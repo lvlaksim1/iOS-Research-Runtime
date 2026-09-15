@@ -184,7 +184,9 @@ public sealed class QemuRuntime : IDisposable
 
         try
         {
-            await process.StandardInput.WriteLineAsync("quit");
+            // -serial mon:stdio uses QEMU's stdio multiplexer.
+            // Ctrl-A X is the native mux command for terminating the emulator.
+            await process.StandardInput.WriteAsync("\u0001x");
             await process.StandardInput.FlushAsync();
 
             var gracefulExit = process.WaitForExitAsync(cancellationToken);
