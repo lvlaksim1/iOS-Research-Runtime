@@ -6,7 +6,9 @@ public sealed class QemuRuntime : IDisposable
 {
     private readonly RuntimeLayout _layout;
     private readonly QemuCommandBuilder _commandBuilder;
+    private readonly object _logSync = new();
     private Process? _process;
+    private StreamWriter? _logWriter;
 
     public QemuRuntime(RuntimeLayout layout, QemuCommandBuilder commandBuilder)
     {
@@ -18,12 +20,32 @@ public sealed class QemuRuntime : IDisposable
     public event EventHandler<int>? Exited;
 
     public bool IsRunning => _process is { HasExited: false };
+    public string? CurrentLogPath { get; private set; }
 
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (IsRunning)
         {
             throw new InvalidOperationException("QEMU runtime is already running.");
+        }
+
+        _layout.EnsureDirectories();
+        lock (_logSync)
+        {
+            _logWriter?.Dispose();
+            CurrentLogPath = Path.Combine(
+                _layout.LogDirectory,
+                $"boot-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+            _logWriter = new StreamWriter(
+                new FileStream(
+                    CurrentLogPath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.Read),
+                new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false))
+            {
+                AutoFlush = true
+            };
         }
 
         var startInfo = new ProcessStartInfo
@@ -52,7 +74,7 @@ public sealed class QemuRuntime : IDisposable
         {
             if (!string.IsNullOrWhiteSpace(eventArgs.Data))
             {
-                OutputReceived?.Invoke(this, eventArgs.Data);
+                EmitOutput(eventArgs.Data);
             }
         };
 
@@ -60,7 +82,7 @@ public sealed class QemuRuntime : IDisposable
         {
             if (!string.IsNullOrWhiteSpace(eventArgs.Data))
             {
-                OutputReceived?.Invoke(this, eventArgs.Data);
+                EmitOutput(eventArgs.Data);
             }
         };
 
@@ -72,6 +94,11 @@ public sealed class QemuRuntime : IDisposable
         if (!process.Start())
         {
             process.Dispose();
+            lock (_logSync)
+            {
+                _logWriter?.Dispose();
+                _logWriter = null;
+            }
             throw new InvalidOperationException("Failed to start qemu-sptm.");
         }
 
@@ -81,6 +108,31 @@ public sealed class QemuRuntime : IDisposable
 
         cancellationToken.ThrowIfCancellationRequested();
         return Task.CompletedTask;
+    }
+
+    public async Task SendLineAsync(
+        string line,
+        CancellationToken cancellationToken = default)
+    {
+        var process = _process;
+        if (process is null || process.HasExited)
+        {
+            throw new InvalidOperationException("QEMU runtime is not running.");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        await process.StandardInput.WriteLineAsync(line);
+        await process.StandardInput.FlushAsync(cancellationToken);
+    }
+
+    private void EmitOutput(string line)
+    {
+        lock (_logSync)
+        {
+            _logWriter?.WriteLine(line);
+        }
+
+        OutputReceived?.Invoke(this, line);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
@@ -123,5 +175,11 @@ public sealed class QemuRuntime : IDisposable
         }
 
         _process?.Dispose();
+
+        lock (_logSync)
+        {
+            _logWriter?.Dispose();
+            _logWriter = null;
+        }
     }
 }
