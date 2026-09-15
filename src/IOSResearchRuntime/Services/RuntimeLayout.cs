@@ -15,7 +15,6 @@ public sealed class RuntimeLayout
         ResourceDirectory = Path.Combine(DataDirectory, "resources");
 
         IpswExecutable = Path.Combine(ToolDirectory, "ipsw", "ipsw.exe");
-        ApfsExecutable = Path.Combine(ToolDirectory, "apfs", "apfs.exe");
         RcodesignExecutable = Path.Combine(ToolDirectory, "rcodesign", "rcodesign.exe");
         IosCliToolsArchive = Path.Combine(ResourceDirectory, "ios-cli-tools.tar.gz");
 
@@ -48,7 +47,6 @@ public sealed class RuntimeLayout
     public string ToolDirectory { get; }
     public string ResourceDirectory { get; }
     public string IpswExecutable { get; }
-    public string ApfsExecutable { get; }
     public string RcodesignExecutable { get; }
     public string IosCliToolsArchive { get; }
     public string NvramTemplate { get; }
