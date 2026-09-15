@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -142,10 +143,14 @@ func collectDirectoryCDHashes(
 				return err
 			}
 		case info.Mode().IsRegular():
-			data, err := volume.ReadFile(fullPath)
+			data, isMacho, err := readMachOFile(volume, fullPath)
 			if err != nil {
-				return fmt.Errorf("%s: read for cdhash: %w", fullPath, err)
+				return fmt.Errorf("%s: inspect for cdhash: %w", fullPath, err)
 			}
+			if !isMacho {
+				continue
+			}
+
 			hash, ok, err := signer.CDHash(data)
 			if err != nil {
 				return fmt.Errorf("%s: cdhash: %w", fullPath, err)
@@ -157,6 +162,29 @@ func collectDirectoryCDHashes(
 	}
 
 	return nil
+}
+
+func readMachOFile(volume *apfs.Volume, filePath string) ([]byte, bool, error) {
+	file, err := volume.Open(filePath)
+	if err != nil {
+		return nil, false, err
+	}
+	defer file.Close()
+
+	magic := make([]byte, 4)
+	n, err := file.Read(magic)
+	if err != nil && err != io.EOF {
+		return nil, false, err
+	}
+	if n < len(magic) || !isMachO(magic) {
+		return nil, false, nil
+	}
+
+	data, err := volume.ReadFile(filePath)
+	if err != nil {
+		return nil, false, err
+	}
+	return data, true, nil
 }
 
 func writeCDHashes(filePath string, hashes map[string]struct{}) error {
