@@ -1,0 +1,97 @@
+name: rcodesign Windows Gate
+
+on:
+  push:
+    paths:
+      - '.github/workflows/rcodesign-windows-gate.yml'
+      - 'runtime/codesign/**'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download pinned rcodesign release and checksum
+        shell: pwsh
+        run: |
+          $base = "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0"
+          $zip = "apple-codesign-0.29.0-x86_64-pc-windows-msvc.zip"
+          Invoke-WebRequest "$base/$zip" -OutFile $zip
+          Invoke-WebRequest "$base/$zip.sha256" -OutFile "$zip.sha256"
+
+          $expected = (Get-Content "$zip.sha256").Trim().Split()[0].ToLowerInvariant()
+          $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Host "RCODESIGN_SHA256=$actual"
+          if ($expected -ne $actual) {
+            throw "rcodesign checksum mismatch: expected $expected, got $actual"
+          }
+
+          Expand-Archive $zip -DestinationPath rcodesign -Force
+          $exe = Get-ChildItem rcodesign -Recurse -Filter rcodesign.exe | Select-Object -First 1
+          if (!$exe) { throw "rcodesign.exe not found" }
+          "RCODESIGN_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Verify rcodesign executable
+        shell: pwsh
+        run: |
+          & $env:RCODESIGN_EXE --version
+
+      - name: Download iOS CLI Mach-O fixture
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://raw.githubusercontent.com/jprx/ios-cli-tools/main/prebuilt.tar.gz" -OutFile ios-cli-tools.tar.gz
+          New-Item -ItemType Directory -Path fixture | Out-Null
+          tar -xzf ios-cli-tools.tar.gz -C fixture
+          $bash = Get-ChildItem fixture -Recurse -File | Where-Object { $_.Name -eq "bash" } | Select-Object -First 1
+          if (!$bash) { throw "bash Mach-O fixture not found" }
+          "MACHO_FIXTURE=$($bash.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Ad-hoc sign Mach-O on Windows
+        shell: pwsh
+        run: |
+          $signed = Join-Path $env:RUNNER_TEMP "bash.signed"
+          & $env:RCODESIGN_EXE sign $env:MACHO_FIXTURE $signed
+          if ($LASTEXITCODE -ne 0) { throw "rcodesign sign failed" }
+          if (!(Test-Path $signed)) { throw "signed Mach-O not created" }
+
+          $info = & $env:RCODESIGN_EXE print-signature-info $signed 2>&1
+          $info | Out-Host
+
+          $lines = @($info)
+          $slot = -1
+          for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match 'slot:\s+CodeDirectory \(0\)') {
+              $slot = $i
+              break
+            }
+          }
+          if ($slot -lt 0) { throw "primary CodeDirectory not found" }
+
+          $sha256 = $null
+          for ($i = $slot + 1; $i -lt [Math]::Min($slot + 10, $lines.Count); $i++) {
+            if ($lines[$i] -match 'sha256:\s+([0-9a-fA-F]{64})') {
+              $sha256 = $Matches[1].ToLowerInvariant()
+              break
+            }
+          }
+          if (!$sha256) { throw "CodeDirectory SHA-256 not found" }
+
+          $cdhash = $sha256.Substring(0, 40)
+          Write-Host "CODEDIRECTORY_SHA256=$sha256"
+          Write-Host "CDHASH=$cdhash"
+
+      - name: Upload signed proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: rcodesign-windows-proof
+          path: |
+            apple-codesign-0.29.0-x86_64-pc-windows-msvc.zip.sha256
+          if-no-files-found: error
+          retention-days: 14
