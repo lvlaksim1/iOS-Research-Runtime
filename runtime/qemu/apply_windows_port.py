@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path.cwd()
 
 def replace_exact(relative_path: str, old: str, new: str) -> None:
     path = ROOT / relative_path
