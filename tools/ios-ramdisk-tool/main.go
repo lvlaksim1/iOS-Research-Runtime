@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/deploymenttheory/go-apfs-v2/pkg/apfs"
 	"github.com/deploymenttheory/go-apfs-v2/pkg/apfswrite"
@@ -75,7 +76,7 @@ func run(opts options) error {
 	}
 	fmt.Printf("collected %d existing CDHashes\n", len(hashes))
 
-	children, err := readDirectory(volume, ".")
+	children, err := readAPFSTree(volume)
 	if err != nil {
 		return fmt.Errorf("read APFS tree: %w", err)
 	}
@@ -185,45 +186,62 @@ func run(opts options) error {
 	return nil
 }
 
-func readDirectory(volume *apfs.Volume, directory string) ([]*apfswrite.Entry, error) {
-	entries, err := volume.ReadDir(directory)
+func readAPFSTree(volume *apfs.Volume) ([]*apfswrite.Entry, error) {
+	root, err := volume.RootDirectory()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open APFS root inode: %w", err)
 	}
 
-	result := make([]*apfswrite.Entry, 0, len(entries))
+	return readDirectoryEntry(root, "")
+}
 
-	for _, directoryEntry := range entries {
-		name := directoryEntry.Name()
-		fullPath := name
-		if directory != "." {
-			fullPath = directory + "/" + name
-		}
+func readDirectoryEntry(directory *apfs.FileEntry, directoryPath string) ([]*apfswrite.Entry, error) {
+	count, err := directory.NumberOfSubFileEntries()
+	if err != nil {
+		return nil, fmt.Errorf("%s: enumerate directory: %w", displayPath(directoryPath), err)
+	}
 
-		info, err := directoryEntry.Info()
+	result := make([]*apfswrite.Entry, 0, count)
+
+	for index := 0; index < count; index++ {
+		source, err := directory.SubFileEntryByIndex(index)
 		if err != nil {
-			return nil, fmt.Errorf("%s: info: %w", fullPath, err)
+			return nil, fmt.Errorf("%s: read child %d: %w", displayPath(directoryPath), index, err)
+		}
+		if source.Inode == nil {
+			return nil, fmt.Errorf("%s: child %d has no inode", displayPath(directoryPath), index)
 		}
 
+		name, err := source.UTF8Name()
+		if err != nil {
+			return nil, fmt.Errorf("%s: read child %d name: %w", displayPath(directoryPath), index, err)
+		}
+
+		fullPath := name
+		if directoryPath != "" {
+			fullPath = directoryPath + "/" + name
+		}
+
+		inode := source.Inode
+		mode := fileModeFromInode(inode)
 		entry := &apfswrite.Entry{
 			Name:    name,
-			Mode:    info.Mode(),
-			ModTime: info.ModTime(),
+			Mode:    mode,
+			ModTime: time.Unix(0, int64(inode.ModificationTime)),
+			UID:     inode.OwnerIdentifier,
+			GID:     inode.GroupIdentifier,
 		}
 
-		var inode *apfs.Inode
-		if value, ok := info.Sys().(*apfs.Inode); ok {
-			inode = value
-			entry.UID = value.OwnerIdentifier
-			entry.GID = value.GroupIdentifier
-			if info.Mode().IsRegular() && value.NumberOfLinks > 1 {
-				entry.LinkGroup = value.Identifier
-			}
+		if mode.IsRegular() && inode.NumberOfLinks > 1 {
+			entry.LinkGroup = inode.Identifier
 		}
 
-		xattrs, err := volume.Xattrs(fullPath)
-		if err == nil && len(xattrs) > 0 {
-			entry.Xattrs = cloneXattrs(xattrs)
+		xattrs, err := readEntryXattrs(source)
+		if err != nil {
+			return nil, fmt.Errorf("%s: read xattrs: %w", fullPath, err)
+		}
+		if len(xattrs) > 0 {
+			entry.Xattrs = xattrs
 			delete(entry.Xattrs, symlinkXattrName)
 			if len(entry.Xattrs) == 0 {
 				entry.Xattrs = nil
@@ -231,27 +249,27 @@ func readDirectory(volume *apfs.Volume, directory string) ([]*apfswrite.Entry, e
 		}
 
 		switch {
-		case info.Mode()&fs.ModeSymlink != 0:
-			target, err := volume.Readlink(fullPath)
+		case mode&fs.ModeSymlink != 0:
+			target, err := source.SymbolicLinkTarget()
 			if err != nil {
 				return nil, fmt.Errorf("%s: read symlink: %w", fullPath, err)
 			}
 			entry.Data = []byte(target)
 
-		case info.Mode().IsDir():
-			children, err := readDirectory(volume, fullPath)
+		case mode.IsDir():
+			children, err := readDirectoryEntry(source, fullPath)
 			if err != nil {
 				return nil, err
 			}
 			entry.Children = children
 
-		case info.Mode().IsRegular():
-			if inode != nil && inode.BSDFlags&apfs.BSDFlagCompressed != 0 {
-				// The writer reconstructs transparently-compressed content from
-				// com.apple.decmpfs (+ resource fork when present).
+		case mode.IsRegular():
+			if inode.BSDFlags&apfs.BSDFlagCompressed != 0 {
+				// apfswrite reconstructs transparently-compressed content
+				// from com.apple.decmpfs (+ resource fork when present).
 				entry.Data = nil
 			} else {
-				data, err := volume.ReadFile(fullPath)
+				data, err := readFileEntryData(source)
 				if err != nil {
 					return nil, fmt.Errorf("%s: read file: %w", fullPath, err)
 				}
@@ -259,13 +277,92 @@ func readDirectory(volume *apfs.Volume, directory string) ([]*apfswrite.Entry, e
 			}
 
 		default:
-			return nil, fmt.Errorf("%s: unsupported special file mode %v", fullPath, info.Mode())
+			return nil, fmt.Errorf("%s: unsupported special file mode %v", fullPath, mode)
 		}
 
 		result = append(result, entry)
 	}
 
 	return result, nil
+}
+
+func readEntryXattrs(entry *apfs.FileEntry) (map[string][]byte, error) {
+	count, err := entry.NumberOfExtendedAttributes()
+	if err != nil {
+		return nil, err
+	}
+	if count == 0 {
+		return nil, nil
+	}
+
+	result := make(map[string][]byte, count)
+	for index := 0; index < count; index++ {
+		attribute, err := entry.ExtendedAttributeByIndex(index)
+		if err != nil {
+			return nil, err
+		}
+		name, err := attribute.UTF8Name()
+		if err != nil {
+			return nil, err
+		}
+		if _, err := attribute.Seek(0, io.SeekStart); err != nil {
+			return nil, err
+		}
+		data, err := io.ReadAll(attribute)
+		if err != nil {
+			return nil, err
+		}
+		result[name] = data
+	}
+	return result, nil
+}
+
+func readFileEntryData(entry *apfs.FileEntry) ([]byte, error) {
+	size, err := entry.Size()
+	if err != nil {
+		return nil, err
+	}
+	if size == 0 {
+		return []byte{}, nil
+	}
+	if size > uint64(^uint(0)>>1) {
+		return nil, fmt.Errorf("file is too large to materialize: %d bytes", size)
+	}
+
+	data := make([]byte, int(size))
+	n, err := entry.ReadAt(data, 0)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func fileModeFromInode(inode *apfs.Inode) fs.FileMode {
+	mode := fs.FileMode(inode.FileMode & 0o777)
+
+	switch inode.FileMode & 0xF000 {
+	case 0x4000:
+		mode |= fs.ModeDir
+	case 0xA000:
+		mode |= fs.ModeSymlink
+	case 0x2000:
+		mode |= fs.ModeDevice | fs.ModeCharDevice
+	case 0x6000:
+		mode |= fs.ModeDevice
+	case 0x1000:
+		mode |= fs.ModeNamedPipe
+	case 0xC000:
+		mode |= fs.ModeSocket
+	}
+
+	return mode
+}
+
+func displayPath(value string) string {
+	if value == "" {
+		return "/"
+	}
+	return "/" + value
 }
 
 func cloneXattrs(source map[string][]byte) map[string][]byte {
