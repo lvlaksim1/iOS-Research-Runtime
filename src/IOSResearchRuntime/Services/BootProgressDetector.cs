@@ -24,7 +24,8 @@ public sealed class BootProgressDetector
 
     public BootProgress MarkQemuStarted()
     {
-        return Advance(
+        _stage = BootStage.QemuStarted;
+        return new BootProgress(
             BootStage.QemuStarted,
             "QEMU запущен. Ожидаем XNU.");
     }
