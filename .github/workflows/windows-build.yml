@@ -20,11 +20,17 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore
+      - name: Restore application
         run: dotnet restore src/IOSResearchRuntime/IOSResearchRuntime.csproj
+
+      - name: Restore tests
+        run: dotnet restore tests/IOSResearchRuntime.Tests/IOSResearchRuntime.Tests.csproj
 
       - name: Build
         run: dotnet build src/IOSResearchRuntime/IOSResearchRuntime.csproj -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/IOSResearchRuntime.Tests/IOSResearchRuntime.Tests.csproj -c Release --no-restore
 
       - name: Publish self-contained Windows x64
         run: >
