@@ -6,6 +6,10 @@ on:
       - '.github/workflows/qemu-sptm-windows.yml'
       - 'runtime/qemu/**'
 
+concurrency:
+  group: qemu-sptm-windows-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -42,27 +46,57 @@ jobs:
           cd qemu-sptm
           git checkout 2867d847d3471560e773120ee50c42dbcbb6d60b
 
-      - name: Apply Windows portability transforms
+      - name: Apply Windows portability patch
         shell: msys2 {0}
         run: |
           cd qemu-sptm
-          python ../runtime/qemu/apply_windows_port.py
+          git apply --check ../runtime/qemu/patches/0001-win32-portability.patch
+          git apply ../runtime/qemu/patches/0001-win32-portability.patch
           git diff --check
           git diff --stat
+
+      - name: Restore QEMU build cache
+        id: qemu-build-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: qemu-sptm/build
+          key: qemu-sptm-win64-2867d847-headless-v1-${{ hashFiles('runtime/qemu/patches/0001-win32-portability.patch') }}
 
       - name: Configure qemu-sptm
         shell: msys2 {0}
         run: |
           cd qemu-sptm
-          mkdir build
+          mkdir -p build
           cd build
-          ../configure             --target-list=aarch64-softmmu             --disable-pvg             --disable-werror
+          if [ ! -f build.ninja ]; then
+            ../configure \
+              --target-list=aarch64-softmmu \
+              --disable-pvg \
+              --disable-werror \
+              --disable-docs \
+              --disable-gtk \
+              --disable-sdl \
+              --disable-vnc \
+              --disable-opengl \
+              --disable-curses \
+              --disable-slirp \
+              --disable-plugins \
+              --disable-tools \
+              --disable-guest-agent
+          fi
 
       - name: Build qemu-sptm
         shell: msys2 {0}
         run: |
           cd qemu-sptm/build
           ninja qemu-system-aarch64.exe
+
+      - name: Save QEMU build cache
+        if: steps.qemu-build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: qemu-sptm/build
+          key: qemu-sptm-win64-2867d847-headless-v1-${{ hashFiles('runtime/qemu/patches/0001-win32-portability.patch') }}
 
       - name: Verify Darwin machine
         shell: msys2 {0}
@@ -98,7 +132,21 @@ jobs:
           test -f "$runtime_dir/qemu-system-aarch64.exe"
           dll_count=$(find "$runtime_dir" -maxdepth 1 -type f -iname '*.dll' | wc -l)
           test "$dll_count" -gt 0
+
+          mkdir -p "$runtime_dir/provenance"
+          cp runtime/qemu/UPSTREAM.md "$runtime_dir/provenance/"
+          cp runtime/qemu/patches/0001-win32-portability.patch "$runtime_dir/provenance/"
+          cp qemu-sptm/COPYING "$runtime_dir/LICENSE-QEMU.txt"
+
+          (
+            cd "$runtime_dir"
+            find . -maxdepth 1 -type f ! -name 'SHA256SUMS.txt' -print0 |
+              sort -z |
+              xargs -0 sha256sum > SHA256SUMS.txt
+          )
+
           printf '%s\n' "DLL_COUNT=$dll_count" | tee qemu-proof/runtime-summary.txt
+          printf '%s\n' "UPSTREAM_COMMIT=2867d847d3471560e773120ee50c42dbcbb6d60b" | tee -a qemu-proof/runtime-summary.txt
 
       - name: Verify standalone QEMU runtime
         shell: pwsh
