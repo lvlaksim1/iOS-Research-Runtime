@@ -148,7 +148,7 @@ public partial class MainWindow : Window
               string.Join(Environment.NewLine, snapshot.MissingItems.Select(item => "• " + item));
 
         var busy = snapshot.State is RuntimeState.Booting or RuntimeState.Stopping;
-        PrepareButton.IsEnabled = PrepareButton.IsEnabled && !busy && snapshot.State != RuntimeState.Running;
+        PrepareButton.IsEnabled = !busy && snapshot.State != RuntimeState.Running;
         StartButton.IsEnabled = snapshot.State == RuntimeState.Ready;
         StopButton.IsEnabled = snapshot.State is RuntimeState.Running or RuntimeState.Booting;
     }
