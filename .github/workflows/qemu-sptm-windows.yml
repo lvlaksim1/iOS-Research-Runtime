@@ -1,0 +1,77 @@
+name: qemu-sptm Windows Gate
+
+on:
+  push:
+    paths:
+      - '.github/workflows/qemu-sptm-windows.yml'
+      - 'runtime/qemu/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-qemu:
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout application repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 MINGW64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            git
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-glib2
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pixman
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-python
+
+      - name: Clone pinned qemu-sptm
+        shell: msys2 {0}
+        run: |
+          git clone https://github.com/jprx/qemu-sptm.git qemu-sptm
+          cd qemu-sptm
+          git checkout 2867d847d3471560e773120ee50c42dbcbb6d60b
+
+      - name: Configure qemu-sptm
+        shell: msys2 {0}
+        run: |
+          cd qemu-sptm
+          mkdir build
+          cd build
+          ../configure             --target-list=aarch64-softmmu             --disable-pvg             --disable-werror
+
+      - name: Build qemu-sptm
+        shell: msys2 {0}
+        run: |
+          cd qemu-sptm/build
+          ninja
+
+      - name: Verify Darwin machine
+        shell: msys2 {0}
+        run: |
+          cd qemu-sptm/build
+          ./qemu-system-aarch64.exe -M help | tee machine-list.txt
+          grep -E '^darwin[[:space:]]' machine-list.txt
+
+      - name: Stage proof artifact
+        shell: msys2 {0}
+        run: |
+          mkdir -p qemu-proof
+          cp qemu-sptm/build/qemu-system-aarch64.exe qemu-proof/
+          cp qemu-sptm/build/machine-list.txt qemu-proof/
+
+      - name: Upload proof artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-sptm-windows-gate
+          path: qemu-proof/**
+          if-no-files-found: error
+          retention-days: 14
