@@ -1,0 +1,159 @@
+name: Windows Full Package
+
+on:
+  workflow_run:
+    workflows:
+      - Windows End-to-End Boot
+    types:
+      - completed
+
+concurrency:
+  group: windows-full-package
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  package:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: tools/ios-ramdisk-tool/go.mod
+
+      - name: Download tested QEMU runtime
+        uses: actions/download-artifact@v4
+        with:
+          name: qemu-runtime-tested
+          path: qemu-tested
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Build ramdisk helper
+        working-directory: tools/ios-ramdisk-tool
+        shell: pwsh
+        run: |
+          go mod download
+          go test ./...
+          go build -trimpath -ldflags="-s -w" -o ../../publish-tools/ios-ramdisk-tool.exe .
+
+      - name: Restore and test application
+        shell: pwsh
+        run: |
+          dotnet restore src/IOSResearchRuntime/IOSResearchRuntime.csproj
+          dotnet restore tests/IOSResearchRuntime.Tests/IOSResearchRuntime.Tests.csproj
+          dotnet build src/IOSResearchRuntime/IOSResearchRuntime.csproj -c Release --no-restore
+          dotnet test tests/IOSResearchRuntime.Tests/IOSResearchRuntime.Tests.csproj -c Release --no-restore
+
+      - name: Publish self-contained Windows x64
+        shell: pwsh
+        run: |
+          dotnet publish src/IOSResearchRuntime/IOSResearchRuntime.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+
+      - name: Assemble full runtime package
+        shell: pwsh
+        run: |
+          $qemu = Get-ChildItem qemu-tested -Recurse -Filter qemu-system-aarch64.exe | Select-Object -First 1
+          if (!$qemu) {
+            throw "Tested QEMU runtime artifact does not contain qemu-system-aarch64.exe"
+          }
+
+          $qemuSource = $qemu.Directory.FullName
+          $qemuDestination = Join-Path $PWD "publish/tools/qemu-sptm"
+          New-Item -ItemType Directory -Path $qemuDestination -Force | Out-Null
+          Copy-Item (Join-Path $qemuSource "*") $qemuDestination -Recurse -Force
+
+          New-Item -ItemType Directory -Path "publish/tools" -Force | Out-Null
+          Copy-Item "publish-tools/ios-ramdisk-tool.exe" "publish/tools/ios-ramdisk-tool.exe" -Force
+
+          if (!(Test-Path "publish/iOSResearchRuntime.exe")) {
+            throw "Published application executable is missing"
+          }
+          if (!(Test-Path "publish/tools/ios-ramdisk-tool.exe")) {
+            throw "Bundled ramdisk helper is missing"
+          }
+          if (!(Test-Path "publish/tools/qemu-sptm/qemu-system-aarch64.exe")) {
+            throw "Bundled QEMU executable is missing"
+          }
+
+      - name: Verify packaged QEMU runtime
+        shell: pwsh
+        run: |
+          $runtime = (Resolve-Path "publish/tools/qemu-sptm").Path
+          $systemRoot = $env:SystemRoot
+          $oldPath = $env:PATH
+          try {
+            $env:PATH = "$runtime;$systemRoot\System32;$systemRoot"
+            $output = & "$runtime\qemu-system-aarch64.exe" -M help 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              throw "Packaged QEMU failed with exit code $LASTEXITCODE"
+            }
+            if (-not ($output -match '(?m)^darwin\s')) {
+              throw "Packaged QEMU does not expose darwin machine"
+            }
+          }
+          finally {
+            $env:PATH = $oldPath
+          }
+
+      - name: Create package archive and hashes
+        id: package
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "VERSION is empty"
+          }
+
+          $packageName = "iOS-Research-Runtime-v$version-win-x64"
+          $out = Join-Path $PWD "dist"
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+
+          $manifest = @(
+            "VERSION=$version"
+            "APPLICATION_SHA=${{ github.sha }}"
+            "E2E_RUN=${{ github.event.workflow_run.id }}"
+            "E2E_SHA=${{ github.event.workflow_run.head_sha }}"
+          )
+          $manifest | Set-Content -Encoding utf8 "publish/PACKAGE-MANIFEST.txt"
+
+          $zip = Join-Path $out "$packageName.zip"
+          tar.exe -a -c -f $zip -C publish .
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to create package archive"
+          }
+
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $packageName.zip" | Set-Content -Encoding ascii (Join-Path $out "$packageName.sha256")
+
+          "package_name=$packageName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "PACKAGE=$packageName"
+          "SHA256=$hash"
+
+      - name: Upload full Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.package_name }}
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+          retention-days: 14
