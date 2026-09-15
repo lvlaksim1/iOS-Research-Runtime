@@ -12,6 +12,8 @@ public sealed class RuntimeLayout
         LogDirectory = Path.Combine(DataDirectory, "logs");
         CacheDirectory = Path.Combine(DataDirectory, "cache");
         ToolDirectory = Path.Combine(DataDirectory, "tools");
+        IpswExecutable = Path.Combine(ToolDirectory, "ipsw", "ipsw.exe");
+        ApfsExecutable = Path.Combine(ToolDirectory, "apfs", "apfs.exe");
         QemuExecutable = Path.Combine(
             ApplicationDirectory,
             "tools",
@@ -25,6 +27,8 @@ public sealed class RuntimeLayout
     public string LogDirectory { get; }
     public string CacheDirectory { get; }
     public string ToolDirectory { get; }
+    public string IpswExecutable { get; }
+    public string ApfsExecutable { get; }
     public string QemuExecutable { get; }
 
     public void EnsureDirectories()
