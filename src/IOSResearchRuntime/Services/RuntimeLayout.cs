@@ -24,6 +24,11 @@ public sealed class RuntimeLayout
             "runtime",
             "firmware",
             "nvram.bin");
+        LaunchdPlist = Path.Combine(
+            ApplicationDirectory,
+            "runtime",
+            "ramdisk",
+            "com.jprx.bash.plist");
         QemuExecutable = Path.Combine(
             ApplicationDirectory,
             "tools",
@@ -47,6 +52,7 @@ public sealed class RuntimeLayout
     public string RcodesignExecutable { get; }
     public string IosCliToolsArchive { get; }
     public string NvramTemplate { get; }
+    public string LaunchdPlist { get; }
     public string QemuExecutable { get; }
     public string RamdiskToolExecutable { get; }
 
