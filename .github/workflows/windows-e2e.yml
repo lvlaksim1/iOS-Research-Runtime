@@ -1,0 +1,141 @@
+name: Windows End-to-End Boot
+
+on:
+  workflow_run:
+    workflows:
+      - qemu-sptm Windows Gate
+    types:
+      - completed
+
+concurrency:
+  group: windows-e2e-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  boot-proof:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout exact tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: tools/ios-ramdisk-tool/go.mod
+
+      - name: Download QEMU runtime from gate
+        uses: actions/download-artifact@v4
+        with:
+          name: qemu-sptm-windows-gate
+          path: qemu-gate-artifact
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Stage tested QEMU runtime
+        shell: pwsh
+        run: |
+          $source = Join-Path $PWD "qemu-gate-artifact/runtime"
+          $destination = Join-Path $PWD "tools/qemu-sptm"
+
+          if (!(Test-Path (Join-Path $source "qemu-system-aarch64.exe"))) {
+            throw "QEMU gate artifact does not contain qemu-system-aarch64.exe"
+          }
+
+          New-Item -ItemType Directory -Path $destination -Force | Out-Null
+          Copy-Item (Join-Path $source "*") $destination -Recurse -Force
+
+          $systemRoot = $env:SystemRoot
+          $oldPath = $env:PATH
+          try {
+            $env:PATH = "$destination;$systemRoot\System32;$systemRoot"
+            $machines = & (Join-Path $destination "qemu-system-aarch64.exe") -M help 2>&1
+            if ($LASTEXITCODE -ne 0) {
+              throw "Staged QEMU runtime failed with exit code $LASTEXITCODE"
+            }
+            if (-not ($machines -match '(?m)^darwin\s')) {
+              throw "Staged QEMU runtime does not expose darwin machine"
+            }
+          }
+          finally {
+            $env:PATH = $oldPath
+          }
+
+      - name: Build bundled ramdisk helper
+        working-directory: tools/ios-ramdisk-tool
+        shell: pwsh
+        run: |
+          go mod download
+          go test ./...
+          go build -trimpath -ldflags="-s -w" -o ../ios-ramdisk-tool.exe .
+          if (!(Test-Path ../ios-ramdisk-tool.exe)) {
+            throw "ios-ramdisk-tool.exe was not built"
+          }
+
+      - name: Restore integration harness
+        run: dotnet restore tools/IOSResearchRuntime.Integration/IOSResearchRuntime.Integration.csproj
+
+      - name: Run provisioning and Darwin root-shell proof
+        shell: pwsh
+        run: |
+          $data = Join-Path $env:RUNNER_TEMP "ios-research-runtime-e2e"
+          New-Item -ItemType Directory -Path $data -Force | Out-Null
+          $evidence = Join-Path $PWD "e2e-evidence"
+          New-Item -ItemType Directory -Path $evidence -Force | Out-Null
+
+          dotnet run --project tools/IOSResearchRuntime.Integration/IOSResearchRuntime.Integration.csproj -c Release --no-restore -- --application-directory "$PWD" --data-directory "$data" --timeout-minutes 60 2>&1 | Tee-Object -FilePath (Join-Path $evidence "integration.log")
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "End-to-end integration harness failed with exit code $LASTEXITCODE"
+          }
+
+          $bootLogs = Join-Path $data "logs"
+          if (Test-Path $bootLogs) {
+            Copy-Item $bootLogs (Join-Path $evidence "boot-logs") -Recurse -Force
+          }
+
+          Copy-Item "qemu-gate-artifact/runtime-summary.txt" $evidence -ErrorAction SilentlyContinue
+          Copy-Item "qemu-gate-artifact/standalone-machine-list.txt" $evidence -ErrorAction SilentlyContinue
+
+      - name: Collect failure evidence
+        if: always()
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $PWD "e2e-evidence"
+          New-Item -ItemType Directory -Path $evidence -Force | Out-Null
+          $data = Join-Path $env:RUNNER_TEMP "ios-research-runtime-e2e"
+
+          if (Test-Path (Join-Path $data "logs")) {
+            Copy-Item (Join-Path $data "logs") (Join-Path $evidence "boot-logs") -Recurse -Force
+          }
+
+          Get-ChildItem $evidence -Recurse -File | ForEach-Object {
+            "$($_.FullName) $($_.Length)"
+          } | Set-Content (Join-Path $evidence "evidence-files.txt")
+
+      - name: Upload end-to-end evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-darwin-windows-e2e
+          path: e2e-evidence/**
+          if-no-files-found: warn
+          retention-days: 14
