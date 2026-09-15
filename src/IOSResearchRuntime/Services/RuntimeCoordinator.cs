@@ -7,6 +7,7 @@ public sealed class RuntimeCoordinator : IDisposable
 {
     private readonly FirmwareBundleValidator _validator;
     private readonly QemuRuntime _runtime;
+    private readonly BootProgressDetector _bootProgress = new();
     private RuntimeSnapshot _snapshot = RuntimeSnapshot.NotReady(
         "Среда не проверена.",
         Array.Empty<string>());
@@ -44,6 +45,7 @@ public sealed class RuntimeCoordinator : IDisposable
             return;
         }
 
+        _bootProgress.Reset();
         SetSnapshot(new RuntimeSnapshot(
             RuntimeState.Booting,
             "Запуск qemu-sptm и загрузка iOS…",
@@ -52,9 +54,10 @@ public sealed class RuntimeCoordinator : IDisposable
         try
         {
             await _runtime.StartAsync(cancellationToken);
+            var progress = _bootProgress.MarkQemuStarted();
             SetSnapshot(new RuntimeSnapshot(
-                RuntimeState.Running,
-                "Runtime запущен. Ожидаем загрузку iOS.",
+                RuntimeState.Booting,
+                progress.Message,
                 Array.Empty<string>()));
         }
         catch (Exception exception)
@@ -98,6 +101,21 @@ public sealed class RuntimeCoordinator : IDisposable
     private void RuntimeOnOutputReceived(object? sender, string line)
     {
         LogReceived?.Invoke(this, line);
+
+        var progress = _bootProgress.Observe(line);
+        if (progress is null)
+        {
+            return;
+        }
+
+        var state = progress.Stage == BootStage.RootShell
+            ? RuntimeState.Running
+            : RuntimeState.Booting;
+
+        SetSnapshot(new RuntimeSnapshot(
+            state,
+            progress.Message,
+            Array.Empty<string>()));
     }
 
     private void RuntimeOnExited(object? sender, int exitCode)
