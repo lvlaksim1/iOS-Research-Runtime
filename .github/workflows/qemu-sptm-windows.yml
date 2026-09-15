@@ -71,12 +71,49 @@ jobs:
           ./qemu-system-aarch64.exe -M help | tee machine-list.txt
           grep -E '^darwin[[:space:]]' machine-list.txt
 
-      - name: Stage proof artifact
+      - name: Stage standalone QEMU runtime
         shell: msys2 {0}
         run: |
-          mkdir -p qemu-proof
-          cp qemu-sptm/build/qemu-system-aarch64.exe qemu-proof/
+          set -euo pipefail
+          runtime_dir="$PWD/qemu-proof/runtime"
+          mkdir -p "$runtime_dir"
+          cp qemu-sptm/build/qemu-system-aarch64.exe "$runtime_dir/"
           cp qemu-sptm/build/machine-list.txt qemu-proof/
+
+          # MSYS2 ldd resolves the complete imported DLL closure for this PE.
+          ldd qemu-sptm/build/qemu-system-aarch64.exe | tee qemu-proof/ldd.txt
+          while IFS= read -r dll; do
+            [ -f "$dll" ] || continue
+            case "$dll" in
+              /mingw64/bin/*.dll)
+                cp -f "$dll" "$runtime_dir/"
+                ;;
+            esac
+          done < <(
+            ldd qemu-sptm/build/qemu-system-aarch64.exe |
+              sed -nE 's#.*=>[[:space:]]+([^[:space:]]+\.dll).*#\1#p; s#^[[:space:]]*([^[:space:]]+\.dll).*#\1#p' |
+              sort -u
+          )
+
+          test -f "$runtime_dir/qemu-system-aarch64.exe"
+          dll_count=$(find "$runtime_dir" -maxdepth 1 -type f -iname '*.dll' | wc -l)
+          test "$dll_count" -gt 0
+          printf '%s\n' "DLL_COUNT=$dll_count" | tee qemu-proof/runtime-summary.txt
+
+      - name: Verify standalone QEMU runtime
+        shell: pwsh
+        run: |
+          $runtime = (Resolve-Path "qemu-proof/runtime").Path
+          $systemRoot = $env:SystemRoot
+          $env:PATH = "$runtime;$systemRoot\System32;$systemRoot"
+          $output = & "$runtime\qemu-system-aarch64.exe" -M help 2>&1
+          $output | Set-Content -Encoding utf8 "qemu-proof/standalone-machine-list.txt"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Standalone qemu-system-aarch64.exe failed with exit code $LASTEXITCODE"
+          }
+          if (-not ($output -match '(?m)^darwin\s')) {
+            throw "Standalone QEMU runtime does not expose the darwin machine"
+          }
 
       - name: Upload proof artifact
         uses: actions/upload-artifact@v4
