@@ -1,7 +1,9 @@
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@
+@@ -83,27 +83,27 @@
+ }
+ 
  static mmap_file_t check_and_open(const char *path, const char *errmsg) {
 -    int fd;
 -    struct stat stats;
@@ -18,10 +20,9 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 -    mapping = mmap(NULL, stats.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 -    if (MAP_FAILED == mapping) goto fail;
 +    /*
-+     * The original darwin machine used POSIX mmap(MAP_PRIVATE) to obtain a
-+     * writable copy of each firmware blob.  Win32/MinGW doesn't provide that
-+     * API.  GLib's file helper gives us the same semantics needed here: a
-+     * private writable heap buffer whose lifetime we own.
++     * The original Darwin machine used POSIX mmap(MAP_PRIVATE) to obtain a
++     * writable private copy of each firmware blob. GLib gives the same
++     * semantics on Windows: a writable heap buffer owned by the caller.
 +     */
 +    if (!g_file_get_contents(path, &contents, &length, NULL)) goto fail;
  
@@ -39,7 +40,12 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 +        .buf = contents,
 +        .len = length,
      };
-@@
+ 
+ fail:
+@@ -286,13 +286,13 @@
+     qdev_connect_gpio_out(cpudev, GTIMER_HYPVIRT, qdev_get_gpio_in(cpudev, ARM_CPU_FIQ));
+ 
+     qemu_register_reset(do_darwin_reset, s);
 -    munmap(info->bootkc_f.buf, info->bootkc_f.len);
 -    munmap(info->dtree_f.buf, info->dtree_f.len);
 -    munmap(info->tc_f.buf, info->tc_f.len);
@@ -55,10 +61,11 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 +        g_free(info->txm_f.buf);
      }
  }
+ 
 diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
 --- a/hw/arm/xnuboot_sptm.c
 +++ b/hw/arm/xnuboot_sptm.c
-@@
+@@ -3,7 +3,6 @@
  #include "hw/arm/machines-qom.h"
  #include "system/address-spaces.h"
  #include "cpu.h"
@@ -69,7 +76,9 @@ diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
 diff --git a/hw/arm/apple_dtree.c b/hw/arm/apple_dtree.c
 --- a/hw/arm/apple_dtree.c
 +++ b/hw/arm/apple_dtree.c
-@@
+@@ -69,13 +69,14 @@
+ }
+ 
  struct dtree_node *adt_find_node(struct dtree_node *root, const char *path) {
 -    char *token, *string, *tofree;
      struct dtree_node *cur_node, *cur_child;
@@ -85,7 +94,7 @@ diff --git a/hw/arm/apple_dtree.c b/hw/arm/apple_dtree.c
          bool found_it = false;
  
          cur_child = first_child(cur_node);
-@@
+@@ -90,12 +91,11 @@
  
          if (!found_it) {
              cur_node = NULL;
@@ -99,9 +108,16 @@ diff --git a/hw/arm/apple_dtree.c b/hw/arm/apple_dtree.c
 +    g_strfreev(tokens);
      return cur_node;
  }
+ 
 diff --git a/hw/arm/apple_regs.c b/hw/arm/apple_regs.c
 --- a/hw/arm/apple_regs.c
 +++ b/hw/arm/apple_regs.c
-@@
+@@ -23,7 +23,7 @@
+ 
+ #define APPLE_STATE(env) ((apple_state_t*)env->apple_state)
+ 
 -#define TAG_OFFSET_EL2_LOCK            BIT(63)
 +#define TAG_OFFSET_EL2_LOCK            (UINT64_C(1) << 63)
+ 
+ #include "apple_regs_autogen.h"
+ 
