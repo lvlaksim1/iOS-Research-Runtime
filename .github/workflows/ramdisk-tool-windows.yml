@@ -40,8 +40,8 @@ jobs:
         shell: pwsh
         run: |
           if (!(Test-Path publish-tools/ios-ramdisk-tool.exe)) { throw "missing ios-ramdisk-tool.exe" }
-          & publish-tools/ios-ramdisk-tool.exe 2>&1 | Out-Host
-          if ($LASTEXITCODE -ne 1) { throw "unexpected no-argument exit code: $LASTEXITCODE" }
+          & publish-tools/ios-ramdisk-tool.exe -h 2>&1 | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "helper help failed: $LASTEXITCODE" }
 
       - name: Upload helper artifact
         uses: actions/upload-artifact@v4

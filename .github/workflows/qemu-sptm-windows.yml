@@ -40,6 +40,14 @@ jobs:
           cd qemu-sptm
           git checkout 2867d847d3471560e773120ee50c42dbcbb6d60b
 
+      - name: Apply Windows portability patches
+        shell: msys2 {0}
+        run: |
+          cd qemu-sptm
+          git apply ../runtime/qemu/patches/0001-win32-portability.patch
+          git diff --check
+          git diff --stat
+
       - name: Configure qemu-sptm
         shell: msys2 {0}
         run: |

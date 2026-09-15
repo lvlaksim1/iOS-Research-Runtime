@@ -47,6 +47,8 @@ jobs:
         shell: pwsh
         run: |
           Invoke-WebRequest "https://raw.githubusercontent.com/jprx/ios-cli-tools/main/prebuilt.tar.gz" -OutFile ios-cli-tools.tar.gz
+          $sysrootHash = (Get-FileHash ios-cli-tools.tar.gz -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Host "IOS_CLI_TOOLS_SHA256=$sysrootHash"
           New-Item -ItemType Directory -Path fixture | Out-Null
           tar -xzf ios-cli-tools.tar.gz -C fixture
           $bash = Get-ChildItem fixture -Recurse -File | Where-Object { $_.Name -eq "bash" } | Select-Object -First 1
@@ -57,11 +59,11 @@ jobs:
         shell: pwsh
         run: |
           $signed = Join-Path $env:RUNNER_TEMP "bash.signed"
-          & $env:RCODESIGN_EXE sign $env:MACHO_FIXTURE $signed
+          & $env:RCODESIGN_EXE sign -C /dev/null $env:MACHO_FIXTURE $signed
           if ($LASTEXITCODE -ne 0) { throw "rcodesign sign failed" }
           if (!(Test-Path $signed)) { throw "signed Mach-O not created" }
 
-          $info = & $env:RCODESIGN_EXE print-signature-info $signed 2>&1
+          $info = & $env:RCODESIGN_EXE print-signature-info -C /dev/null $signed 2>&1
           $info | Out-Host
 
           $lines = @($info)
