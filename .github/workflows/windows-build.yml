@@ -34,6 +34,9 @@ jobs:
         working-directory: tools/ios-ramdisk-tool
         run: |
           go mod tidy
+          Write-Host "----- BEGIN GENERATED GO.MOD -----"
+          Get-Content go.mod
+          Write-Host "----- END GENERATED GO.MOD -----"
           Write-Host "----- BEGIN GENERATED GO.SUM -----"
           Get-Content go.sum
           Write-Host "----- END GENERATED GO.SUM -----"
