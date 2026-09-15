@@ -8,6 +8,7 @@ namespace IOSResearchRuntime;
 public partial class MainWindow : Window
 {
     private readonly RuntimeCoordinator _coordinator;
+    private readonly ToolBootstrapService _toolBootstrap;
 
     public MainWindow()
     {
@@ -17,13 +18,41 @@ public partial class MainWindow : Window
         var validator = new FirmwareBundleValidator(layout);
         var commandBuilder = new QemuCommandBuilder(layout);
         var runtime = new QemuRuntime(layout, commandBuilder);
+
         _coordinator = new RuntimeCoordinator(validator, runtime);
+        _toolBootstrap = new ToolBootstrapService(layout);
 
         _coordinator.StatusChanged += CoordinatorOnStatusChanged;
         _coordinator.LogReceived += CoordinatorOnLogReceived;
+        _toolBootstrap.ProgressChanged += ToolBootstrapOnProgressChanged;
 
         Loaded += (_, _) => RenderSnapshot(_coordinator.Refresh());
-        Closed += (_, _) => _coordinator.Dispose();
+        Closed += (_, _) =>
+        {
+            _toolBootstrap.Dispose();
+            _coordinator.Dispose();
+        };
+    }
+
+    private async void ToolsButton_Click(object sender, RoutedEventArgs e)
+    {
+        ToolsButton.IsEnabled = false;
+
+        try
+        {
+            AppendLog("[tools] Подготовка Windows-инструментов…");
+            await _toolBootstrap.BootstrapAllAsync();
+            AppendLog("[tools] Подготовка завершена.");
+        }
+        catch (Exception exception)
+        {
+            AppendLog("[tools] ОШИБКА: " + exception.Message);
+        }
+        finally
+        {
+            ToolsButton.IsEnabled = true;
+            RenderSnapshot(_coordinator.Refresh());
+        }
     }
 
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -41,6 +70,11 @@ public partial class MainWindow : Window
         await _coordinator.StopAsync();
     }
 
+    private void ToolBootstrapOnProgressChanged(object? sender, string line)
+    {
+        Dispatcher.Invoke(() => AppendLog(line));
+    }
+
     private void CoordinatorOnStatusChanged(object? sender, RuntimeSnapshot snapshot)
     {
         Dispatcher.Invoke(() => RenderSnapshot(snapshot));
@@ -48,11 +82,13 @@ public partial class MainWindow : Window
 
     private void CoordinatorOnLogReceived(object? sender, string line)
     {
-        Dispatcher.Invoke(() =>
-        {
-            LogTextBox.AppendText(line + Environment.NewLine);
-            LogTextBox.ScrollToEnd();
-        });
+        Dispatcher.Invoke(() => AppendLog(line));
+    }
+
+    private void AppendLog(string line)
+    {
+        LogTextBox.AppendText(line + Environment.NewLine);
+        LogTextBox.ScrollToEnd();
     }
 
     private void RenderSnapshot(RuntimeSnapshot snapshot)
@@ -74,6 +110,7 @@ public partial class MainWindow : Window
               string.Join(Environment.NewLine, snapshot.MissingItems.Select(item => "• " + item));
 
         var busy = snapshot.State is RuntimeState.Booting or RuntimeState.Stopping;
+        ToolsButton.IsEnabled = !busy && snapshot.State != RuntimeState.Running;
         RefreshButton.IsEnabled = !busy && snapshot.State != RuntimeState.Running;
         StartButton.IsEnabled = snapshot.State == RuntimeState.Ready;
         StopButton.IsEnabled = snapshot.State is RuntimeState.Running or RuntimeState.Booting;

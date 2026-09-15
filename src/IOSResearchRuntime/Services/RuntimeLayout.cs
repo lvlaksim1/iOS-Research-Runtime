@@ -11,6 +11,7 @@ public sealed class RuntimeLayout
         FirmwareDirectory = Path.Combine(DataDirectory, "firmware");
         LogDirectory = Path.Combine(DataDirectory, "logs");
         CacheDirectory = Path.Combine(DataDirectory, "cache");
+        ToolDirectory = Path.Combine(DataDirectory, "tools");
         QemuExecutable = Path.Combine(
             ApplicationDirectory,
             "tools",
@@ -23,6 +24,7 @@ public sealed class RuntimeLayout
     public string FirmwareDirectory { get; }
     public string LogDirectory { get; }
     public string CacheDirectory { get; }
+    public string ToolDirectory { get; }
     public string QemuExecutable { get; }
 
     public void EnsureDirectories()
@@ -31,5 +33,6 @@ public sealed class RuntimeLayout
         Directory.CreateDirectory(FirmwareDirectory);
         Directory.CreateDirectory(LogDirectory);
         Directory.CreateDirectory(CacheDirectory);
+        Directory.CreateDirectory(ToolDirectory);
     }
 }

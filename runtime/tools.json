@@ -1,0 +1,20 @@
+{
+  "tools": [
+    {
+      "name": "ipsw",
+      "version": "3.1.720",
+      "archiveUrl": "https://github.com/blacktop/ipsw/releases/download/v3.1.720/ipsw_3.1.720_windows_x86_64.zip",
+      "sha256": "9894c8a88da83798353491b046dcffe00348026df1d1f39f8c699c9b9c2cb4d4",
+      "executableName": "ipsw.exe",
+      "installDirectory": "ipsw"
+    },
+    {
+      "name": "apfs",
+      "version": "0.3.0",
+      "archiveUrl": "https://github.com/deploymenttheory/go-apfs-v2/releases/download/v0.3.0/apfs_0.3.0_windows_amd64.zip",
+      "sha256": "eb467d20fc7347a6878472e77dd317312d20467f534d784197a6e1cafab068c0",
+      "executableName": "apfs.exe",
+      "installDirectory": "apfs"
+    }
+  ]
+}
