@@ -14,6 +14,11 @@ public sealed class RuntimeLayout
         ToolDirectory = Path.Combine(DataDirectory, "tools");
         IpswExecutable = Path.Combine(ToolDirectory, "ipsw", "ipsw.exe");
         ApfsExecutable = Path.Combine(ToolDirectory, "apfs", "apfs.exe");
+        NvramTemplate = Path.Combine(
+            ApplicationDirectory,
+            "runtime",
+            "firmware",
+            "nvram.bin");
         QemuExecutable = Path.Combine(
             ApplicationDirectory,
             "tools",
@@ -29,6 +34,7 @@ public sealed class RuntimeLayout
     public string ToolDirectory { get; }
     public string IpswExecutable { get; }
     public string ApfsExecutable { get; }
+    public string NvramTemplate { get; }
     public string QemuExecutable { get; }
 
     public void EnsureDirectories()

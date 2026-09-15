@@ -17,13 +17,17 @@ public partial class MainWindow : Window
 
         var layout = new RuntimeLayout();
         var processRunner = new ExternalProcessRunner();
+        var deviceTreePatcher = new AppleDeviceTreePatcher();
         var validator = new FirmwareBundleValidator(layout);
         var commandBuilder = new QemuCommandBuilder(layout);
         var runtime = new QemuRuntime(layout, commandBuilder);
 
         _coordinator = new RuntimeCoordinator(validator, runtime);
         _toolBootstrap = new ToolBootstrapService(layout);
-        _rawFirmwareProvisioning = new RawFirmwareProvisioningService(layout, processRunner);
+        _rawFirmwareProvisioning = new RawFirmwareProvisioningService(
+            layout,
+            processRunner,
+            deviceTreePatcher);
 
         _coordinator.StatusChanged += CoordinatorOnStatusChanged;
         _coordinator.LogReceived += CoordinatorOnLogReceived;

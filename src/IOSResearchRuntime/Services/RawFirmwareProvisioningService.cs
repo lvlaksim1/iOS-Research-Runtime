@@ -6,13 +6,16 @@ public sealed class RawFirmwareProvisioningService
 {
     private readonly RuntimeLayout _layout;
     private readonly ExternalProcessRunner _processRunner;
+    private readonly AppleDeviceTreePatcher _deviceTreePatcher;
 
     public RawFirmwareProvisioningService(
         RuntimeLayout layout,
-        ExternalProcessRunner processRunner)
+        ExternalProcessRunner processRunner,
+        AppleDeviceTreePatcher deviceTreePatcher)
     {
         _layout = layout;
         _processRunner = processRunner;
+        _deviceTreePatcher = deviceTreePatcher;
     }
 
     public event EventHandler<string>? ProgressChanged;
@@ -28,6 +31,13 @@ public sealed class RawFirmwareProvisioningService
             throw new FileNotFoundException(
                 "ipsw.exe не установлен. Сначала нажмите «Инструменты».",
                 _layout.IpswExecutable);
+        }
+
+        if (!File.Exists(_layout.NvramTemplate))
+        {
+            throw new FileNotFoundException(
+                "Не найден встроенный шаблон nvram.bin.",
+                _layout.NvramTemplate);
         }
 
         var stagingRoot = Path.Combine(
@@ -70,8 +80,16 @@ public sealed class RawFirmwareProvisioningService
                 profile,
                 downloadsDirectory,
                 $"DeviceTree.{profile.BoardName}",
-                Path.Combine(firmwareDirectory, "dtree"),
+                Path.Combine(firmwareDirectory, "dtree.raw"),
                 cancellationToken);
+
+            ProgressChanged?.Invoke(this, "[dtree] Применение qemu-sptm DeviceTree fixups…");
+            _deviceTreePatcher.PatchFile(
+                Path.Combine(firmwareDirectory, "dtree.raw"),
+                Path.Combine(firmwareDirectory, "dtree"),
+                _layout.NvramTemplate);
+            File.Delete(Path.Combine(firmwareDirectory, "dtree.raw"));
+            ProgressChanged?.Invoke(this, "[dtree] DeviceTree готов.");
 
             await ExtractAndUnwrapRamdiskAsync(
                 profile,
@@ -83,7 +101,7 @@ public sealed class RawFirmwareProvisioningService
 
             ProgressChanged?.Invoke(
                 this,
-                "[ipsw] Базовый firmware-комплект извлечён. Следующий этап: DeviceTree/ramdisk patch + trust cache.");
+                "[ipsw] Firmware извлечён и DeviceTree пропатчен. Следующий этап: ramdisk patch + trust cache.");
         }
         finally
         {
@@ -118,7 +136,7 @@ public sealed class RawFirmwareProvisioningService
 
         result.EnsureSuccess($"ipsw extract {pattern}");
 
-        var downloadedPath = ParseFirstJsonPath(result.StandardOutput);
+        var downloadedPath = ParseFirstJsonPath(result.StandardOutput, _layout.DataDirectory);
         await UnwrapIm4pAsync(downloadedPath, destinationPath, cancellationToken);
 
         ProgressChanged?.Invoke(
@@ -149,7 +167,7 @@ public sealed class RawFirmwareProvisioningService
 
         result.EnsureSuccess("ipsw extract recovery ramdisk");
 
-        var downloadedPath = ParseFirstJsonPath(result.StandardOutput);
+        var downloadedPath = ParseFirstJsonPath(result.StandardOutput, _layout.DataDirectory);
         await UnwrapIm4pAsync(downloadedPath, destinationPath, cancellationToken);
 
         ProgressChanged?.Invoke(this, "[ipsw] ramdisk.dmg готов.");
@@ -182,7 +200,7 @@ public sealed class RawFirmwareProvisioningService
         }
     }
 
-    private static string ParseFirstJsonPath(string json)
+    private static string ParseFirstJsonPath(string json, string workingDirectory)
     {
         using var document = JsonDocument.Parse(json);
 
@@ -200,14 +218,23 @@ public sealed class RawFirmwareProvisioningService
         }
 
         var path = first.GetString();
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new InvalidDataException("ipsw вернул пустой путь.");
+        }
+
+        var resolvedPath = Path.IsPathRooted(path)
+            ? path
+            : Path.GetFullPath(path, workingDirectory);
+
+        if (!File.Exists(resolvedPath))
         {
             throw new FileNotFoundException(
                 "Файл, указанный ipsw, не найден.",
-                path);
+                resolvedPath);
         }
 
-        return path;
+        return resolvedPath;
     }
 
     private void CommitStagedFirmware(string stagedFirmwareDirectory)
