@@ -19,7 +19,7 @@ public sealed class QemuCommandBuilder
             "-dtree", Path.Combine(firmware, "dtree"),
             "-tc", Path.Combine(firmware, "ramdisk.tc"),
             "-ramdisk", Path.Combine(firmware, "ramdisk.dmg"),
-            "-args", "debug=0x8 kextlog=0xffff cpus=1 rd=md0 serial=7 -v -noprogress keepsyms=1 wdt=-1 -enable_kprintf_spam wlan-olyhal-abort",
+            "-args", "rd=md0 serial=3 -v -noprogress wdt=-1 wlan-olyhal-abort",
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G"
