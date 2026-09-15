@@ -10,8 +10,6 @@ public sealed class QemuRuntime : IDisposable
     private readonly object _logSync = new();
     private Process? _process;
     private StreamWriter? _logWriter;
-    private Task? _stdoutPump;
-    private Task? _stderrPump;
 
     public QemuRuntime(RuntimeLayout layout, QemuCommandBuilder commandBuilder)
     {
@@ -93,8 +91,8 @@ public sealed class QemuRuntime : IDisposable
         }
 
         _process = process;
-        _stdoutPump = PumpStreamAsync(process.StandardOutput);
-        _stderrPump = PumpStreamAsync(process.StandardError);
+        _ = PumpStreamAsync(process.StandardOutput);
+        _ = PumpStreamAsync(process.StandardError);
 
         return Task.CompletedTask;
     }
