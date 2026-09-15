@@ -25,10 +25,19 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Checkout exact tested commit
+      - name: Checkout current main application
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: main
+
+      - name: Record tested revisions
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path e2e-evidence -Force | Out-Null
+          $appSha = (git rev-parse HEAD).Trim()
+          "QEMU_GATE_RUN=${{ github.event.workflow_run.id }}" | Set-Content e2e-evidence/revisions.txt
+          "QEMU_GATE_SHA=${{ github.event.workflow_run.head_sha }}" | Add-Content e2e-evidence/revisions.txt
+          "APPLICATION_SHA=$appSha" | Add-Content e2e-evidence/revisions.txt
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
