@@ -52,34 +52,14 @@ public partial class MainWindow : Window
         };
     }
 
-    private async void ToolsButton_Click(object sender, RoutedEventArgs e)
+    private async void PrepareButton_Click(object sender, RoutedEventArgs e)
     {
         SetProvisioningButtons(enabled: false);
 
         try
         {
-            AppendLog("[tools] Подготовка Windows-инструментов и runtime-ресурсов…");
-            await _toolBootstrap.BootstrapAllAsync();
-            await _resourceBootstrap.BootstrapAllAsync();
-            AppendLog("[tools] Инструменты и runtime-ресурсы подготовлены.");
-        }
-        catch (Exception exception)
-        {
-            AppendLog("[tools] ОШИБКА: " + exception.Message);
-        }
-        finally
-        {
-            SetProvisioningButtons(enabled: true);
-            RenderSnapshot(_coordinator.Refresh());
-        }
-    }
-
-    private async void FirmwareButton_Click(object sender, RoutedEventArgs e)
-    {
-        SetProvisioningButtons(enabled: false);
-
-        try
-        {
+            StatusText.Text = "Подготовка";
+            DetailsText.Text = "Загрузка инструментов и подготовка iOS/Darwin firmware bundle…";
             AppendLog("[provision] Полная подготовка iOS runtime…");
             await _toolBootstrap.BootstrapAllAsync();
             await _resourceBootstrap.BootstrapAllAsync();
@@ -89,18 +69,13 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            AppendLog("[ipsw] ОШИБКА: " + exception.Message);
+            AppendLog("[provision] ОШИБКА: " + exception.Message);
         }
         finally
         {
             SetProvisioningButtons(enabled: true);
             RenderSnapshot(_coordinator.Refresh());
         }
-    }
-
-    private void RefreshButton_Click(object sender, RoutedEventArgs e)
-    {
-        RenderSnapshot(_coordinator.Refresh());
     }
 
     private async void StartButton_Click(object sender, RoutedEventArgs e)
@@ -151,8 +126,7 @@ public partial class MainWindow : Window
 
     private void SetProvisioningButtons(bool enabled)
     {
-        ToolsButton.IsEnabled = enabled;
-        FirmwareButton.IsEnabled = enabled;
+        PrepareButton.IsEnabled = enabled;
     }
 
     private void RenderSnapshot(RuntimeSnapshot snapshot)
@@ -174,9 +148,7 @@ public partial class MainWindow : Window
               string.Join(Environment.NewLine, snapshot.MissingItems.Select(item => "• " + item));
 
         var busy = snapshot.State is RuntimeState.Booting or RuntimeState.Stopping;
-        ToolsButton.IsEnabled = ToolsButton.IsEnabled && !busy && snapshot.State != RuntimeState.Running;
-        FirmwareButton.IsEnabled = FirmwareButton.IsEnabled && !busy && snapshot.State != RuntimeState.Running;
-        RefreshButton.IsEnabled = !busy && snapshot.State != RuntimeState.Running;
+        PrepareButton.IsEnabled = PrepareButton.IsEnabled && !busy && snapshot.State != RuntimeState.Running;
         StartButton.IsEnabled = snapshot.State == RuntimeState.Ready;
         StopButton.IsEnabled = snapshot.State is RuntimeState.Running or RuntimeState.Booting;
     }
