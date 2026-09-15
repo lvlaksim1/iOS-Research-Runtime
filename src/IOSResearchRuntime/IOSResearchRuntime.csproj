@@ -14,8 +14,16 @@
              Link="runtime\tools.json"
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\runtime\resources.json"
+             Link="runtime\resources.json"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\..\runtime\firmware\nvram.bin"
              Link="runtime\firmware\nvram.bin"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\runtime\ramdisk\com.jprx.bash.plist"
+             Link="runtime\ramdisk\com.jprx.bash.plist"
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

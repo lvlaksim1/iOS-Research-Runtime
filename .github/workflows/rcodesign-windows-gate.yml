@@ -36,12 +36,12 @@ jobs:
           Expand-Archive $zip -DestinationPath rcodesign -Force
           $exe = Get-ChildItem rcodesign -Recurse -Filter rcodesign.exe | Select-Object -First 1
           if (!$exe) { throw "rcodesign.exe not found" }
-          "RCODESIGN_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "CODESIGN_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Verify rcodesign executable
         shell: pwsh
         run: |
-          & $env:RCODESIGN_EXE --version
+          & $env:CODESIGN_EXE --version
 
       - name: Download iOS CLI Mach-O fixture
         shell: pwsh
@@ -59,11 +59,11 @@ jobs:
         shell: pwsh
         run: |
           $signed = Join-Path $env:RUNNER_TEMP "bash.signed"
-          & $env:RCODESIGN_EXE sign -C /dev/null $env:MACHO_FIXTURE $signed
+          & $env:CODESIGN_EXE sign -C /dev/null $env:MACHO_FIXTURE $signed
           if ($LASTEXITCODE -ne 0) { throw "rcodesign sign failed" }
           if (!(Test-Path $signed)) { throw "signed Mach-O not created" }
 
-          $info = & $env:RCODESIGN_EXE print-signature-info -C /dev/null $signed 2>&1
+          $info = & $env:CODESIGN_EXE print-signature-info -C /dev/null $signed 2>&1
           $info | Out-Host
 
           $lines = @($info)
