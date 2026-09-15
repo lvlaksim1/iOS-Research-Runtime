@@ -20,6 +20,19 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: tools/ios-ramdisk-tool/go.mod
+
+      - name: Build bundled ramdisk helper
+        working-directory: tools/ios-ramdisk-tool
+        run: |
+          go mod tidy
+          go test ./...
+          go build -trimpath -ldflags="-s -w" -o ../../publish-tools/ios-ramdisk-tool.exe .
+
       - name: Restore application
         run: dotnet restore src/IOSResearchRuntime/IOSResearchRuntime.csproj
 
@@ -41,6 +54,13 @@ jobs:
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o publish
+
+      - name: Bundle native helper
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path publish/tools -Force | Out-Null
+          Copy-Item publish-tools/ios-ramdisk-tool.exe publish/tools/ios-ramdisk-tool.exe
+          if (!(Test-Path publish/tools/ios-ramdisk-tool.exe)) { throw "ramdisk helper missing from application bundle" }
 
       - name: Upload application artifact
         uses: actions/upload-artifact@v4
