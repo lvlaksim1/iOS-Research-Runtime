@@ -2,8 +2,8 @@
   "resources": [
     {
       "name": "ios-cli-tools",
-      "version": "jprx-main-2026-09-16",
-      "url": "https://raw.githubusercontent.com/jprx/ios-cli-tools/main/prebuilt.tar.gz",
+      "version": "jprx-4f1a90a1b3fc",
+      "url": "https://raw.githubusercontent.com/jprx/ios-cli-tools/4f1a90a1b3fcc1be0649f948deb90a085bc01c59/prebuilt.tar.gz",
       "sha256": "9554d05e3b6b05c0144e960d346cc3b09443146d3f823ec18cfbe7c99cd70d3a",
       "fileName": "ios-cli-tools.tar.gz"
     }
