@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/qemu-sptm-windows.yml'
+      - '.gitattributes'
       - 'runtime/qemu/**'
 
 concurrency:
