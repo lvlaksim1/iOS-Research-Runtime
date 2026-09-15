@@ -51,24 +51,12 @@
                                Foreground="#6B7280"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="ToolsButton"
-                            MinWidth="120"
+                    <Button x:Name="PrepareButton"
+                            MinWidth="160"
                             Margin="0,0,8,0"
                             Padding="14,9"
-                            Content="Инструменты"
-                            Click="ToolsButton_Click"/>
-                    <Button x:Name="FirmwareButton"
-                            MinWidth="120"
-                            Margin="0,0,8,0"
-                            Padding="14,9"
-                            Content="IPSW"
-                            Click="FirmwareButton_Click"/>
-                    <Button x:Name="RefreshButton"
-                            MinWidth="110"
-                            Margin="0,0,8,0"
-                            Padding="14,9"
-                            Content="Проверить"
-                            Click="RefreshButton_Click"/>
+                            Content="Подготовить среду"
+                            Click="PrepareButton_Click"/>
                     <Button x:Name="StartButton"
                             MinWidth="110"
                             Margin="0,0,8,0"
