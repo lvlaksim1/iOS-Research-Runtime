@@ -11,6 +11,7 @@ public sealed class RuntimeCoordinator : IDisposable
 
     private readonly QemuRuntime _runtime;
     private readonly BootProgressDetector _bootProgress = new();
+    private readonly BootProofValidator _bootProofValidator = new();
     private bool _proofActive;
     private readonly List<string> _proofLines = new();
     private RuntimeSnapshot _snapshot = RuntimeSnapshot.NotReady(
@@ -174,9 +175,16 @@ public sealed class RuntimeCoordinator : IDisposable
         if (trimmed == ProofEndMarker)
         {
             _proofActive = false;
+            var validation = _bootProofValidator.Validate(_proofLines);
+            if (!validation.IsValid)
+            {
+                LogReceived?.Invoke(this, $"[proof] ОШИБКА: {validation.Message}");
+                return;
+            }
+
             LogReceived?.Invoke(
                 this,
-                $"[proof] Диагностика завершена; строк результата: {_proofLines.Count}. Evidence: {_runtime.CurrentLogPath}");
+                $"[proof] Диагностика завершена; {validation.Message} Строк результата: {_proofLines.Count}. Evidence: {_runtime.CurrentLogPath}");
             return;
         }
 
