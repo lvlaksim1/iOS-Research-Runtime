@@ -4,8 +4,18 @@ on:
   push:
     paths:
       - '.github/workflows/qemu-sptm-windows.yml'
+      - '.github/workflows/windows-e2e.yml'
       - '.gitattributes'
       - 'runtime/qemu/**'
+      - 'runtime/resources.json'
+      - 'runtime/tools.json'
+      - 'runtime/ramdisk/**'
+      - 'runtime/firmware/**'
+      - 'src/IOSResearchRuntime/Core/**'
+      - 'src/IOSResearchRuntime/Models/**'
+      - 'src/IOSResearchRuntime/Services/**'
+      - 'tools/ios-ramdisk-tool/**'
+      - 'tools/IOSResearchRuntime.Integration/**'
 
 concurrency:
   group: qemu-sptm-windows-${{ github.ref }}
