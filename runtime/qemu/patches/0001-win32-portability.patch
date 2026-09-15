@@ -76,39 +76,46 @@ diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
 diff --git a/hw/arm/apple_dtree.c b/hw/arm/apple_dtree.c
 --- a/hw/arm/apple_dtree.c
 +++ b/hw/arm/apple_dtree.c
-@@ -69,13 +69,14 @@
+@@ -69,36 +69,35 @@ size_t adt_get_prop_len(struct dtree_node *n, const char *prop_name) {
  }
- 
+
  struct dtree_node *adt_find_node(struct dtree_node *root, const char *path) {
 -    char *token, *string, *tofree;
      struct dtree_node *cur_node, *cur_child;
 +    gchar **tokens;
- 
+
 -    tofree = string = strdup(path);
 +    tokens = g_strsplit(path, kDTPathNameSeparator, -1);
      cur_node = root;
- 
+
 -    while (NULL != (token = strsep(&string, kDTPathNameSeparator))) {
 +    for (size_t token_index = 0; tokens[token_index] != NULL; token_index++) {
 +        const char *token = tokens[token_index];
          bool found_it = false;
- 
+
          cur_child = first_child(cur_node);
-@@ -90,12 +91,11 @@
- 
+         for (size_t i = 0; i < cur_node->nChildren; i++) {
+             if (0 == strcmp(adt_get_prop_val(cur_child, "name"), token)) {
+                 cur_node = cur_child;
+                 found_it = true;
+                 break;
+             }
+             cur_child = next_child(cur_child);
+         }
+
          if (!found_it) {
              cur_node = NULL;
 -            goto out;
 +            break;
          }
      }
- 
+
 -out:
 -    free(tofree);
 +    g_strfreev(tokens);
      return cur_node;
  }
- 
+
 diff --git a/hw/arm/apple_regs.c b/hw/arm/apple_regs.c
 --- a/hw/arm/apple_regs.c
 +++ b/hw/arm/apple_regs.c
