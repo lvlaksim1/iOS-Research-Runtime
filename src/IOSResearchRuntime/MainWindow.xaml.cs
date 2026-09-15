@@ -9,6 +9,7 @@ public partial class MainWindow : Window
 {
     private readonly RuntimeCoordinator _coordinator;
     private readonly ToolBootstrapService _toolBootstrap;
+    private readonly ResourceBootstrapService _resourceBootstrap;
     private readonly RawFirmwareProvisioningService _rawFirmwareProvisioning;
 
     public MainWindow()
@@ -24,6 +25,7 @@ public partial class MainWindow : Window
 
         _coordinator = new RuntimeCoordinator(validator, runtime);
         _toolBootstrap = new ToolBootstrapService(layout);
+        _resourceBootstrap = new ResourceBootstrapService(layout);
         _rawFirmwareProvisioning = new RawFirmwareProvisioningService(
             layout,
             processRunner,
@@ -32,11 +34,13 @@ public partial class MainWindow : Window
         _coordinator.StatusChanged += CoordinatorOnStatusChanged;
         _coordinator.LogReceived += CoordinatorOnLogReceived;
         _toolBootstrap.ProgressChanged += ToolBootstrapOnProgressChanged;
+        _resourceBootstrap.ProgressChanged += ResourceBootstrapOnProgressChanged;
         _rawFirmwareProvisioning.ProgressChanged += RawFirmwareOnProgressChanged;
 
         Loaded += (_, _) => RenderSnapshot(_coordinator.Refresh());
         Closed += (_, _) =>
         {
+            _resourceBootstrap.Dispose();
             _toolBootstrap.Dispose();
             _coordinator.Dispose();
         };
@@ -48,9 +52,10 @@ public partial class MainWindow : Window
 
         try
         {
-            AppendLog("[tools] Подготовка Windows-инструментов…");
+            AppendLog("[tools] Подготовка Windows-инструментов и runtime-ресурсов…");
             await _toolBootstrap.BootstrapAllAsync();
-            AppendLog("[tools] Подготовка завершена.");
+            await _resourceBootstrap.BootstrapAllAsync();
+            AppendLog("[tools] Инструменты и runtime-ресурсы подготовлены.");
         }
         catch (Exception exception)
         {
@@ -99,6 +104,11 @@ public partial class MainWindow : Window
     }
 
     private void ToolBootstrapOnProgressChanged(object? sender, string line)
+    {
+        Dispatcher.Invoke(() => AppendLog(line));
+    }
+
+    private void ResourceBootstrapOnProgressChanged(object? sender, string line)
     {
         Dispatcher.Invoke(() => AppendLog(line));
     }
