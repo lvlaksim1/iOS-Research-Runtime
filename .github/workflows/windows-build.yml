@@ -43,11 +43,17 @@ jobs:
       - name: Restore tests
         run: dotnet restore tests/IOSResearchRuntime.Tests/IOSResearchRuntime.Tests.csproj
 
+      - name: Restore integration harness
+        run: dotnet restore tools/IOSResearchRuntime.Integration/IOSResearchRuntime.Integration.csproj
+
       - name: Build
         run: dotnet build src/IOSResearchRuntime/IOSResearchRuntime.csproj -c Release --no-restore
 
       - name: Test
         run: dotnet test tests/IOSResearchRuntime.Tests/IOSResearchRuntime.Tests.csproj -c Release --no-restore
+
+      - name: Build integration harness
+        run: dotnet build tools/IOSResearchRuntime.Integration/IOSResearchRuntime.Integration.csproj -c Release --no-restore
 
       - name: Publish self-contained Windows x64
         run: >
