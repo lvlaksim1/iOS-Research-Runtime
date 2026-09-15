@@ -11,7 +11,7 @@ public sealed class ToolBootstrapService : IDisposable
     public ToolBootstrapService(RuntimeLayout layout)
     {
         _layout = layout;
-        _manifestPath = Path.Combine(AppContext.BaseDirectory, "runtime", "tools.json");
+        _manifestPath = Path.Combine(_layout.ApplicationDirectory, "runtime", "tools.json");
     }
 
     public event EventHandler<string>? ProgressChanged;
