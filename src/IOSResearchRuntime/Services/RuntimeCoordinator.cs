@@ -22,6 +22,7 @@ public sealed class RuntimeCoordinator : IDisposable
         _validator = validator;
         _runtime = runtime;
         _runtime.OutputReceived += RuntimeOnOutputReceived;
+        _runtime.OutputChunkReceived += RuntimeOnOutputChunkReceived;
         _runtime.Exited += RuntimeOnExited;
     }
 
@@ -109,8 +110,11 @@ public sealed class RuntimeCoordinator : IDisposable
     {
         LogReceived?.Invoke(this, line);
         CaptureBootProof(line);
+    }
 
-        var progress = _bootProgress.Observe(line);
+    private void RuntimeOnOutputChunkReceived(object? sender, string chunk)
+    {
+        var progress = _bootProgress.Observe(chunk);
         if (progress is null)
         {
             return;
@@ -203,6 +207,7 @@ public sealed class RuntimeCoordinator : IDisposable
     public void Dispose()
     {
         _runtime.OutputReceived -= RuntimeOnOutputReceived;
+        _runtime.OutputChunkReceived -= RuntimeOnOutputChunkReceived;
         _runtime.Exited -= RuntimeOnExited;
         _runtime.Dispose();
     }
