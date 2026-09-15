@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace IOSResearchRuntime.Services;
 
 public enum BootStage
@@ -13,13 +15,21 @@ public sealed record BootProgress(BootStage Stage, string Message);
 
 public sealed class BootProgressDetector
 {
+    private const int TailLimit = 8192;
+
+    private static readonly Regex RootShellPrompt = new(
+        @"(?:^|[\r\n])(?:bash|sh)-[^\r\n#]*#\s*$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     private BootStage _stage;
+    private string _tail = string.Empty;
 
     public BootStage Stage => _stage;
 
     public void Reset()
     {
         _stage = BootStage.None;
+        _tail = string.Empty;
     }
 
     public BootProgress MarkQemuStarted()
@@ -30,37 +40,39 @@ public sealed class BootProgressDetector
             "QEMU запущен. Ожидаем XNU.");
     }
 
-    public BootProgress? Observe(string line)
+    public BootProgress? Observe(string text)
     {
-        if (string.IsNullOrWhiteSpace(line))
+        if (string.IsNullOrEmpty(text))
         {
             return null;
         }
 
-        if (line.Contains("Darwin Kernel Version", StringComparison.Ordinal))
+        _tail += text;
+        if (_tail.Length > TailLimit)
         {
-            return Advance(
-                BootStage.Kernel,
-                "XNU запущен. Ожидаем launchd.");
+            _tail = _tail[^TailLimit..];
         }
 
-        if (line.Contains("com.apple.xpc.launchd|", StringComparison.Ordinal) ||
-            line.Contains("Darwin Bootstrapper Version", StringComparison.Ordinal))
+        if (RootShellPrompt.IsMatch(_tail))
+        {
+            return Advance(
+                BootStage.RootShell,
+                "iOS/Darwin runtime готов: получен root shell.");
+        }
+
+        if (_tail.Contains("com.apple.xpc.launchd|", StringComparison.Ordinal) ||
+            _tail.Contains("Darwin Bootstrapper Version", StringComparison.Ordinal))
         {
             return Advance(
                 BootStage.Launchd,
                 "launchd запущен. Ожидаем root shell.");
         }
 
-        var trimmed = line.TrimEnd();
-        if (trimmed.EndsWith("#", StringComparison.Ordinal) &&
-            (trimmed.StartsWith("bash-", StringComparison.Ordinal) ||
-             trimmed.StartsWith("sh-", StringComparison.Ordinal) ||
-             trimmed.Contains("bash-", StringComparison.Ordinal)))
+        if (_tail.Contains("Darwin Kernel Version", StringComparison.Ordinal))
         {
             return Advance(
-                BootStage.RootShell,
-                "iOS/Darwin runtime готов: получен root shell.");
+                BootStage.Kernel,
+                "XNU запущен. Ожидаем launchd.");
         }
 
         return null;
