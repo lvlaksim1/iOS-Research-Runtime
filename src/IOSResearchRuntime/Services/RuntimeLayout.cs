@@ -2,12 +2,20 @@ namespace IOSResearchRuntime.Services;
 
 public sealed class RuntimeLayout
 {
-    public RuntimeLayout()
+    public RuntimeLayout(
+        string? applicationDirectory = null,
+        string? dataDirectory = null)
     {
-        ApplicationDirectory = AppContext.BaseDirectory;
-        DataDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "iOSResearchRuntime");
+        ApplicationDirectory = Path.GetFullPath(
+            string.IsNullOrWhiteSpace(applicationDirectory)
+                ? AppContext.BaseDirectory
+                : applicationDirectory);
+        DataDirectory = Path.GetFullPath(
+            string.IsNullOrWhiteSpace(dataDirectory)
+                ? Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "iOSResearchRuntime")
+                : dataDirectory);
         FirmwareDirectory = Path.Combine(DataDirectory, "firmware");
         LogDirectory = Path.Combine(DataDirectory, "logs");
         CacheDirectory = Path.Combine(DataDirectory, "cache");
