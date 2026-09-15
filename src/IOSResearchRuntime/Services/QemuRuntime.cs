@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 
 namespace IOSResearchRuntime.Services;
 
@@ -9,6 +10,8 @@ public sealed class QemuRuntime : IDisposable
     private readonly object _logSync = new();
     private Process? _process;
     private StreamWriter? _logWriter;
+    private Task? _stdoutPump;
+    private Task? _stderrPump;
 
     public QemuRuntime(RuntimeLayout layout, QemuCommandBuilder commandBuilder)
     {
@@ -17,6 +20,7 @@ public sealed class QemuRuntime : IDisposable
     }
 
     public event EventHandler<string>? OutputReceived;
+    public event EventHandler<string>? OutputChunkReceived;
     public event EventHandler<int>? Exited;
 
     public bool IsRunning => _process is { HasExited: false };
@@ -24,6 +28,8 @@ public sealed class QemuRuntime : IDisposable
 
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (IsRunning)
         {
             throw new InvalidOperationException("QEMU runtime is already running.");
@@ -42,7 +48,7 @@ public sealed class QemuRuntime : IDisposable
                     FileMode.Create,
                     FileAccess.Write,
                     FileShare.Read),
-                new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false))
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false))
             {
                 AutoFlush = true
             };
@@ -70,22 +76,6 @@ public sealed class QemuRuntime : IDisposable
             EnableRaisingEvents = true
         };
 
-        process.OutputDataReceived += (_, eventArgs) =>
-        {
-            if (!string.IsNullOrWhiteSpace(eventArgs.Data))
-            {
-                EmitOutput(eventArgs.Data);
-            }
-        };
-
-        process.ErrorDataReceived += (_, eventArgs) =>
-        {
-            if (!string.IsNullOrWhiteSpace(eventArgs.Data))
-            {
-                EmitOutput(eventArgs.Data);
-            }
-        };
-
         process.Exited += (_, _) =>
         {
             Exited?.Invoke(this, process.ExitCode);
@@ -103,10 +93,9 @@ public sealed class QemuRuntime : IDisposable
         }
 
         _process = process;
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
+        _stdoutPump = PumpStreamAsync(process.StandardOutput);
+        _stderrPump = PumpStreamAsync(process.StandardError);
 
-        cancellationToken.ThrowIfCancellationRequested();
         return Task.CompletedTask;
     }
 
@@ -125,14 +114,66 @@ public sealed class QemuRuntime : IDisposable
         await process.StandardInput.FlushAsync(cancellationToken);
     }
 
-    private void EmitOutput(string line)
+    private async Task PumpStreamAsync(StreamReader reader)
+    {
+        var buffer = new char[4096];
+        var pendingLine = new StringBuilder();
+
+        try
+        {
+            while (true)
+            {
+                var read = await reader.ReadAsync(buffer.AsMemory());
+                if (read == 0)
+                {
+                    break;
+                }
+
+                var chunk = new string(buffer, 0, read);
+                EmitChunk(chunk);
+                EmitCompletedLines(chunk, pendingLine);
+            }
+
+            if (pendingLine.Length > 0)
+            {
+                OutputReceived?.Invoke(this, pendingLine.ToString());
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (IOException)
+        {
+        }
+    }
+
+    private void EmitChunk(string chunk)
     {
         lock (_logSync)
         {
-            _logWriter?.WriteLine(line);
+            _logWriter?.Write(chunk);
         }
 
-        OutputReceived?.Invoke(this, line);
+        OutputChunkReceived?.Invoke(this, chunk);
+    }
+
+    private void EmitCompletedLines(string chunk, StringBuilder pendingLine)
+    {
+        foreach (var character in chunk)
+        {
+            if (character is '\r' or '\n')
+            {
+                if (pendingLine.Length > 0)
+                {
+                    OutputReceived?.Invoke(this, pendingLine.ToString());
+                    pendingLine.Clear();
+                }
+
+                continue;
+            }
+
+            pendingLine.Append(character);
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
