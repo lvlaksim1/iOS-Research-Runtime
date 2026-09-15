@@ -22,11 +22,14 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.26.x'
-          cache-dependency-path: tools/ios-ramdisk-tool/go.mod
+          cache-dependency-path: tools/ios-ramdisk-tool/go.sum
 
-      - name: Resolve pinned modules
+      - name: Verify pinned modules
         working-directory: tools/ios-ramdisk-tool
-        run: go mod tidy
+        run: |
+          go mod download
+          go mod tidy -diff
+          git diff --exit-code -- go.mod go.sum
 
       - name: Test
         working-directory: tools/ios-ramdisk-tool
