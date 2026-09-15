@@ -11,7 +11,7 @@ public sealed class ResourceBootstrapService : IDisposable
     public ResourceBootstrapService(RuntimeLayout layout)
     {
         _layout = layout;
-        _manifestPath = Path.Combine(AppContext.BaseDirectory, "runtime", "resources.json");
+        _manifestPath = Path.Combine(_layout.ApplicationDirectory, "runtime", "resources.json");
     }
 
     public event EventHandler<string>? ProgressChanged;
