@@ -23,6 +23,23 @@ jobs:
       - name: Checkout application repository
         uses: actions/checkout@v4
 
+      - name: Clone pinned qemu-sptm
+        shell: pwsh
+        run: |
+          git config --global core.autocrlf false
+          git clone https://github.com/jprx/qemu-sptm.git qemu-sptm
+          Set-Location qemu-sptm
+          git checkout 2867d847d3471560e773120ee50c42dbcbb6d60b
+
+      - name: Apply Windows portability patch
+        shell: pwsh
+        run: |
+          Set-Location qemu-sptm
+          git apply --check ../runtime/qemu/patches/0001-win32-portability.patch
+          git apply ../runtime/qemu/patches/0001-win32-portability.patch
+          git diff --check
+          git diff --stat
+
       - name: Setup MSYS2 MINGW64
         uses: msys2/setup-msys2@v2
         with:
@@ -39,22 +56,6 @@ jobs:
             mingw-w64-x86_64-pixman
             mingw-w64-x86_64-pkgconf
             mingw-w64-x86_64-python
-
-      - name: Clone pinned qemu-sptm
-        shell: msys2 {0}
-        run: |
-          git clone https://github.com/jprx/qemu-sptm.git qemu-sptm
-          cd qemu-sptm
-          git checkout 2867d847d3471560e773120ee50c42dbcbb6d60b
-
-      - name: Apply Windows portability patch
-        shell: msys2 {0}
-        run: |
-          cd qemu-sptm
-          git apply --check ../runtime/qemu/patches/0001-win32-portability.patch
-          git apply ../runtime/qemu/patches/0001-win32-portability.patch
-          git diff --check
-          git diff --stat
 
       - name: Restore QEMU build cache
         id: qemu-build-cache
