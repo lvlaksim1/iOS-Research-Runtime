@@ -29,7 +29,7 @@ public sealed class RawFirmwareProvisioningService
         if (!File.Exists(_layout.IpswExecutable))
         {
             throw new FileNotFoundException(
-                "ipsw.exe не установлен. Сначала нажмите «Инструменты».",
+                "ipsw.exe не установлен. Выполните «Подготовить среду».",
                 _layout.IpswExecutable);
         }
 
