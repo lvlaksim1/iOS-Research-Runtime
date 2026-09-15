@@ -28,18 +28,14 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.26.x'
-          cache-dependency-path: tools/ios-ramdisk-tool/go.mod
+          cache-dependency-path: tools/ios-ramdisk-tool/go.sum
 
       - name: Build bundled ramdisk helper
         working-directory: tools/ios-ramdisk-tool
         run: |
-          go mod tidy
-          Write-Host "----- BEGIN GENERATED GO.MOD -----"
-          Get-Content go.mod
-          Write-Host "----- END GENERATED GO.MOD -----"
-          Write-Host "----- BEGIN GENERATED GO.SUM -----"
-          Get-Content go.sum
-          Write-Host "----- END GENERATED GO.SUM -----"
+          go mod download
+          go mod tidy -diff
+          git diff --exit-code -- go.mod go.sum
           go test ./...
           go build -trimpath -ldflags="-s -w" -o ../../publish-tools/ios-ramdisk-tool.exe .
 
