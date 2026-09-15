@@ -140,6 +140,14 @@ jobs:
             "$($_.FullName) $($_.Length)"
           } | Set-Content (Join-Path $evidence "evidence-files.txt")
 
+      - name: Upload tested QEMU runtime
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-runtime-tested
+          path: qemu-gate-artifact/runtime/**
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload end-to-end evidence
         if: always()
         uses: actions/upload-artifact@v4
