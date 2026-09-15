@@ -25,6 +25,8 @@ type options struct {
 	output       string
 	sysrootTar   string
 	launchdPlist string
+	rcodesign    string
+	hashesOut    string
 }
 
 func main() {
@@ -34,6 +36,8 @@ func main() {
 	flag.StringVar(&opts.output, "output", "", "patched recovery ramdisk DMG")
 	flag.StringVar(&opts.sysrootTar, "sysroot-tar", "", "iOS CLI sysroot tar.gz")
 	flag.StringVar(&opts.launchdPlist, "launchd-plist", "", "launch daemon plist")
+	flag.StringVar(&opts.rcodesign, "rcodesign", "", "path to rcodesign.exe")
+	flag.StringVar(&opts.hashesOut, "hashes-out", "", "output file for collected CDHashes")
 	flag.Parse()
 
 	if err := run(opts); err != nil {
@@ -43,8 +47,9 @@ func main() {
 }
 
 func run(opts options) error {
-	if opts.input == "" || opts.output == "" || opts.sysrootTar == "" || opts.launchdPlist == "" {
-		return errors.New("--input, --output, --sysroot-tar and --launchd-plist are required")
+	if opts.input == "" || opts.output == "" || opts.sysrootTar == "" || opts.launchdPlist == "" ||
+		opts.rcodesign == "" || opts.hashesOut == "" {
+		return errors.New("--input, --output, --sysroot-tar, --launchd-plist, --rcodesign and --hashes-out are required")
 	}
 
 	container, closer, err := apfs.OpenImage(opts.input, nil)
@@ -57,6 +62,18 @@ func run(opts options) error {
 	if err != nil {
 		return fmt.Errorf("open first APFS volume: %w", err)
 	}
+
+	signer, err := newMachoSigner(opts.rcodesign)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("collecting existing Mach-O CDHashes...")
+	hashes, err := collectVolumeCDHashes(volume, signer)
+	if err != nil {
+		return fmt.Errorf("collect existing CDHashes: %w", err)
+	}
+	fmt.Printf("collected %d existing CDHashes\n", len(hashes))
 
 	children, err := readDirectory(volume, ".")
 	if err != nil {
@@ -79,7 +96,7 @@ func run(opts options) error {
 		return err
 	}
 
-	if err := mergeSysrootTar(root, opts.sysrootTar); err != nil {
+	if err := mergeSysrootTarWithSigner(root, opts.sysrootTar, signer, hashes); err != nil {
 		return fmt.Errorf("merge sysroot: %w", err)
 	}
 
@@ -159,7 +176,12 @@ func run(opts options) error {
 		return fmt.Errorf("wrap patched APFS container in DMG: %w", err)
 	}
 
+	if err := writeCDHashes(opts.hashesOut, hashes); err != nil {
+		return fmt.Errorf("write CDHashes: %w", err)
+	}
+
 	fmt.Printf("patched ramdisk: %s -> %s\n", opts.input, opts.output)
+	fmt.Printf("trust-cache hashes: %s (%d entries)\n", opts.hashesOut, len(hashes))
 	return nil
 }
 
@@ -295,6 +317,15 @@ func replaceLaunchDaemons(root *apfswrite.Entry, plist []byte) error {
 }
 
 func mergeSysrootTar(root *apfswrite.Entry, archivePath string) error {
+	return mergeSysrootTarWithSigner(root, archivePath, nil, nil)
+}
+
+func mergeSysrootTarWithSigner(
+	root *apfswrite.Entry,
+	archivePath string,
+	signer *machoSigner,
+	hashes map[string]struct{},
+) error {
 	file, err := os.Open(archivePath)
 	if err != nil {
 		return err
@@ -341,6 +372,28 @@ func mergeSysrootTar(root *apfswrite.Entry, archivePath string) error {
 			if readErr != nil {
 				return fmt.Errorf("%s: read tar file: %w", cleaned, readErr)
 			}
+
+			if signer != nil && isMachO(data) {
+				if strings.HasPrefix(cleaned, "bin/") {
+					signed, hash, signErr := signer.Sign(data)
+					if signErr != nil {
+						return fmt.Errorf("%s: sign: %w", cleaned, signErr)
+					}
+					data = signed
+					if hashes != nil {
+						hashes[hash] = struct{}{}
+					}
+				} else {
+					hash, ok, hashErr := signer.CDHash(data)
+					if hashErr != nil {
+						return fmt.Errorf("%s: cdhash: %w", cleaned, hashErr)
+					}
+					if ok && hashes != nil {
+						hashes[hash] = struct{}{}
+					}
+				}
+			}
+
 			err = putRegularFile(root, cleaned, mode, data, 0)
 
 		case tar.TypeSymlink:
