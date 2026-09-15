@@ -11,6 +11,7 @@ public partial class MainWindow : Window
     private readonly ToolBootstrapService _toolBootstrap;
     private readonly ResourceBootstrapService _resourceBootstrap;
     private readonly RawFirmwareProvisioningService _rawFirmwareProvisioning;
+    private readonly RamdiskProvisioningService _ramdiskProvisioning;
 
     public MainWindow()
     {
@@ -30,12 +31,17 @@ public partial class MainWindow : Window
             layout,
             processRunner,
             deviceTreePatcher);
+        _ramdiskProvisioning = new RamdiskProvisioningService(
+            layout,
+            processRunner,
+            new TrustCacheBuilder());
 
         _coordinator.StatusChanged += CoordinatorOnStatusChanged;
         _coordinator.LogReceived += CoordinatorOnLogReceived;
         _toolBootstrap.ProgressChanged += ToolBootstrapOnProgressChanged;
         _resourceBootstrap.ProgressChanged += ResourceBootstrapOnProgressChanged;
         _rawFirmwareProvisioning.ProgressChanged += RawFirmwareOnProgressChanged;
+        _ramdiskProvisioning.ProgressChanged += RamdiskProvisioningOnProgressChanged;
 
         Loaded += (_, _) => RenderSnapshot(_coordinator.Refresh());
         Closed += (_, _) =>
@@ -74,8 +80,12 @@ public partial class MainWindow : Window
 
         try
         {
-            AppendLog("[ipsw] Начинаю подготовку базового firmware-комплекта.");
+            AppendLog("[provision] Полная подготовка iOS runtime…");
+            await _toolBootstrap.BootstrapAllAsync();
+            await _resourceBootstrap.BootstrapAllAsync();
             await _rawFirmwareProvisioning.PrepareAsync(ProvisioningProfile.Default);
+            await _ramdiskProvisioning.PrepareAsync();
+            AppendLog("[provision] Firmware bundle полностью подготовлен.");
         }
         catch (Exception exception)
         {
@@ -114,6 +124,11 @@ public partial class MainWindow : Window
     }
 
     private void RawFirmwareOnProgressChanged(object? sender, string line)
+    {
+        Dispatcher.Invoke(() => AppendLog(line));
+    }
+
+    private void RamdiskProvisioningOnProgressChanged(object? sender, string line)
     {
         Dispatcher.Invoke(() => AppendLog(line));
     }
