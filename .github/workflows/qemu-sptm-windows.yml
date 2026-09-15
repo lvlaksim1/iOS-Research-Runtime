@@ -60,7 +60,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd qemu-sptm/build
-          ninja
+          ninja qemu-system-aarch64.exe
 
       - name: Verify Darwin machine
         shell: msys2 {0}
