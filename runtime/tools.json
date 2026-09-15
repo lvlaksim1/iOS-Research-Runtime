@@ -9,14 +9,6 @@
       "installDirectory": "ipsw"
     },
     {
-      "name": "apfs",
-      "version": "0.3.0",
-      "archiveUrl": "https://github.com/deploymenttheory/go-apfs-v2/releases/download/v0.3.0/apfs_0.3.0_windows_amd64.zip",
-      "sha256": "eb467d20fc7347a6878472e77dd317312d20467f534d784197a6e1cafab068c0",
-      "executableName": "apfs.exe",
-      "installDirectory": "apfs"
-    },
-    {
       "name": "rcodesign",
       "version": "0.29.0",
       "archiveUrl": "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0/apple-codesign-0.29.0-x86_64-pc-windows-msvc.zip",
