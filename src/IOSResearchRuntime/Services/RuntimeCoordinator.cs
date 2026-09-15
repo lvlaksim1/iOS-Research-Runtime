@@ -6,8 +6,13 @@ namespace IOSResearchRuntime.Services;
 public sealed class RuntimeCoordinator : IDisposable
 {
     private readonly FirmwareBundleValidator _validator;
+    private const string ProofBeginMarker = "__IOS_RESEARCH_PROOF_BEGIN__";
+    private const string ProofEndMarker = "__IOS_RESEARCH_PROOF_END__";
+
     private readonly QemuRuntime _runtime;
     private readonly BootProgressDetector _bootProgress = new();
+    private bool _proofActive;
+    private readonly List<string> _proofLines = new();
     private RuntimeSnapshot _snapshot = RuntimeSnapshot.NotReady(
         "Среда не проверена.",
         Array.Empty<string>());
@@ -46,6 +51,8 @@ public sealed class RuntimeCoordinator : IDisposable
         }
 
         _bootProgress.Reset();
+        _proofActive = false;
+        _proofLines.Clear();
         SetSnapshot(new RuntimeSnapshot(
             RuntimeState.Booting,
             "Запуск qemu-sptm и загрузка iOS…",
@@ -101,6 +108,7 @@ public sealed class RuntimeCoordinator : IDisposable
     private void RuntimeOnOutputReceived(object? sender, string line)
     {
         LogReceived?.Invoke(this, line);
+        CaptureBootProof(line);
 
         var progress = _bootProgress.Observe(line);
         if (progress is null)
@@ -116,6 +124,59 @@ public sealed class RuntimeCoordinator : IDisposable
             state,
             progress.Message,
             Array.Empty<string>()));
+
+        if (progress.Stage == BootStage.RootShell)
+        {
+            LogReceived?.Invoke(
+                this,
+                $"[runtime] Serial evidence: {_runtime.CurrentLogPath}");
+            _ = RunBootProofAsync();
+        }
+    }
+
+    private async Task RunBootProofAsync()
+    {
+        try
+        {
+            LogReceived?.Invoke(this, "[proof] Проверяю root shell: uname, whoami, ls /.");
+            await _runtime.SendLineAsync($"echo {ProofBeginMarker}");
+            await _runtime.SendLineAsync("uname -v");
+            await _runtime.SendLineAsync("whoami");
+            await _runtime.SendLineAsync("ls /");
+            await _runtime.SendLineAsync($"echo {ProofEndMarker}");
+        }
+        catch (Exception exception)
+        {
+            LogReceived?.Invoke(this, $"[proof] ОШИБКА: {exception.Message}");
+        }
+    }
+
+    private void CaptureBootProof(string line)
+    {
+        var trimmed = line.Trim();
+
+        if (trimmed == ProofBeginMarker)
+        {
+            _proofLines.Clear();
+            _proofActive = true;
+            return;
+        }
+
+        if (!_proofActive)
+        {
+            return;
+        }
+
+        if (trimmed == ProofEndMarker)
+        {
+            _proofActive = false;
+            LogReceived?.Invoke(
+                this,
+                $"[proof] Диагностика завершена; строк результата: {_proofLines.Count}. Evidence: {_runtime.CurrentLogPath}");
+            return;
+        }
+
+        _proofLines.Add(line);
     }
 
     private void RuntimeOnExited(object? sender, int exitCode)
