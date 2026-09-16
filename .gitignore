@@ -8,3 +8,7 @@ publish/
 artifacts/
 runtime/
 *.log
+tools/ios-ramdisk-tool/.apfs-patched/
+tools/ios-ramdisk-tool/go.work
+tools/ios-ramdisk-tool/go.work.sum
+tools/ios-ramdisk-tool/apfs-overlay.json
