@@ -9,7 +9,7 @@ if ([string]::IsNullOrWhiteSpace($moduleDir) -or !(Test-Path $moduleDir)) {
 
 $stagingRoot = Join-Path $PSScriptRoot ".apfs-patched"
 $patchedModule = Join-Path $stagingRoot "go-apfs-v2"
-$overrideRoot = Join-Path $PSScriptRoot "overrides/go-apfs-v2/pkg/apfswrite"
+$overrideRoot = Join-Path $PSScriptRoot "_overrides/go-apfs-v2/pkg/apfswrite"
 
 if (Test-Path $stagingRoot) {
     Remove-Item $stagingRoot -Recurse -Force
