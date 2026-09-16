@@ -1,7 +1,7 @@
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -67,17 +67,35 @@ static void do_darwin_reset(void *state) {
+@@ -67,15 +67,37 @@ static void do_darwin_reset(void *state) {
      ARMCPU *cpu = s->cpu;
      CPUState *cs = CPU(cpu);
      CPUARMState *env = &cpu->env;
@@ -42,7 +42,7 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
 --- a/hw/arm/xnuboot_sptm.c
 +++ b/hw/arm/xnuboot_sptm.c
-@@ -440,6 +440,17 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_info *info) {
+@@ -440,5 +440,16 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_info *info) {
      );
  
      info->init_pc = vtop(&sptm_mi, sptm_mi.entrypoint);
