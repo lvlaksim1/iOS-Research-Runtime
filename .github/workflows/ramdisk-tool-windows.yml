@@ -38,11 +38,17 @@ jobs:
 
       - name: Test
         working-directory: tools/ios-ramdisk-tool
-        run: go test -overlay=apfs-overlay.json ./...
+        shell: pwsh
+        run: |
+          $overlay = (Resolve-Path "apfs-overlay.json").Path
+          go test -overlay "$overlay" ./...
 
       - name: Build Windows x64
         working-directory: tools/ios-ramdisk-tool
-        run: go build -overlay=apfs-overlay.json -trimpath -ldflags="-s -w" -o ../../publish-tools/ios-ramdisk-tool.exe .
+        shell: pwsh
+        run: |
+          $overlay = (Resolve-Path "apfs-overlay.json").Path
+          go build -overlay "$overlay" -trimpath -ldflags="-s -w" -o ../../publish-tools/ios-ramdisk-tool.exe .
 
       - name: Smoke test
         shell: pwsh
