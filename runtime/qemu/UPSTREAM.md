@@ -43,3 +43,11 @@ Only after this gate passes will the binary be bundled into the desktop applicat
   words read back from guest RAM. The desktop boot command also enables QEMU's
   short ARM interrupt/exception log (`-d int`) while early Windows boot is
   being validated.
+
+- `0005-win64-sptm-l2-mask.patch`: keeps the SPTM 36-bit L2 index mask
+  64-bit on Windows. QEMU's `BIT(n)` expands to `1UL << n`; under the
+  Win64 LLP64 ABI `unsigned long` is only 32-bit, so `BIT(36)` overflowed
+  and `STRIP_L2_PT_INDEX()` collapsed `boot_args.virtBase` to zero.
+  The patch uses `BIT_ULL(36)`, preserving the upstream layout and preventing
+  SPTM from translating into low unmapped guest addresses after enabling EL2
+  translation.
