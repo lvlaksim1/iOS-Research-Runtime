@@ -22,7 +22,13 @@ public sealed class QemuCommandBuilder
             "-args", "rd=md0 serial=3 -v -noprogress wdt=-1 wlan-olyhal-abort",
             "-nographic",
             "-serial", "mon:stdio",
-            "-m", "8G"
+            "-m", "8G",
+            // Until the Windows port reaches XNU reliably, keep QEMU's earliest
+            // CPU/MMIO diagnostics in the same captured stderr stream as the
+            // serial log. This distinguishes a silent SPTM/TXM execution fault
+            // from a UART/output plumbing problem without generating an
+            // instruction-by-instruction trace.
+            "-d", "unimp,guest_errors,cpu_reset"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
