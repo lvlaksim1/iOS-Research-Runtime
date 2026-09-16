@@ -3,6 +3,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"encoding/binary"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -90,5 +91,70 @@ func TestMergeSysrootTarAssignsRootOwnershipAndMode(t *testing.T) {
 	}
 	if bash.Mode.Perm() != 0o755 {
 		t.Fatalf("mode = %o", bash.Mode.Perm())
+	}
+}
+
+
+func TestMaterializeRawDecmpfsType9(t *testing.T) {
+	payload := []byte("hello")
+	attr := make([]byte, 17+len(payload))
+	copy(attr[:4], []byte("fpmc"))
+	binary.LittleEndian.PutUint32(attr[4:8], 9)
+	binary.LittleEndian.PutUint64(attr[8:16], uint64(len(payload)))
+	attr[16] = 0xCC
+	copy(attr[17:], payload)
+
+	got, materialized, err := materializeRawDecmpfs(
+		map[string][]byte{"com.apple.decmpfs": attr})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !materialized {
+		t.Fatal("type 9 was not materialized")
+	}
+	if string(got) != string(payload) {
+		t.Fatalf("payload = %q, want %q", got, payload)
+	}
+}
+
+func TestMaterializeRawDecmpfsType10(t *testing.T) {
+	payload := []byte("rawfork")
+	attr := make([]byte, 16)
+	copy(attr[:4], []byte("fpmc"))
+	binary.LittleEndian.PutUint32(attr[4:8], 10)
+	binary.LittleEndian.PutUint64(attr[8:16], uint64(len(payload)))
+
+	fork := make([]byte, 8+len(payload))
+	binary.LittleEndian.PutUint32(fork[:4], 8)
+	binary.LittleEndian.PutUint32(fork[4:8], uint32(8+len(payload)))
+	copy(fork[8:], payload)
+
+	got, materialized, err := materializeRawDecmpfs(map[string][]byte{
+		"com.apple.decmpfs":      attr,
+		"com.apple.ResourceFork": fork,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !materialized {
+		t.Fatal("type 10 was not materialized")
+	}
+	if string(got) != string(payload) {
+		t.Fatalf("payload = %q, want %q", got, payload)
+	}
+}
+
+func TestMaterializeRawDecmpfsLeavesSupportedCompressionUntouched(t *testing.T) {
+	attr := make([]byte, 16)
+	copy(attr[:4], []byte("fpmc"))
+	binary.LittleEndian.PutUint32(attr[4:8], 11)
+
+	got, materialized, err := materializeRawDecmpfs(
+		map[string][]byte{"com.apple.decmpfs": attr})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if materialized || got != nil {
+		t.Fatal("supported type 11 should be preserved as compressed xattrs")
 	}
 }

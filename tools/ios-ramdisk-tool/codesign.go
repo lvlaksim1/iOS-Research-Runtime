@@ -2,17 +2,13 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/deploymenttheory/go-apfs-v2/pkg/apfs"
 )
 
 var primaryCodeDirectoryPattern = regexp.MustCompile(`(?s)slot:\s+CodeDirectory \(0\).*?sha256:\s+([0-9a-fA-F]{64})`)
@@ -107,102 +103,6 @@ func (s *machoSigner) CDHashFile(filePath string) (string, bool, error) {
 	return sha256[:40], true, nil
 }
 
-func collectVolumeCDHashes(volume *apfs.Volume, signer *machoSigner) (map[string]struct{}, error) {
-	root, err := volume.RootDirectory()
-	if err != nil {
-		return nil, fmt.Errorf("open APFS root inode: %w", err)
-	}
-
-	hashes := make(map[string]struct{})
-	if err := collectDirectoryCDHashes(root, "", signer, hashes); err != nil {
-		return nil, err
-	}
-	return hashes, nil
-}
-
-func collectDirectoryCDHashes(
-	directory *apfs.FileEntry,
-	directoryPath string,
-	signer *machoSigner,
-	hashes map[string]struct{},
-) error {
-	count, err := directory.NumberOfSubFileEntries()
-	if err != nil {
-		return fmt.Errorf("%s: enumerate for cdhash: %w", displayPath(directoryPath), err)
-	}
-
-	for index := 0; index < count; index++ {
-		entry, err := directory.SubFileEntryByIndex(index)
-		if err != nil {
-			return fmt.Errorf("%s: read child %d for cdhash: %w", displayPath(directoryPath), index, err)
-		}
-		if entry.Inode == nil {
-			return fmt.Errorf("%s: child %d has no inode", displayPath(directoryPath), index)
-		}
-
-		name, err := entry.UTF8Name()
-		if err != nil {
-			return fmt.Errorf("%s: read child %d name: %w", displayPath(directoryPath), index, err)
-		}
-
-		fullPath := name
-		if directoryPath != "" {
-			fullPath = directoryPath + "/" + name
-		}
-
-		mode := fileModeFromInode(entry.Inode)
-		switch {
-		case mode.IsDir():
-			if err := collectDirectoryCDHashes(entry, fullPath, signer, hashes); err != nil {
-				return err
-			}
-
-		case mode.IsRegular():
-			data, isMacho, err := readMachOEntry(entry)
-			if err != nil {
-				return fmt.Errorf("%s: inspect for cdhash: %w", fullPath, err)
-			}
-			if !isMacho {
-				continue
-			}
-
-			hash, ok, err := signer.CDHash(data)
-			if err != nil {
-				return fmt.Errorf("%s: cdhash: %w", fullPath, err)
-			}
-			if ok {
-				hashes[hash] = struct{}{}
-			}
-		}
-	}
-
-	return nil
-}
-
-func readMachOEntry(entry *apfs.FileEntry) ([]byte, bool, error) {
-	size, err := entry.Size()
-	if err != nil {
-		return nil, false, err
-	}
-	if size < 4 {
-		return nil, false, nil
-	}
-
-	magic := make([]byte, 4)
-	n, err := entry.ReadAt(magic, 0)
-	if err != nil && !errors.Is(err, io.EOF) {
-		return nil, false, err
-	}
-	if n < len(magic) || !isMachO(magic) {
-		return nil, false, nil
-	}
-
-	data, err := readFileEntryData(entry)
-	if err != nil {
-		return nil, false, err
-	}
-	return data, true, nil
-}
 
 func writeCDHashes(filePath string, hashes map[string]struct{}) error {
 	values := make([]string, 0, len(hashes))

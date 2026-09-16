@@ -3,6 +3,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
@@ -69,12 +70,10 @@ func run(opts options) error {
 		return err
 	}
 
-	fmt.Println("collecting existing Mach-O CDHashes...")
-	hashes, err := collectVolumeCDHashes(volume, signer)
-	if err != nil {
-		return fmt.Errorf("collect existing CDHashes: %w", err)
-	}
-	fmt.Printf("collected %d existing CDHashes\n", len(hashes))
+	// Existing Apple binaries are covered by the recovery trust cache extracted
+	// directly from the IPSW. Only injected sysroot binaries need new CDHashes.
+	hashes := make(map[string]struct{})
+	fmt.Println("using Apple recovery trust cache as base; collecting injected CDHashes only...")
 
 	children, err := readAPFSTree(volume)
 	if err != nil {
@@ -265,9 +264,22 @@ func readDirectoryEntry(directory *apfs.FileEntry, directoryPath string) ([]*apf
 
 		case mode.IsRegular():
 			if inode.BSDFlags&apfs.BSDFlagCompressed != 0 {
-				// apfswrite reconstructs transparently-compressed content
-				// from com.apple.decmpfs (+ resource fork when present).
-				entry.Data = nil
+				data, materialized, err := materializeRawDecmpfs(entry.Xattrs)
+				if err != nil {
+					return nil, fmt.Errorf("%s: normalize decmpfs: %w", fullPath, err)
+				}
+				if materialized {
+					entry.Data = data
+					delete(entry.Xattrs, "com.apple.decmpfs")
+					delete(entry.Xattrs, "com.apple.ResourceFork")
+					if len(entry.Xattrs) == 0 {
+						entry.Xattrs = nil
+					}
+				} else {
+					// Supported compressed formats are carried losslessly by
+					// apfswrite through raw decmpfs/resource-fork xattrs.
+					entry.Data = nil
+				}
 			} else {
 				data, err := readFileEntryData(source)
 				if err != nil {
@@ -363,6 +375,136 @@ func displayPath(value string) string {
 		return "/"
 	}
 	return "/" + value
+}
+
+func materializeRawDecmpfs(xattrs map[string][]byte) ([]byte, bool, error) {
+	attr := xattrs["com.apple.decmpfs"]
+	if len(attr) == 0 {
+		return nil, false, errors.New("UF_COMPRESSED file is missing com.apple.decmpfs")
+	}
+	if len(attr) < 16 {
+		return nil, false, fmt.Errorf("decmpfs attribute is too short: %d", len(attr))
+	}
+	if string(attr[:4]) != "fpmc" {
+		return nil, false, fmt.Errorf("invalid decmpfs magic %q", attr[:4])
+	}
+
+	compressionType := binary.LittleEndian.Uint32(attr[4:8])
+	uncompressedSize := binary.LittleEndian.Uint64(attr[8:16])
+
+	switch compressionType {
+	case 1:
+		return validateRawDecmpfsPayload(attr[16:], uncompressedSize, compressionType)
+
+	case 9:
+		if len(attr) < 17 {
+			return nil, false, errors.New("decmpfs type 9 is missing its raw-storage marker")
+		}
+		return validateRawDecmpfsPayload(attr[17:], uncompressedSize, compressionType)
+
+	case 10:
+		resourceFork := xattrs["com.apple.ResourceFork"]
+		if len(resourceFork) == 0 {
+			return nil, false, errors.New("decmpfs type 10 is missing com.apple.ResourceFork")
+		}
+		data, err := decodeRawResourceFork(resourceFork, uncompressedSize)
+		if err != nil {
+			return nil, false, err
+		}
+		return data, true, nil
+
+	case 3, 4, 7, 8, 11, 12:
+		return nil, false, nil
+
+	case 5:
+		return nil, false, errors.New("decmpfs type 5 dedup storage cannot be materialized safely")
+	case 13, 14:
+		return nil, false, fmt.Errorf("decmpfs LZBITMAP type %d is not supported safely", compressionType)
+	default:
+		return nil, false, fmt.Errorf("unsupported decmpfs compression type %d", compressionType)
+	}
+}
+
+func validateRawDecmpfsPayload(
+	payload []byte,
+	uncompressedSize uint64,
+	compressionType uint32,
+) ([]byte, bool, error) {
+	if uint64(len(payload)) != uncompressedSize {
+		return nil, false, fmt.Errorf(
+			"decmpfs type %d raw payload length %d != declared size %d",
+			compressionType,
+			len(payload),
+			uncompressedSize,
+		)
+	}
+	return append([]byte(nil), payload...), true, nil
+}
+
+func decodeRawResourceFork(resourceFork []byte, uncompressedSize uint64) ([]byte, error) {
+	const chunkSize uint64 = 65536
+
+	if len(resourceFork) < 8 {
+		return nil, fmt.Errorf("raw resource fork is too short: %d", len(resourceFork))
+	}
+
+	headerSize := uint64(binary.LittleEndian.Uint32(resourceFork[:4]))
+	blockCount := (uncompressedSize + chunkSize - 1) / chunkSize
+	tableEnd := uint64(4) + blockCount*4
+	if headerSize < tableEnd || headerSize > uint64(len(resourceFork)) {
+		return nil, fmt.Errorf(
+			"raw resource fork header size %d is invalid for %d blocks and %d bytes",
+			headerSize,
+			blockCount,
+			len(resourceFork),
+		)
+	}
+
+	if uncompressedSize > uint64(^uint(0)>>1) {
+		return nil, fmt.Errorf("raw resource fork is too large: %d", uncompressedSize)
+	}
+
+	out := make([]byte, 0, int(uncompressedSize))
+	for block := uint64(0); block < blockCount; block++ {
+		start := headerSize
+		if block > 0 {
+			offset := 4 + (block-1)*4
+			start = uint64(binary.LittleEndian.Uint32(resourceFork[offset : offset+4]))
+		}
+		offset := 4 + block*4
+		end := uint64(binary.LittleEndian.Uint32(resourceFork[offset : offset+4]))
+
+		if end < start || end > uint64(len(resourceFork)) {
+			return nil, fmt.Errorf(
+				"raw resource fork block %d range [%d,%d) is invalid",
+				block,
+				start,
+				end,
+			)
+		}
+
+		expected := min(chunkSize, uncompressedSize-uint64(len(out)))
+		if end-start != expected {
+			return nil, fmt.Errorf(
+				"raw resource fork block %d length %d != expected %d",
+				block,
+				end-start,
+				expected,
+			)
+		}
+
+		out = append(out, resourceFork[start:end]...)
+	}
+
+	if uint64(len(out)) != uncompressedSize {
+		return nil, fmt.Errorf(
+			"raw resource fork decoded %d bytes, expected %d",
+			len(out),
+			uncompressedSize,
+		)
+	}
+
+	return out, nil
 }
 
 func cloneXattrs(source map[string][]byte) map[string][]byte {

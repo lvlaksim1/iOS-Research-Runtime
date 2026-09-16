@@ -23,7 +23,9 @@ public sealed class RamdiskProvisioningService
         _layout.EnsureDirectories();
 
         var sourceRamdisk = Path.Combine(_layout.FirmwareDirectory, "ramdisk.dmg");
+        var baseTrustCache = Path.Combine(_layout.FirmwareDirectory, "ramdisk.base.tc");
         RequireFile(sourceRamdisk, "Исходный recovery ramdisk не подготовлен.");
+        RequireFile(baseTrustCache, "Штатный recovery trustcache не подготовлен.");
         RequireFile(_layout.RamdiskToolExecutable, "Не найден встроенный ios-ramdisk-tool.exe.");
         RequireFile(_layout.RcodesignExecutable, "rcodesign.exe не установлен.");
         RequireFile(_layout.IosCliToolsArchive, "iOS CLI runtime resource не подготовлен.");
@@ -82,9 +84,16 @@ public sealed class RamdiskProvisioningService
 
             ProgressChanged?.Invoke(
                 this,
-                $"[trustcache] Построение TrustCacheModule1 из {hashCount} CDHash…");
+                $"[trustcache] Объединение Apple recovery trustcache с {hashCount} новыми CDHash…");
 
-            _trustCacheBuilder.BuildFile(hashList, trustCache);
+            var merge = _trustCacheBuilder.MergeFile(
+                baseTrustCache,
+                hashList,
+                trustCache);
+
+            ProgressChanged?.Invoke(
+                this,
+                $"[trustcache] v{merge.Version}: Apple {merge.BaseEntries}, добавлено {merge.AddedEntries}, всего {merge.TotalEntries}.");
 
             if (!File.Exists(trustCache) || new FileInfo(trustCache).Length == 0)
             {
@@ -99,7 +108,7 @@ public sealed class RamdiskProvisioningService
 
             ProgressChanged?.Invoke(
                 this,
-                $"[ramdisk] Готово: patched ramdisk + trust cache ({hashCount} entries).");
+                $"[ramdisk] Готово: patched ramdisk + объединённый trust cache.");
         }
         finally
         {

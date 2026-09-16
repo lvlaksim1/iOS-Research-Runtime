@@ -95,6 +95,7 @@ public sealed class RawFirmwareProvisioningService
                 profile,
                 downloadsDirectory,
                 Path.Combine(firmwareDirectory, "ramdisk.dmg"),
+                Path.Combine(firmwareDirectory, "ramdisk.base.tc"),
                 cancellationToken);
 
             CommitStagedFirmware(firmwareDirectory);
@@ -148,6 +149,7 @@ public sealed class RawFirmwareProvisioningService
         ProvisioningProfile profile,
         string downloadsDirectory,
         string destinationPath,
+        string trustCacheDestinationPath,
         CancellationToken cancellationToken)
     {
         ProgressChanged?.Invoke(this, "[ipsw] Извлечение recovery ramdisk…");
@@ -168,9 +170,27 @@ public sealed class RawFirmwareProvisioningService
         result.EnsureSuccess("ipsw extract recovery ramdisk");
 
         var downloadedPath = ParseFirstJsonPath(result.StandardOutput, _layout.DataDirectory);
-        await UnwrapIm4pAsync(downloadedPath, destinationPath, cancellationToken);
+        var ramdiskName = Path.GetFileName(downloadedPath);
+        if (!ramdiskName.EndsWith(".dmg", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException(
+                $"Recovery ramdisk имеет неожиданный формат: {ramdiskName}");
+        }
 
+        await UnwrapIm4pAsync(downloadedPath, destinationPath, cancellationToken);
         ProgressChanged?.Invoke(this, "[ipsw] ramdisk.dmg готов.");
+
+        var trustCacheName = ramdiskName + ".trustcache";
+        ProgressChanged?.Invoke(
+            this,
+            $"[ipsw] Извлечение штатного recovery trustcache {trustCacheName}…");
+
+        await ExtractAndUnwrapPatternAsync(
+            profile,
+            downloadsDirectory,
+            trustCacheName,
+            trustCacheDestinationPath,
+            cancellationToken);
     }
 
     private async Task UnwrapIm4pAsync(
