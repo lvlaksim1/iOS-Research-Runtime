@@ -15,7 +15,7 @@ import (
 	"github.com/deploymenttheory/go-apfs-v2/pkg/apfs"
 )
 
-var primaryCodeDirectoryPattern = regexp.MustCompile(`(?s)slot:\\s+CodeDirectory \\(0\\).*?sha256:\\s+([0-9a-fA-F]{64})`)
+var primaryCodeDirectoryPattern = regexp.MustCompile(`(?s)slot:\s+CodeDirectory \(0\).*?sha256:\s+([0-9a-fA-F]{64})`)
 
 type machoSigner struct {
 	executable string
