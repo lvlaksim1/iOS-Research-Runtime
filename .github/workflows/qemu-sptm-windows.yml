@@ -68,6 +68,9 @@ jobs:
         with:
           path: qemu-sptm/build
           key: qemu-sptm-win64-2867d847-headless-v2-${{ hashFiles('runtime/qemu/patches/*.patch') }}
+          restore-keys: |
+            qemu-sptm-win64-2867d847-headless-v2-
+            qemu-sptm-win64-2867d847-headless-v1-
 
       - name: Configure qemu-sptm
         shell: msys2 {0}
