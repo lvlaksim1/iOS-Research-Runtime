@@ -32,6 +32,7 @@ static int ReadIntOption(string[] args, string name, int defaultValue)
 var applicationDirectory = Path.GetFullPath(RequireOption(args, "--application-directory"));
 var dataDirectory = Path.GetFullPath(RequireOption(args, "--data-directory"));
 var timeoutMinutes = ReadIntOption(args, "--timeout-minutes", 45);
+var bootProgressTimeoutMinutes = ReadIntOption(args, "--boot-progress-timeout-minutes", 5);
 
 using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(timeoutMinutes));
 var cancellationToken = timeout.Token;
@@ -39,6 +40,7 @@ var cancellationToken = timeout.Token;
 Console.WriteLine($"APPLICATION_DIRECTORY={applicationDirectory}");
 Console.WriteLine($"DATA_DIRECTORY={dataDirectory}");
 Console.WriteLine($"TIMEOUT_MINUTES={timeoutMinutes}");
+Console.WriteLine($"BOOT_PROGRESS_TIMEOUT_MINUTES={bootProgressTimeoutMinutes}");
 
 var layout = new RuntimeLayout(applicationDirectory, dataDirectory);
 var processRunner = new ExternalProcessRunner();
@@ -83,10 +85,19 @@ using var coordinator = new RuntimeCoordinator(validator, qemuRuntime);
 
 var proofCompleted = new TaskCompletionSource(
     TaskCreationOptions.RunContinuationsAsynchronously);
+var bootProgress = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
 
 coordinator.LogReceived += (_, line) =>
 {
     Console.WriteLine(line);
+
+    if (line.Contains("Darwin Kernel Version", StringComparison.Ordinal) ||
+        line.Contains("com.apple.xpc.launchd", StringComparison.Ordinal) ||
+        line.StartsWith("bash-", StringComparison.Ordinal))
+    {
+        bootProgress.TrySetResult();
+    }
 
     if (line.StartsWith("[proof] Диагностика завершена;", StringComparison.Ordinal))
     {
@@ -106,8 +117,9 @@ coordinator.StatusChanged += (_, snapshot) =>
 
     if (snapshot.State == RuntimeState.Failed)
     {
-        proofCompleted.TrySetException(
-            new InvalidOperationException(snapshot.Message));
+        var exception = new InvalidOperationException(snapshot.Message);
+        bootProgress.TrySetException(exception);
+        proofCompleted.TrySetException(exception);
     }
 };
 
@@ -115,6 +127,23 @@ try
 {
     Console.WriteLine("[integration] Boot start.");
     await coordinator.StartAsync(cancellationToken);
+
+    using (var bootProgressTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+    {
+        bootProgressTimeout.CancelAfter(TimeSpan.FromMinutes(bootProgressTimeoutMinutes));
+        try
+        {
+            await bootProgress.Task.WaitAsync(bootProgressTimeout.Token);
+            Console.WriteLine("[integration] XNU boot progress observed.");
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            var evidencePath = qemuRuntime.CurrentLogPath ?? "<not-created>";
+            throw new TimeoutException(
+                $"QEMU produced no XNU/launchd/root-shell progress within {bootProgressTimeoutMinutes} minute(s). " +
+                $"Boot evidence: {evidencePath}");
+        }
+    }
 
     await proofCompleted.Task.WaitAsync(cancellationToken);
 
