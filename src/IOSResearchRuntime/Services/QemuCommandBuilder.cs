@@ -23,12 +23,13 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // Until the Windows port reaches XNU reliably, keep QEMU's earliest
-            // CPU/MMIO diagnostics in the same captured stderr stream as the
-            // serial log. This distinguishes a silent SPTM/TXM execution fault
-            // from a UART/output plumbing problem without generating an
-            // instruction-by-instruction trace.
-            "-d", "unimp,guest_errors,cpu_reset,int"
+            // The early-boot probe proved that SPTM reaches its physical entry
+            // point and then faults after enabling EL2 translation. Replace the
+            // extremely repetitive interrupt trace with MMU/invalid-memory
+            // evidence so the next E2E run exposes the page-table transition
+            // and failing translation without producing hundreds of MB of the
+            // same Prefetch Abort loop.
+            "-d", "unimp,guest_errors,cpu_reset,mmu,invalid_mem"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
