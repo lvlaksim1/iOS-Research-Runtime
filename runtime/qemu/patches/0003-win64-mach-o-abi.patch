@@ -1,0 +1,24 @@
+diff --git a/include/xnu/mach-o/loader.h b/include/xnu/mach-o/loader.h
+--- a/include/xnu/mach-o/loader.h
++++ b/include/xnu/mach-o/loader.h
+@@ -363,7 +363,7 @@
+  */
+ union lc_str {
+ 	uint32_t	offset;	/* offset to the string */
+-#ifndef __LP64__
++#if !defined(__LP64__) && !defined(_WIN64)
+ 	char		*ptr;	/* pointer to the string */
+ #endif 
+ };
+diff --git a/hw/arm/macho.c b/hw/arm/macho.c
+--- a/hw/arm/macho.c
++++ b/hw/arm/macho.c
+@@ -8,6 +8,8 @@
+ 
+ #define NEXT(c) (( (lc_t*) (((u8*)((c))) + (((c))->cmdsize)) ))
+ 
++QEMU_BUILD_BUG_ON(sizeof(fse_t) != 32);
++
+ // We assume all files are img4 unwrapped; this will tell us if the user
+ // accidentally forgot to unwrap something. We do not want any im4ps.
+ bool is_im4p(u8 *macho) {
