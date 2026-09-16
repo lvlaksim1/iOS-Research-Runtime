@@ -22,6 +22,12 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
       - name: Download E2E revision evidence
         uses: actions/download-artifact@v4
         with:
@@ -31,7 +37,7 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Resolve tested application revision
+      - name: Pin workspace to tested application revision
         id: revisions
         shell: pwsh
         run: |
@@ -42,161 +48,41 @@ jobs:
 
           $values = @{}
           foreach ($line in Get-Content $file.FullName) {
-            if ($line -match '^([^=]+)=(.*)        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26.x'
-          cache-dependency-path: tools/ios-ramdisk-tool/go.sum
-
-      - name: Download tested QEMU runtime
-        uses: actions/download-artifact@v4
-        with:
-          name: qemu-runtime-tested
-          path: qemu-tested
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.event.workflow_run.id }}
-
-      - name: Build ramdisk helper
-        working-directory: tools/ios-ramdisk-tool
-        shell: pwsh
-        run: |
-          go mod download
-          go mod tidy -diff
-          git diff --exit-code -- go.mod go.sum
-          go test ./...
-          go build -trimpath -ldflags="-s -w" -o ../../publish-tools/ios-ramdisk-tool.exe .
-
-      - name: Restore and test application
-        shell: pwsh
-        run: |
-          dotnet restore src/IOSResearchRuntime/IOSResearchRuntime.csproj
-          dotnet restore tests/IOSResearchRuntime.Tests/IOSResearchRuntime.Tests.csproj
-          dotnet build src/IOSResearchRuntime/IOSResearchRuntime.csproj -c Release --no-restore
-          dotnet test tests/IOSResearchRuntime.Tests/IOSResearchRuntime.Tests.csproj -c Release --no-restore
-
-      - name: Publish self-contained Windows x64
-        shell: pwsh
-        run: |
-          dotnet publish src/IOSResearchRuntime/IOSResearchRuntime.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
-
-      - name: Assemble full runtime package
-        shell: pwsh
-        run: |
-          $qemu = Get-ChildItem qemu-tested -Recurse -Filter qemu-system-aarch64.exe | Select-Object -First 1
-          if (!$qemu) {
-            throw "Tested QEMU runtime artifact does not contain qemu-system-aarch64.exe"
-          }
-
-          $qemuSource = $qemu.Directory.FullName
-          $qemuDestination = Join-Path $PWD "publish/tools/qemu-sptm"
-          New-Item -ItemType Directory -Path $qemuDestination -Force | Out-Null
-          Copy-Item (Join-Path $qemuSource "*") $qemuDestination -Recurse -Force
-
-          New-Item -ItemType Directory -Path "publish/tools" -Force | Out-Null
-          Copy-Item "publish-tools/ios-ramdisk-tool.exe" "publish/tools/ios-ramdisk-tool.exe" -Force
-
-          if (!(Test-Path "publish/iOSResearchRuntime.exe")) {
-            throw "Published application executable is missing"
-          }
-          if (!(Test-Path "publish/tools/ios-ramdisk-tool.exe")) {
-            throw "Bundled ramdisk helper is missing"
-          }
-          if (!(Test-Path "publish/tools/qemu-sptm/qemu-system-aarch64.exe")) {
-            throw "Bundled QEMU executable is missing"
-          }
-
-      - name: Verify packaged QEMU runtime
-        shell: pwsh
-        run: |
-          $runtime = (Resolve-Path "publish/tools/qemu-sptm").Path
-          $systemRoot = $env:SystemRoot
-          $oldPath = $env:PATH
-          try {
-            $env:PATH = "$runtime;$systemRoot\System32;$systemRoot"
-            $output = & "$runtime\qemu-system-aarch64.exe" -M help 2>&1
-            if ($LASTEXITCODE -ne 0) {
-              throw "Packaged QEMU failed with exit code $LASTEXITCODE"
-            }
-            if (-not ($output -match '(?m)^darwin\s')) {
-              throw "Packaged QEMU does not expose darwin machine"
-            }
-          }
-          finally {
-            $env:PATH = $oldPath
-          }
-
-      - name: Create package archive and hashes
-        id: package
-        shell: pwsh
-        run: |
-          $version = (Get-Content VERSION -Raw).Trim()
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            throw "VERSION is empty"
-          }
-
-          $packageName = "iOS-Research-Runtime-v$version-win-x64"
-          $out = Join-Path $PWD "dist"
-          New-Item -ItemType Directory -Path $out -Force | Out-Null
-
-          $manifest = @(
-            "VERSION=$version"
-            "APPLICATION_SHA=${{ steps.revisions.outputs.application_sha }}"
-            "QEMU_GATE_SHA=${{ steps.revisions.outputs.qemu_gate_sha }}"
-            "QEMU_GATE_RUN=${{ steps.revisions.outputs.qemu_gate_run }}"
-            "E2E_RUN=${{ github.event.workflow_run.id }}"
-            "E2E_SHA=${{ github.event.workflow_run.head_sha }}"
-          )
-          $manifest | Set-Content -Encoding utf8 "publish/PACKAGE-MANIFEST.txt"
-
-          $zip = Join-Path $out "$packageName.zip"
-          tar.exe -a -c -f $zip -C publish .
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to create package archive"
-          }
-
-          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $packageName.zip" | Set-Content -Encoding ascii (Join-Path $out "$packageName.sha256")
-
-          "package_name=$packageName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "PACKAGE=$packageName"
-          "SHA256=$hash"
-
-      - name: Upload full Windows package
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.package.outputs.package_name }}
-          path: |
-            dist/*.zip
-            dist/*.sha256
-          if-no-files-found: error
-          retention-days: 14
-) {
+            if ($line -match '^([^=]+)=(.*)$') {
               $values[$Matches[1]] = $Matches[2]
             }
           }
 
-          $appSha = $values['APPLICATION_SHA']
-          $qemuSha = $values['QEMU_GATE_SHA']
-          $qemuRun = $values['QEMU_GATE_RUN']
-          if ([string]::IsNullOrWhiteSpace($appSha) -or
-              [string]::IsNullOrWhiteSpace($qemuSha) -or
-              [string]::IsNullOrWhiteSpace($qemuRun)) {
-            throw "E2E revision evidence is incomplete"
+          $appSha = $values["APPLICATION_SHA"]
+          $qemuSha = $values["QEMU_GATE_SHA"]
+          $qemuRun = $values["QEMU_GATE_RUN"]
+          if ([string]::IsNullOrWhiteSpace($appSha)) {
+            throw "APPLICATION_SHA missing from E2E evidence"
+          }
+          if ([string]::IsNullOrWhiteSpace($qemuSha)) {
+            throw "QEMU_GATE_SHA missing from E2E evidence"
+          }
+          if ([string]::IsNullOrWhiteSpace($qemuRun)) {
+            throw "QEMU_GATE_RUN missing from E2E evidence"
+          }
+
+          git fetch --depth=1 origin $appSha
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to fetch tested application commit $appSha"
+          }
+          git checkout --detach $appSha
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to checkout tested application commit $appSha"
+          }
+
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $appSha) {
+            throw "Checked out $actual instead of tested $appSha"
           }
 
           "application_sha=$appSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "qemu_gate_sha=$qemuSha" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           "qemu_gate_run=$qemuRun" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-
-      - name: Checkout tested application commit
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.revisions.outputs.application_sha }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
