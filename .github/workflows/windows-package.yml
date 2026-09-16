@@ -189,7 +189,9 @@ jobs:
 
           $manifest = @(
             "VERSION=$version"
-            "APPLICATION_SHA=${{ github.sha }}"
+            "APPLICATION_SHA=${{ steps.revisions.outputs.application_sha }}"
+            "QEMU_GATE_SHA=${{ steps.revisions.outputs.qemu_gate_sha }}"
+            "QEMU_GATE_RUN=${{ steps.revisions.outputs.qemu_gate_run }}"
             "E2E_RUN=${{ github.event.workflow_run.id }}"
             "E2E_SHA=${{ github.event.workflow_run.head_sha }}"
           )
