@@ -1,7 +1,7 @@
 diff --git a/hw/arm/macho.c b/hw/arm/macho.c
 --- a/hw/arm/macho.c
 +++ b/hw/arm/macho.c
-@@ -91,17 +91,56 @@ void macho_load(macho_info_t *mi, hwaddr phys_base) {
+@@ -91,17 +91,63 @@ void macho_load(macho_info_t *mi, hwaddr phys_base) {
      }
  }
  
