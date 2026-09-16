@@ -20,3 +20,12 @@ The first QEMU milestone is considered complete when CI can:
 4. Publish the Windows binary and its required runtime DLLs as an artifact.
 
 Only after this gate passes will the binary be bundled into the desktop application.
+
+
+## Local compatibility patches
+
+- `0001-win32-portability.patch`: Windows/MSYS2 portability only.
+- `0002-fileset-entry-offset.patch`: parse `LC_FILESET_ENTRY.entry_id` through
+  its Mach-O `lc_str` offset instead of assuming the string immediately follows
+  `struct fileset_entry_command`. On lookup failure QEMU prints the fileset
+  entries it actually parsed, which is retained in E2E boot evidence.

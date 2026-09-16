@@ -35,8 +35,13 @@ jobs:
         shell: pwsh
         run: |
           Set-Location qemu-sptm
-          git apply --check ../runtime/qemu/patches/0001-win32-portability.patch
-          git apply ../runtime/qemu/patches/0001-win32-portability.patch
+          foreach ($patch in Get-ChildItem ../runtime/qemu/patches/*.patch | Sort-Object Name) {
+            Write-Host "Applying $($patch.Name)"
+            git apply --check $patch.FullName
+            if ($LASTEXITCODE -ne 0) { throw "git apply --check failed for $($patch.Name)" }
+            git apply $patch.FullName
+            if ($LASTEXITCODE -ne 0) { throw "git apply failed for $($patch.Name)" }
+          }
           git diff --check
           git diff --stat
 
@@ -62,7 +67,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: qemu-sptm/build
-          key: qemu-sptm-win64-2867d847-headless-v1-${{ hashFiles('runtime/qemu/patches/0001-win32-portability.patch') }}
+          key: qemu-sptm-win64-2867d847-headless-v2-${{ hashFiles('runtime/qemu/patches/*.patch') }}
 
       - name: Configure qemu-sptm
         shell: msys2 {0}
@@ -98,7 +103,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: qemu-sptm/build
-          key: qemu-sptm-win64-2867d847-headless-v1-${{ hashFiles('runtime/qemu/patches/0001-win32-portability.patch') }}
+          key: qemu-sptm-win64-2867d847-headless-v2-${{ hashFiles('runtime/qemu/patches/*.patch') }}
 
       - name: Verify Darwin machine
         shell: msys2 {0}
@@ -137,7 +142,7 @@ jobs:
 
           mkdir -p "$runtime_dir/provenance"
           cp runtime/qemu/UPSTREAM.md "$runtime_dir/provenance/"
-          cp runtime/qemu/patches/0001-win32-portability.patch "$runtime_dir/provenance/"
+          cp runtime/qemu/patches/*.patch "$runtime_dir/provenance/"
           cp qemu-sptm/COPYING "$runtime_dir/LICENSE-QEMU.txt"
 
           (

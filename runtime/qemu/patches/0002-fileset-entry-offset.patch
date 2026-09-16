@@ -1,0 +1,68 @@
+diff --git a/hw/arm/macho.c b/hw/arm/macho.c
+--- a/hw/arm/macho.c
++++ b/hw/arm/macho.c
+@@ -91,17 +91,56 @@ void macho_load(macho_info_t *mi, hwaddr phys_base) {
+     }
+ }
+ 
++static const char *macho_fileset_entry_id(fse_t *f) {
++    uint32_t offset = f->entry_id.offset;
++
++    /*
++     * LC_FILESET_ENTRY stores entry_id as an lc_str offset relative to the
++     * beginning of the load command. Do not assume that the string starts at
++     * sizeof(struct fileset_entry_command): producer padding/layout may differ.
++     */
++    if (offset < sizeof(*f) || offset >= f->cmdsize) {
++        return NULL;
++    }
++
++    const char *entry_id = (const char *)f + offset;
++    size_t remaining = f->cmdsize - offset;
++    if (!memchr(entry_id, '\0', remaining)) {
++        return NULL;
++    }
++
++    return entry_id;
++}
++
+ fse_t *macho_find_fileset_entry(u8 *macho, const char *name) {
+     mh_t *header = (mh_t*)macho;
+     lc_t *cursor = (lc_t*)(header+1);
+ 
+     for (size_t i = 0; i < header->ncmds; i++) {
+         if (LC_FILESET_ENTRY == cursor->cmd) {
+             fse_t *f = (fse_t*)cursor;
+-            if (0 == strcmp(name, (char*)(f+1))) return f;
++            const char *entry_id = macho_fileset_entry_id(f);
++            if (entry_id && 0 == strcmp(name, entry_id)) {
++                return f;
++            }
+         }
+         cursor = NEXT(cursor);
+     }
+ 
++    /*
++     * Missing fileset entries are boot-critical for some patches. Emit the
++     * parser's actual view only on lookup failure so CI evidence is useful
++     * without making successful boots noisy.
++     */
++    fprintf(stderr, "fileset lookup failed for '%s'; visible entries:\n", name);
++    cursor = (lc_t*)(header+1);
++    for (size_t i = 0; i < header->ncmds; i++) {
++        if (LC_FILESET_ENTRY == cursor->cmd) {
++            fse_t *f = (fse_t*)cursor;
++            const char *entry_id = macho_fileset_entry_id(f);
++            if (entry_id) {
++                fprintf(stderr, "  %s\n", entry_id);
++            } else {
++                fprintf(stderr,
++                        "  <malformed LC_FILESET_ENTRY: cmdsize=%u entry_id.offset=%u>\n",
++                        f->cmdsize, f->entry_id.offset);
++            }
++        }
++        cursor = NEXT(cursor);
++    }
++
+     return NULL;
+ }
