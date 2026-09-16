@@ -1,0 +1,44 @@
+diff --git a/system/memory.c b/system/memory.c
+--- a/system/memory.c
++++ b/system/memory.c
+@@ -31,6 +31,7 @@
+ #include "qemu/accel.h"
+ #include "accel/accel-ops.h"
+ #include "hw/core/boards.h"
++#include "hw/core/cpu.h"
+ #include "migration/vmstate.h"
+ #include "system/address-spaces.h"
+ 
+@@ -1403,6 +1404,8 @@ static const MemoryRegionOps unassigned_mem_ops = {
+     },
+ };
+ 
++static unsigned darwin_invalid_mem_log_count;
++
+ bool memory_region_access_valid(MemoryRegion *mr,
+                                 hwaddr addr,
+                                 unsigned size,
+@@ -1411,10 +1414,18 @@ bool memory_region_access_valid(MemoryRegion *mr,
+ {
+     if (mr->ops->valid.accepts
+         && !mr->ops->valid.accepts(mr->opaque, addr, size, is_write, attrs)) {
+-        qemu_log_mask(LOG_INVALID_MEM, "Invalid %s at addr 0x%" HWADDR_PRIX
+-                      ", size %u, region '%s', reason: rejected\n",
+-                      is_write ? "write" : "read",
+-                      addr, size, memory_region_name(mr));
++        if (darwin_invalid_mem_log_count < 32) {
++            CPUState *cs = current_cpu;
++            vaddr pc = cs ? CPU_GET_CLASS(cs)->get_pc(cs) : 0;
++            qemu_log_mask(LOG_INVALID_MEM,
++                          "Invalid %s at addr 0x%" HWADDR_PRIX
++                          ", size %u, region '%s', reason: rejected, pc=0x%" VADDR_PRIx "\n",
++                          is_write ? "write" : "read",
++                          addr, size, memory_region_name(mr), pc);
++            darwin_invalid_mem_log_count++;
++            if (darwin_invalid_mem_log_count == 32) {
++                qemu_log_mask(LOG_INVALID_MEM,
++                              "Invalid memory log suppressed after 32 rejected accesses\n");
++            }
++        }
+         return false;
+     }
