@@ -55,10 +55,9 @@ public sealed class RawFirmwareProvisioningService
                 this,
                 $"[ipsw] Профиль: {profile.DisplayName}");
 
-            await ExtractAndUnwrapPatternAsync(
+            await ExtractKernelAsync(
                 profile,
                 downloadsDirectory,
-                $"kernelcache.release.{profile.KernelExtension}",
                 Path.Combine(firmwareDirectory, "bootkc"),
                 cancellationToken);
 
@@ -110,6 +109,117 @@ public sealed class RawFirmwareProvisioningService
             {
                 Directory.Delete(stagingRoot, recursive: true);
             }
+        }
+    }
+
+    private async Task ExtractKernelAsync(
+        ProvisioningProfile profile,
+        string downloadsDirectory,
+        string destinationPath,
+        CancellationToken cancellationToken)
+    {
+        var expectedName = $"kernelcache.release.{profile.KernelExtension}";
+        ProgressChanged?.Invoke(
+            this,
+            $"[ipsw] Извлечение BootKC для {profile.DeviceName} через штатный kernel extractor…");
+
+        var result = await _processRunner.RunAsync(
+            _layout.IpswExecutable,
+            [
+                "extract",
+                "--remote", profile.IpswUrl,
+                "--output", downloadsDirectory,
+                "--flat",
+                "--kernel",
+                "--device", profile.DeviceName,
+                "-j"
+            ],
+            _layout.DataDirectory,
+            cancellationToken);
+
+        result.EnsureSuccess($"ipsw extract --kernel {profile.DeviceName}");
+
+        var candidates = ParseJsonPaths(result.StandardOutput, _layout.DataDirectory);
+        var kernelPath = candidates.FirstOrDefault(path =>
+            string.Equals(
+                Path.GetFileName(path),
+                expectedName,
+                StringComparison.OrdinalIgnoreCase));
+
+        kernelPath ??= candidates.FirstOrDefault(path =>
+            Path.GetFileName(path).Contains(
+                expectedName,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (kernelPath is null)
+        {
+            throw new InvalidDataException(
+                $"ipsw kernel extractor не вернул {expectedName}. Получено: " +
+                string.Join(", ", candidates.Select(Path.GetFileName)));
+        }
+
+        Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+        File.Copy(kernelPath, destinationPath, overwrite: true);
+
+        ProgressChanged?.Invoke(
+            this,
+            $"[ipsw] BootKC выбран: {Path.GetFileName(kernelPath)} ({new FileInfo(destinationPath).Length:N0} байт).");
+
+        await ValidateBootKernelCollectionAsync(destinationPath, cancellationToken);
+        ProgressChanged?.Invoke(this, "[ipsw] bootkc готов и содержит AppleImage4.");
+    }
+
+    private async Task ValidateBootKernelCollectionAsync(
+        string bootKernelCollectionPath,
+        CancellationToken cancellationToken)
+    {
+        var kexts = await _processRunner.RunAsync(
+            _layout.IpswExecutable,
+            [
+                "kernel",
+                "kexts",
+                bootKernelCollectionPath
+            ],
+            _layout.DataDirectory,
+            cancellationToken);
+
+        kexts.EnsureSuccess("ipsw kernel kexts bootkc");
+
+        var listing = string.Concat(
+            kexts.StandardOutput,
+            Environment.NewLine,
+            kexts.StandardError);
+
+        if (!listing.Contains(
+                "com.apple.security.AppleImage4",
+                StringComparison.Ordinal))
+        {
+            throw new InvalidDataException(
+                "Извлечённый BootKC не содержит fileset com.apple.security.AppleImage4. " +
+                "Такой kernelcache несовместим с текущим qemu-sptm boot path.");
+        }
+
+        var version = await _processRunner.RunAsync(
+            _layout.IpswExecutable,
+            [
+                "kernel",
+                "version",
+                bootKernelCollectionPath
+            ],
+            _layout.DataDirectory,
+            cancellationToken);
+
+        version.EnsureSuccess("ipsw kernel version bootkc");
+
+        var versionLine = version.StandardOutput
+            .Split(
+                ['\r', '\n'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault();
+
+        if (!string.IsNullOrWhiteSpace(versionLine))
+        {
+            ProgressChanged?.Invoke(this, $"[ipsw] BootKC: {versionLine}");
         }
     }
 
@@ -222,39 +332,68 @@ public sealed class RawFirmwareProvisioningService
 
     private static string ParseFirstJsonPath(string json, string workingDirectory)
     {
+        return ParseJsonPaths(json, workingDirectory).First();
+    }
+
+    private static IReadOnlyList<string> ParseJsonPaths(
+        string json,
+        string workingDirectory)
+    {
         using var document = JsonDocument.Parse(json);
+        var rawPaths = new List<string>();
 
-        if (document.RootElement.ValueKind != JsonValueKind.Array ||
-            document.RootElement.GetArrayLength() == 0)
+        static void AddString(JsonElement element, List<string> paths)
         {
-            throw new InvalidDataException("ipsw не вернул путь к извлечённому файлу.");
+            if (element.ValueKind != JsonValueKind.String)
+            {
+                return;
+            }
+
+            var value = element.GetString();
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                paths.Add(value);
+            }
         }
 
-        var first = document.RootElement[0];
-
-        if (first.ValueKind != JsonValueKind.String)
+        switch (document.RootElement.ValueKind)
         {
-            throw new InvalidDataException("Неожиданный JSON-ответ ipsw.");
+            case JsonValueKind.Array:
+                foreach (var item in document.RootElement.EnumerateArray())
+                {
+                    AddString(item, rawPaths);
+                }
+                break;
+
+            case JsonValueKind.Object:
+                foreach (var property in document.RootElement.EnumerateObject())
+                {
+                    rawPaths.Add(property.Name);
+                    AddString(property.Value, rawPaths);
+                }
+                break;
+
+            case JsonValueKind.String:
+                AddString(document.RootElement, rawPaths);
+                break;
         }
 
-        var path = first.GetString();
-        if (string.IsNullOrWhiteSpace(path))
+        var resolved = rawPaths
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(path =>
+                Path.IsPathRooted(path)
+                    ? path
+                    : Path.GetFullPath(path, workingDirectory))
+            .Where(File.Exists)
+            .ToArray();
+
+        if (resolved.Length == 0)
         {
-            throw new InvalidDataException("ipsw вернул пустой путь.");
+            throw new InvalidDataException(
+                "ipsw не вернул существующих путей к извлечённым файлам.");
         }
 
-        var resolvedPath = Path.IsPathRooted(path)
-            ? path
-            : Path.GetFullPath(path, workingDirectory);
-
-        if (!File.Exists(resolvedPath))
-        {
-            throw new FileNotFoundException(
-                "Файл, указанный ipsw, не найден.",
-                resolvedPath);
-        }
-
-        return resolvedPath;
+        return resolved;
     }
 
     private void CommitStagedFirmware(string stagedFirmwareDirectory)
