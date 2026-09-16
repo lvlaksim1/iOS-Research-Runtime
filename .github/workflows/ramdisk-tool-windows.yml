@@ -31,13 +31,18 @@ jobs:
           go mod tidy -diff
           git diff --exit-code -- go.mod go.sum
 
+      - name: Prepare APFS writer overlay
+        working-directory: tools/ios-ramdisk-tool
+        shell: pwsh
+        run: ./prepare-apfs-overlay.ps1
+
       - name: Test
         working-directory: tools/ios-ramdisk-tool
-        run: go test ./...
+        run: go test -overlay=apfs-overlay.json ./...
 
       - name: Build Windows x64
         working-directory: tools/ios-ramdisk-tool
-        run: go build -trimpath -ldflags="-s -w" -o ../../publish-tools/ios-ramdisk-tool.exe .
+        run: go build -overlay=apfs-overlay.json -trimpath -ldflags="-s -w" -o ../../publish-tools/ios-ramdisk-tool.exe .
 
       - name: Smoke test
         shell: pwsh
