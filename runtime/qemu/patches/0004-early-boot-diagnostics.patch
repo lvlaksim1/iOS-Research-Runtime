@@ -1,0 +1,61 @@
+diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
+--- a/hw/arm/darwin.c
++++ b/hw/arm/darwin.c
+@@ -67,17 +67,35 @@ static void do_darwin_reset(void *state) {
+     ARMCPU *cpu = s->cpu;
+     CPUState *cs = CPU(cpu);
+     CPUARMState *env = &cpu->env;
++    uint32_t entry_words[4] = {0};
++    MemTxResult entry_read;
+ 
+     cpu_reset(cs);
+ 
++    entry_read = address_space_read(
++        &address_space_memory,
++        s->bootinfo.init_pc,
++        MEMTXATTRS_UNSPECIFIED,
++        entry_words,
++        sizeof(entry_words)
++    );
++    fprintf(stderr,
++            "darwin-reset: init_pc=0x%016llx init_x0=0x%016llx "
++            "highest_el=%d entry_read=%d insn=%08x %08x %08x %08x\n",
++            (unsigned long long)s->bootinfo.init_pc,
++            (unsigned long long)s->bootinfo.init_x0,
++            arm_highest_el(env), entry_read,
++            entry_words[0], entry_words[1], entry_words[2], entry_words[3]);
++
+     assert(2 == arm_highest_el(env));
+     env->xregs[0] = s->bootinfo.init_x0;
+     env->pc = s->bootinfo.init_pc;
+ 
+     // SPTM needs fpu enabled:
+     env->cp15.cpacr_el1 |= CPACR_ENABLE_FPU;
+     env->cp15.cptr_el[2] |= CPTR_ENABLE_FPU;
+     arm_rebuild_hflags(env);
++    fprintf(stderr,
++            "darwin-reset: cpu0 armed pc=0x%016llx x0=0x%016llx el=%d\n",
++            (unsigned long long)env->pc,
++            (unsigned long long)env->xregs[0],
++            arm_highest_el(env));
+ }
+diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
+--- a/hw/arm/xnuboot_sptm.c
++++ b/hw/arm/xnuboot_sptm.c
+@@ -440,6 +440,17 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_info *info) {
+     );
+ 
+     info->init_pc = vtop(&sptm_mi, sptm_mi.entrypoint);
+     info->init_x0 = args_base_phys;
++    fprintf(stderr,
++            "darwin-loader: sptm virtlo=0x%016llx physlo=0x%016llx "
++            "entry=0x%016llx init_pc=0x%016llx init_x0=0x%016llx "
++            "bkc_virtlo=0x%016llx bkc_entry=0x%016llx\n",
++            (unsigned long long)sptm_mi.virtlo,
++            (unsigned long long)sptm_mi.physlo,
++            (unsigned long long)sptm_mi.entrypoint,
++            (unsigned long long)info->init_pc,
++            (unsigned long long)info->init_x0,
++            (unsigned long long)bkc_mi.virtlo,
++            (unsigned long long)bkc_mi.entrypoint);
+ }

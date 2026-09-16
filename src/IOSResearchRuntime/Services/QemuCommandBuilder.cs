@@ -28,7 +28,7 @@ public sealed class QemuCommandBuilder
             // serial log. This distinguishes a silent SPTM/TXM execution fault
             // from a UART/output plumbing problem without generating an
             // instruction-by-instruction trace.
-            "-d", "unimp,guest_errors,cpu_reset"
+            "-d", "unimp,guest_errors,cpu_reset,int"
         };
 
         var sptm = Path.Combine(firmware, "sptm");

@@ -36,3 +36,10 @@ Only after this gate passes will the binary be bundled into the desktop applicat
   under MinGW64, the obsolete pointer union member is enabled, and
   `fileset_entry_command` becomes 40 bytes instead of 32. A compile-time
   assertion prevents packaging a QEMU runtime with the wrong layout.
+
+
+- `0004-early-boot-diagnostics.patch`: records the SPTM loader entrypoint,
+  reset-time `init_pc/init_x0`, current EL, and the first four instruction
+  words read back from guest RAM. The desktop boot command also enables QEMU's
+  short ARM interrupt/exception log (`-d int`) while early Windows boot is
+  being validated.
