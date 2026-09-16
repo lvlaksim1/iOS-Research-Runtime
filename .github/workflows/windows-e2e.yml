@@ -152,6 +152,7 @@ jobs:
           go mod download
           go mod tidy -diff
           git diff --exit-code -- go.mod go.sum
+          ./prepare-apfs-overlay.ps1
           go test ./...
           go build -trimpath -ldflags="-s -w" -o ../ios-ramdisk-tool.exe .
           if (!(Test-Path ../ios-ramdisk-tool.exe)) {
