@@ -23,13 +23,14 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The physical trace reaches the MMU handoff at 0x100070a37a4.
-            // After that SPTM executes from its high virtual mapping. QEMU's
-            // -dfilter accepts multiple target-address ranges, so retain the
-            // bounded physical window and add the corresponding SPTM virtual
-            // window instead of enabling an unbounded whole-guest trace.
-            "-d", "in_asm,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0x10007000000+0x800000,0xfffffff027000000+0x800000"
+            // The bounded physical trace reaches the MMU handoff at
+            // 0x100070a37a4, but the assumed high virtual range did not capture
+            // the first translated block after that handoff. Trace translated
+            // blocks without an address filter so the next E2E run records the
+            // actual destination. in_asm logs newly translated blocks rather
+            // than the high-volume exception/memory-access streams that caused
+            // the earlier diagnostic flood.
+            "-d", "in_asm,unimp,guest_errors,cpu_reset"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
