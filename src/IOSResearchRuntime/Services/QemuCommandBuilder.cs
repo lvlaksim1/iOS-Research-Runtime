@@ -23,13 +23,11 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The early-boot probe proved that SPTM reaches its physical entry
-            // point and then faults after enabling EL2 translation. Replace the
-            // extremely repetitive interrupt trace with MMU/invalid-memory
-            // evidence so the next E2E run exposes the page-table transition
-            // and failing translation without producing hundreds of MB of the
-            // same Prefetch Abort loop.
-            "-d", "unimp,guest_errors,cpu_reset,mmu,invalid_mem"
+            // Keep early CPU/guest diagnostics, but do not enable invalid_mem:
+            // rejected loader writes can generate hundreds of MB before reset
+            // and hide the actual SPTM layout evidence. Patch 0006 prints the
+            // physical layout inputs directly before the first Mach-O load.
+            "-d", "unimp,guest_errors,cpu_reset"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
