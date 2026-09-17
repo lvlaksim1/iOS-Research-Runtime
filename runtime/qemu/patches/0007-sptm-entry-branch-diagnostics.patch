@@ -1,7 +1,8 @@
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -72,6 +72,9 @@ static void do_darwin_reset(void *state) {
+@@ -70,7 +70,10 @@ static void do_darwin_reset(void *state) {
+     CPUState *cs = CPU(cpu);
      CPUARMState *env = &cpu->env;
      uint32_t entry_words[4] = {0};
 +    uint32_t branch_words[8] = {0};
@@ -11,7 +12,7 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
  
      cpu_reset(cs);
  
-@@ -84,6 +87,17 @@ static void do_darwin_reset(void *state) {
+@@ -81,6 +84,16 @@ static void do_darwin_reset(void *state) {
          entry_words,
          sizeof(entry_words)
      );
@@ -28,7 +29,8 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
      fprintf(stderr,
              "darwin-reset: init_pc=0x%016llx init_x0=0x%016llx "
              "highest_el=%d entry_read=%d insn=%08x %08x %08x %08x\n",
-@@ -92,6 +106,13 @@ static void do_darwin_reset(void *state) {
+@@ -88,6 +101,12 @@ static void do_darwin_reset(void *state) {
+             (unsigned long long)s->bootinfo.init_x0,
              arm_highest_el(env), entry_read,
              entry_words[0], entry_words[1], entry_words[2], entry_words[3]);
 +    fprintf(stderr,
