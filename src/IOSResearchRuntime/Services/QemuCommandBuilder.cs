@@ -12,6 +12,7 @@ public sealed class QemuCommandBuilder
     public IReadOnlyList<string> BuildArguments()
     {
         var firmware = _layout.FirmwareDirectory;
+        var debugLog = Path.Combine(_layout.LogDirectory, "qemu-debug.log");
         var arguments = new List<string>
         {
             "-M", "darwin",
@@ -23,13 +24,11 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The bounded physical trace reaches the MMU handoff at
-            // 0x100070a37a4, but the assumed high virtual range did not capture
-            // the first translated block after that handoff. Trace translated
-            // blocks without an address filter so the next E2E run records the
-            // actual destination. in_asm logs newly translated blocks rather
-            // than the high-volume exception/memory-access streams that caused
-            // the earlier diagnostic flood.
+            // Persist QEMU's translated-block trace directly into the runtime
+            // log directory. The E2E workflow already copies this directory
+            // into its failure evidence, while relying on redirected stderr
+            // did not preserve the unfiltered in_asm stream.
+            "-D", debugLog,
             "-d", "in_asm,unimp,guest_errors,cpu_reset"
         };
 
