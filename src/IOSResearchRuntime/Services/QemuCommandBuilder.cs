@@ -25,14 +25,14 @@ public sealed class QemuCommandBuilder
             "-serial", "mon:stdio",
             "-m", "8G",
             // Persist QEMU diagnostics directly into the runtime log directory.
-            // The previous unfiltered in_asm trace proved that execution crosses
-            // the MMU handoff and reaches the 0xfffffff0070bxxxx virtual region,
-            // but in_asm only records translation and cannot reveal a tight loop
-            // through already translated blocks. Trace executions in that narrow
-            // region with chaining disabled so the next E2E run identifies the
-            // repeatedly executed TB without recreating a whole-guest trace flood.
+            // Execution now reaches 0xfffffff0070b0ff8, whose TB contains
+            // LDR W9,[X24,#4] followed by CBZ W9. No successor TB is executed,
+            // even though both the fall-through and branch target remain inside
+            // this filter. Capture CPU register state and exceptions in the same
+            // narrow virtual window so the next E2E run exposes X24 plus the
+            // syndrome/fault address of the first post-MMU memory-access stall.
             "-D", debugLog,
-            "-d", "in_asm,exec,nochain,unimp,guest_errors,cpu_reset",
+            "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
             "-dfilter", "0xfffffff0070b0000+0x20000"
         };
 
