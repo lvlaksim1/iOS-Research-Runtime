@@ -23,12 +23,12 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The entry and first branch target are now both verified in guest
-            // RAM. Trace translated blocks only in the small physical SPTM
-            // entry window so the next E2E identifies where execution stops
-            // without recreating the previous hundreds-of-MB debug flood.
+            // The 64 KiB entry trace proved that SPTM executes normally through
+            // its initial EL2 setup and then leaves that window. Trace the wider
+            // physical SPTM region so the next E2E captures the first destination
+            // after that handoff without enabling an unbounded whole-guest trace.
             "-d", "in_asm,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0x100070a0000+0x10000"
+            "-dfilter", "0x10007000000+0x800000"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
