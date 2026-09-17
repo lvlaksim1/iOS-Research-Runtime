@@ -1,0 +1,42 @@
+diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
+--- a/hw/arm/darwin.c
++++ b/hw/arm/darwin.c
+@@ -72,6 +72,9 @@ static void do_darwin_reset(void *state) {
+     CPUARMState *env = &cpu->env;
+     uint32_t entry_words[4] = {0};
++    uint32_t branch_words[8] = {0};
+     MemTxResult entry_read;
++    MemTxResult branch_read = MEMTX_ERROR;
++    hwaddr branch_target = 0;
+ 
+     cpu_reset(cs);
+ 
+@@ -84,6 +87,17 @@ static void do_darwin_reset(void *state) {
+         entry_words,
+         sizeof(entry_words)
+     );
++    if ((entry_words[0] & 0xfc000000u) == 0x14000000u) {
++        int64_t branch_delta = (int64_t)(entry_words[0] & 0x03ffffffu) << 2;
++        if (branch_delta & (1LL << 27)) {
++            branch_delta -= (1LL << 28);
++        }
++        branch_target = s->bootinfo.init_pc + branch_delta;
++        branch_read = address_space_read(
++            &address_space_memory, branch_target, MEMTXATTRS_UNSPECIFIED,
++            branch_words, sizeof(branch_words));
++    }
+     fprintf(stderr,
+             "darwin-reset: init_pc=0x%016llx init_x0=0x%016llx "
+             "highest_el=%d entry_read=%d insn=%08x %08x %08x %08x\n",
+@@ -92,6 +106,13 @@ static void do_darwin_reset(void *state) {
+             arm_highest_el(env), entry_read,
+             entry_words[0], entry_words[1], entry_words[2], entry_words[3]);
++    fprintf(stderr,
++            "darwin-reset: branch_target=0x%016llx branch_read=%d "
++            "insn=%08x %08x %08x %08x %08x %08x %08x %08x\n",
++            (unsigned long long)branch_target, branch_read,
++            branch_words[0], branch_words[1], branch_words[2], branch_words[3],
++            branch_words[4], branch_words[5], branch_words[6], branch_words[7]);
+ 
+     assert(2 == arm_highest_el(env));
+     env->xregs[0] = s->bootinfo.init_x0;
