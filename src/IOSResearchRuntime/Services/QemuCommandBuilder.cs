@@ -23,11 +23,12 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // Keep early CPU/guest diagnostics, but do not enable invalid_mem:
-            // rejected loader writes can generate hundreds of MB before reset
-            // and hide the actual SPTM layout evidence. Patch 0006 prints the
-            // physical layout inputs directly before the first Mach-O load.
-            "-d", "unimp,guest_errors,cpu_reset"
+            // The entry and first branch target are now both verified in guest
+            // RAM. Trace translated blocks only in the small physical SPTM
+            // entry window so the next E2E identifies where execution stops
+            // without recreating the previous hundreds-of-MB debug flood.
+            "-d", "in_asm,unimp,guest_errors,cpu_reset",
+            "-dfilter", "0x100070a0000+0x10000"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
