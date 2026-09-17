@@ -24,12 +24,16 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // Persist QEMU's translated-block trace directly into the runtime
-            // log directory. The E2E workflow already copies this directory
-            // into its failure evidence, while relying on redirected stderr
-            // did not preserve the unfiltered in_asm stream.
+            // Persist QEMU diagnostics directly into the runtime log directory.
+            // The previous unfiltered in_asm trace proved that execution crosses
+            // the MMU handoff and reaches the 0xfffffff0070bxxxx virtual region,
+            // but in_asm only records translation and cannot reveal a tight loop
+            // through already translated blocks. Trace executions in that narrow
+            // region with chaining disabled so the next E2E run identifies the
+            // repeatedly executed TB without recreating a whole-guest trace flood.
             "-D", debugLog,
-            "-d", "in_asm,unimp,guest_errors,cpu_reset"
+            "-d", "in_asm,exec,nochain,unimp,guest_errors,cpu_reset",
+            "-dfilter", "0xfffffff0070b0000+0x20000"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
