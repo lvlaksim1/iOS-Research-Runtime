@@ -1,11 +1,7 @@
 diff --git a/include/xnu/boot/args.h b/include/xnu/boot/args.h
-index 5fca5f106f..0000000000 100644
 --- a/include/xnu/boot/args.h
 +++ b/include/xnu/boot/args.h
-@@ -19,12 +19,12 @@
-  * Video information..
-  */
- struct Boot_Video {
+@@ -22,8 +22,10 @@ struct Boot_Video {
 -	unsigned long   v_baseAddr;     /* Base address of video memory */
 -	unsigned long   v_display;      /* Display Code (if Applicable */
 -	unsigned long   v_rowBytes;     /* Number of bytes per pixel row */
@@ -22,5 +18,3 @@ index 5fca5f106f..0000000000 100644
 +
 +_Static_assert(sizeof(struct Boot_Video) == 48, "Boot_Video must match the Apple LP64 ABI");
  
- #define kBootVideoDepthMask             (0xFF)
- #define kBootVideoDepthDepthShift       (0)
