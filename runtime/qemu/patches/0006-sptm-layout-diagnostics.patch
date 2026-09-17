@@ -1,0 +1,24 @@
+diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
+--- a/hw/arm/xnuboot_sptm.c
++++ b/hw/arm/xnuboot_sptm.c
+@@ -176,8 +176,20 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_info *info) {
+         tc_size_rounded +
+         DARWIN_PAGE_SIZE; // extra page we skip in front of the device tree
+ 
++    fprintf(stderr,
++            "sptm-layout: dram_base=0x%016llx dram_size=0x%016llx "
++            "bkc_virtlo=0x%016llx l2_index=0x%016llx "
++            "bytes_before=0x%016llx blob_before=0x%016llx\n",
++            (unsigned long long)info->dram_base,
++            (unsigned long long)info->dram_size,
++            (unsigned long long)bkc_mi.virtlo,
++            (unsigned long long)GET_L2_PT_INDEX(bkc_mi.virtlo),
++            (unsigned long long)bytes_before_sptm,
++            (unsigned long long)blob_head);
+     assert(GET_L2_PT_INDEX(bkc_mi.virtlo) > bytes_before_sptm);
+     SKIP(GET_L2_PT_INDEX(bkc_mi.virtlo) - bytes_before_sptm);
++    fprintf(stderr, "sptm-layout: blob_after_skip=0x%016llx\n",
++            (unsigned long long)blob_head);
+ 
+     // To find struct layout in SPTM, search for function that uses the string
+     // "%s: region '%s' [%p-%p] not immediately after region '%s' [ending at %p]"
