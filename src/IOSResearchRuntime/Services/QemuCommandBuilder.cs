@@ -23,12 +23,13 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The 64 KiB entry trace proved that SPTM executes normally through
-            // its initial EL2 setup and then leaves that window. Trace the wider
-            // physical SPTM region so the next E2E captures the first destination
-            // after that handoff without enabling an unbounded whole-guest trace.
+            // The physical trace reaches the MMU handoff at 0x100070a37a4.
+            // After that SPTM executes from its high virtual mapping. QEMU's
+            // -dfilter accepts multiple target-address ranges, so retain the
+            // bounded physical window and add the corresponding SPTM virtual
+            // window instead of enabling an unbounded whole-guest trace.
             "-d", "in_asm,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0x10007000000+0x800000"
+            "-dfilter", "0x10007000000+0x800000,0xfffffff027000000+0x800000"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
