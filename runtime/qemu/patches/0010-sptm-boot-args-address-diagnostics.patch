@@ -1,0 +1,18 @@
+diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
+--- a/hw/arm/xnuboot_sptm.c
++++ b/hw/arm/xnuboot_sptm.c
+@@ -391,6 +391,14 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_i
+     }
+     args.topOfKernelData = blob_head;
+     args.deviceTreeP = dtree_base_phys - args.physBase + args.virtBase;
++
++    /* Diagnostic-only: tie the first EL2 abort's 0x12ed0000 value back to
++     * the loader-produced physical boot state without changing semantics. */
++    fprintf(stderr,
++            "SPTM_BOOTARGS physBase=0x%" PRIx64 " topOfKernelData=0x%" PRIx64
++            " topOffset=0x%" PRIx64 " argsPA=0x%" HWADDR_PRIx "\n",
++            args.physBase, args.topOfKernelData,
++            args.topOfKernelData - args.physBase, args_base_phys);
+     args.deviceTreeLength = info->dtree_f.len;
+     g_strlcpy(args.CommandLine, info->args, BOOT_LINE_LENGTH);
+ 
