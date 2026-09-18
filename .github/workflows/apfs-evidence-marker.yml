@@ -22,32 +22,46 @@ jobs:
         run: |
           gh run download 35390159689 --repo ${{ github.repository }} --name ios-darwin-windows-e2e --dir evidence
 
-      - name: Encode first structural differences
+      - name: Encode evidence marker
         id: diff
         shell: pwsh
         run: |
           $path = Get-ChildItem evidence -Recurse -Filter apfs-structural-evidence.json | Select-Object -First 1 -ExpandProperty FullName
-          if (!$path) { throw 'apfs-structural-evidence.json not found' }
-          $j = Get-Content $path -Raw | ConvertFrom-Json
-          $parts = @()
-          foreach ($p in $j.Source.PSObject.Properties.Name) {
-            $a = [string]$j.Source.$p
-            $b = [string]$j.Rebuilt.$p
-            if ($a -ne $b) {
-              $safeA = $a -replace '[^A-Za-z0-9.-]', '_'
-              $safeB = $b -replace '[^A-Za-z0-9.-]', '_'
-              $parts += "$p=$safeA~$safeB"
+          if ($path) {
+            $j = Get-Content $path -Raw | ConvertFrom-Json
+            $source = $j.source
+            $rebuilt = $j.rebuilt
+            if (!$source) { $source = $j.Source }
+            if (!$rebuilt) { $rebuilt = $j.Rebuilt }
+            $parts = @()
+            foreach ($prop in $source.PSObject.Properties) {
+              $p = $prop.Name
+              $a = [string]$source.$p
+              $b = [string]$rebuilt.$p
+              if ($a -ne $b) {
+                $safeA = $a -replace '[^A-Za-z0-9.-]', '_'
+                $safeB = $b -replace '[^A-Za-z0-9.-]', '_'
+                $parts += "$p=$safeA~$safeB"
+              }
             }
+            if ($parts.Count -eq 0) { $marker = 'apfsdiff-NONE' }
+            else { $marker = 'apfsdiff-' + (($parts | Select-Object -First 4) -join '__') }
+            Copy-Item $path marker-evidence.txt
           }
-          if ($parts.Count -eq 0) { $marker = 'apfsdiff-NONE' }
-          else { $marker = 'apfsdiff-' + (($parts | Select-Object -First 4) -join '__') }
+          else {
+            $log = Get-ChildItem evidence -Recurse -Filter integration.log | Select-Object -First 1 -ExpandProperty FullName
+            if (!$log) { throw 'Neither APFS JSON nor integration.log found' }
+            $tail = (Get-Content $log -Tail 6) -join '_'
+            $safe = $tail -replace '[^A-Za-z0-9._=-]', '_'
+            $marker = 'apfslog-' + $safe
+            Copy-Item $log marker-evidence.txt
+          }
           if ($marker.Length -gt 220) { $marker = $marker.Substring(0,220) }
           "marker=$marker" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          Copy-Item $path apfs-structural-evidence.json
 
       - name: Publish metadata-visible marker
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.diff.outputs.marker }}
-          path: apfs-structural-evidence.json
+          path: marker-evidence.txt
           retention-days: 2
