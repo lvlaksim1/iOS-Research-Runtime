@@ -2,7 +2,7 @@ diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
 index 4f0e000000..4f0e000001 100644
 --- a/hw/arm/xnuboot_sptm.c
 +++ b/hw/arm/xnuboot_sptm.c
-@@ -252,6 +252,18 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_i
+@@ -252,6 +252,22 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_i
  
      // SPTM gets loaded in its entirety right here
      macho_load(&sptm_mi, blob_head);
