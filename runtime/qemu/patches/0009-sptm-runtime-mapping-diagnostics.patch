@@ -1,0 +1,25 @@
+diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
+index 4f0e000000..4f0e000001 100644
+--- a/hw/arm/xnuboot_sptm.c
++++ b/hw/arm/xnuboot_sptm.c
+@@ -252,6 +252,18 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_i
+ 
+     // SPTM gets loaded in its entirety right here
+     macho_load(&sptm_mi, blob_head);
++
++    /*
++     * Diagnostic-only evidence for the early boot-state producer search.
++     * Do not infer this PA from dram_base: macho_load() assigns physlo from
++     * the actual runtime placement, while virtlo comes from this SPTM Mach-O.
++     */
++    {
++        const uint64_t boot_state_slot_va = 0xfffffff007090b80ULL;
++        hwaddr boot_state_slot_pa = vtop(&sptm_mi, boot_state_slot_va);
++        fprintf(stderr, "SPTM_MAP virtlo=0x%" PRIx64 " physlo=0x%" HWADDR_PRIx
++                " slot_va=0x%" PRIx64 " slot_pa=0x%" HWADDR_PRIx "\n",
++                sptm_mi.virtlo, sptm_mi.physlo, boot_state_slot_va,
++                boot_state_slot_pa);
++    }
+ 
+     // SPTM-ro
+     {
