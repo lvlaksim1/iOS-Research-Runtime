@@ -24,15 +24,15 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The 0x...0dad50 block is proven to construct the bad X0 from two
-            // globals and X22. The previous diagnostic used -one-insn-per-tb as a
-            // top-level option, but this tested QEMU exits before guest execution.
-            // one-insn-per-tb is a TCG accelerator property, so enable it through
-            // -accel while keeping the trace restricted to the seven instructions.
+            // The callee at 0x...0dad50 is now proven to implement the usual
+            // phys->virt translation X0 = X22 - phys_base + virt_base. Its globals
+            // are 0x10000000000 and 0xfffffff000000000, while X22 arrives as only
+            // 0x12ed0000. Trace the immediate caller as well as the translation so
+            // the next evidence shows where that offset-valued X22 is produced.
             "-accel", "tcg,one-insn-per-tb=on",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070dad50+0x20"
+            "-dfilter", "0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
