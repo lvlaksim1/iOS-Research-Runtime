@@ -24,14 +24,16 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The caller trace proves X0 is still canonical at 0x...0d7c1c but is
-            // 0x00003ef012ed0000 by 0x...0d7cf4. The last captured block branches
-            // from 0x...0d7c88 to 0x...0dad6c, outside the previous dfilter, so the
-            // actual high-bit transformation is hidden in that branch target path.
-            // Trace only the 0x...0da000 window next to capture that missing logic.
+            // The 0x...0dad50 block is now proven to construct the bad X0 itself:
+            // ADRP/LDR X8 from 0x...0921f8, ADRP/LDR X9 from 0x...091040,
+            // SUB X8,X22,X8, then ADD X0,X8,X9. The previous TB-level trace only
+            // shows entry and exit register sets. Force one instruction per TB and
+            // keep the log filter tightly on this seven-instruction block so the
+            // next evidence exposes both loaded globals and the exact arithmetic.
+            "-one-insn-per-tb",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070da000+0x2000"
+            "-dfilter", "0xfffffff0070dad50+0x20"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
