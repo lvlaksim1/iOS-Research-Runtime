@@ -24,14 +24,14 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The caller trace proves X22 is already 0x12ed0000 on entry to
-            // 0x...0d7b50. Its LR is 0x...0d782c, so the producing call site is
-            // one frame earlier around 0x...0d7828. Trace that narrow predecessor
-            // window together with the already-proven caller and translation.
+            // The recovered predecessor trace proves X22 is already 0x12ed0000
+            // at its first captured instruction 0x...0d77d0 and stays unchanged
+            // through the call at 0x...0d7828. Move the trace one narrow block
+            // earlier so the next E2E can catch where X22 is loaded or inherited.
             "-accel", "tcg,one-insn-per-tb=on",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070d77d0+0x60,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
+            "-dfilter", "0xfffffff0070d7700+0x130,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
