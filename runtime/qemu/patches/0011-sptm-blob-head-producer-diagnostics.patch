@@ -12,14 +12,3 @@ diff --git a/hw/arm/xnuboot_sptm.c b/hw/arm/xnuboot_sptm.c
  
      // PUSH_SEG(m,s): push a segment into the blob
      // m: which macho_info_t to search for the segment in
-@@ -177,6 +181,10 @@ static void arm_load_xnu_sptm(ARMCPU *cpu, MachineState *ms, struct xnu_boot_i
- 
-     assert(GET_L2_PT_INDEX(bkc_mi.virtlo) > bytes_before_sptm);
-     SKIP(GET_L2_PT_INDEX(bkc_mi.virtlo) - bytes_before_sptm);
-+    fprintf(stderr, "SPTM_BLOB_POST_SKIP blobHead=0x%" HWADDR_PRIx
-+            " bkcVirtLo=0x%" PRIx64 " bytesBeforeSPTM=0x%" HWADDR_PRIx "\n",
-+            blob_head, bkc_mi.virtlo, bytes_before_sptm);
-+
- 
-     // To find struct layout in SPTM, search for function that uses the string
-     // "%s: region '%s' [%p-%p] not immediately after region '%s' [ending at %p]"
