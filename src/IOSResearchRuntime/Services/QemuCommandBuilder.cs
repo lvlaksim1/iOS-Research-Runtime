@@ -24,16 +24,16 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The latest Windows E2E reaches translated SPTM execution and then
-            // takes its first real Data Abort at ELR 0xfffffff0070a3bc4 with
-            // FAR 0x00003ef012ed0000. The previous filter started at 0x...0b0000,
-            // so it captured the later exception loop but not the faulting TB.
-            // Trace only the narrow 0x...0a3000 window to expose the exact
-            // instruction and source registers without producing another
-            // multi-gigabyte trace of the subsequent Prefetch Abort loop.
+            // The faulting memset-like block at 0x...0a3bc4 is now identified:
+            // STNP Q0, Q0, [X0] faults because X0 is already malformed on entry.
+            // Its LR is 0xfffffff0070d7d04, so the next evidence we need is the
+            // caller that constructs/passes that X0. Trace only that caller window;
+            // keeping the filter narrow avoids re-capturing the known callee and
+            // the later Prefetch Abort loop while preserving register state at the
+            // call site immediately before control transfers to 0x...0a3ba0.
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070a3000+0x2000"
+            "-dfilter", "0xfffffff0070d7000+0x2000"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
