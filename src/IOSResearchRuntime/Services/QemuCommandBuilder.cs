@@ -24,13 +24,12 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The 0x...0dad50 block is now proven to construct the bad X0 itself:
-            // ADRP/LDR X8 from 0x...0921f8, ADRP/LDR X9 from 0x...091040,
-            // SUB X8,X22,X8, then ADD X0,X8,X9. The previous TB-level trace only
-            // shows entry and exit register sets. Force one instruction per TB and
-            // keep the log filter tightly on this seven-instruction block so the
-            // next evidence exposes both loaded globals and the exact arithmetic.
-            "-one-insn-per-tb",
+            // The 0x...0dad50 block is proven to construct the bad X0 from two
+            // globals and X22. The previous diagnostic used -one-insn-per-tb as a
+            // top-level option, but this tested QEMU exits before guest execution.
+            // one-insn-per-tb is a TCG accelerator property, so enable it through
+            // -accel while keeping the trace restricted to the seven instructions.
+            "-accel", "tcg,one-insn-per-tb=on",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
             "-dfilter", "0xfffffff0070dad50+0x20"
