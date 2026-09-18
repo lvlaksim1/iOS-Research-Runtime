@@ -24,15 +24,14 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The callee at 0x...0dad50 is now proven to implement the usual
-            // phys->virt translation X0 = X22 - phys_base + virt_base. Its globals
-            // are 0x10000000000 and 0xfffffff000000000, while X22 arrives as only
-            // 0x12ed0000. Trace the immediate caller as well as the translation so
-            // the next evidence shows where that offset-valued X22 is produced.
+            // The caller trace proves X22 is already 0x12ed0000 on entry to
+            // 0x...0d7b50. Its LR is 0x...0d782c, so the producing call site is
+            // one frame earlier around 0x...0d7828. Trace that narrow predecessor
+            // window together with the already-proven caller and translation.
             "-accel", "tcg,one-insn-per-tb=on",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
+            "-dfilter", "0xfffffff0070d77d0+0x60,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
