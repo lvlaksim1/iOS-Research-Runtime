@@ -24,15 +24,15 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The exact 9651ad5 E2E trace proves 0x12ed0000 first appears
-            // at the load from boot-state slot 0x...090b80 at 0x...0b3978.
-            // No traced register carries that value from 0x...0b3600 until
-            // this load, so the slot producer is earlier. Extend only this
-            // caller window backward; keep both SPTM proof windows unchanged.
+            // The exact ffaa8cb E2E trace still first sees 0x12ed0000 at
+            // the load from boot-state slot 0x...090b80 at 0x...0b3978.
+            // The added 0x...0b3000 caller interval contains no earlier
+            // carrier of that value, so extend only this producer search
+            // one more page upstream and preserve both SPTM proof windows.
             "-accel", "tcg,one-insn-per-tb=on",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070b3000+0xb60,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
+            "-dfilter", "0xfffffff0070b2000+0x1b60,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
