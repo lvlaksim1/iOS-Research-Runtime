@@ -24,14 +24,13 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The expanded trace now catches the exact X22 inheritance: at
-            // 0x...0d7758, aa0203f6 copies X2 into X22, and X2 is already
-            // 0x12ed0000 at the first captured instruction 0x...0d7704.
-            // Move only this predecessor window back again to find X2's producer.
+            // The exact expanded trace starts at 0x...0d7704 with X2 already
+            // equal to 0x12ed0000. Its LR is 0x...0b3a58, proving the value is
+            // supplied by the caller. Trace that narrow caller window next.
             "-accel", "tcg,one-insn-per-tb=on",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070d7600+0x230,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
+            "-dfilter", "0xfffffff0070b3900+0x160,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
