@@ -35,15 +35,35 @@ jobs:
         shell: pwsh
         run: |
           Set-Location qemu-sptm
+          New-Item -ItemType Directory -Force ../qemu-proof | Out-Null
+          $summary = Join-Path (Resolve-Path ../qemu-proof).Path 'patch-application.txt'
           foreach ($patch in Get-ChildItem ../runtime/qemu/patches/*.patch | Sort-Object Name) {
-            Write-Host "Applying $($patch.Name)"
-            git apply --check $patch.FullName
-            if ($LASTEXITCODE -ne 0) { throw "git apply --check failed for $($patch.Name)" }
-            git apply $patch.FullName
-            if ($LASTEXITCODE -ne 0) { throw "git apply failed for $($patch.Name)" }
+            "PATCH=$($patch.Name)" | Tee-Object -FilePath $summary -Append
+            $check = & git apply --check $patch.FullName 2>&1
+            $check | Tee-Object -FilePath $summary -Append
+            if ($LASTEXITCODE -ne 0) {
+              "RESULT=CHECK_FAILED" | Tee-Object -FilePath $summary -Append
+              throw "git apply --check failed for $($patch.Name)"
+            }
+            $apply = & git apply $patch.FullName 2>&1
+            $apply | Tee-Object -FilePath $summary -Append
+            if ($LASTEXITCODE -ne 0) {
+              "RESULT=APPLY_FAILED" | Tee-Object -FilePath $summary -Append
+              throw "git apply failed for $($patch.Name)"
+            }
+            "RESULT=APPLIED" | Tee-Object -FilePath $summary -Append
           }
           git diff --check
           git diff --stat
+
+      - name: Upload patch application evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-sptm-patch-application
+          path: qemu-proof/patch-application.txt
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Setup MSYS2 MINGW64
         uses: msys2/setup-msys2@v2
@@ -123,38 +143,21 @@ jobs:
           mkdir -p "$runtime_dir"
           cp qemu-sptm/build/qemu-system-aarch64.exe "$runtime_dir/"
           cp qemu-sptm/build/machine-list.txt qemu-proof/
-
-          # MSYS2 ldd resolves the complete imported DLL closure for this PE.
           ldd qemu-sptm/build/qemu-system-aarch64.exe | tee qemu-proof/ldd.txt
           while IFS= read -r dll; do
             [ -f "$dll" ] || continue
             case "$dll" in
-              /mingw64/bin/*.dll)
-                cp -f "$dll" "$runtime_dir/"
-                ;;
+              /mingw64/bin/*.dll) cp -f "$dll" "$runtime_dir/" ;;
             esac
-          done < <(
-            ldd qemu-sptm/build/qemu-system-aarch64.exe |
-              sed -nE 's#.*=>[[:space:]]+([^[:space:]]+\.dll).*#\1#p; s#^[[:space:]]*([^[:space:]]+\.dll).*#\1#p' |
-              sort -u
-          )
-
+          done < <(ldd qemu-sptm/build/qemu-system-aarch64.exe | sed -nE 's#.*=>[[:space:]]+([^[:space:]]+\.dll).*#\1#p; s#^[[:space:]]*([^[:space:]]+\.dll).*#\1#p' | sort -u)
           test -f "$runtime_dir/qemu-system-aarch64.exe"
           dll_count=$(find "$runtime_dir" -maxdepth 1 -type f -iname '*.dll' | wc -l)
           test "$dll_count" -gt 0
-
           mkdir -p "$runtime_dir/provenance"
           cp runtime/qemu/UPSTREAM.md "$runtime_dir/provenance/"
           cp runtime/qemu/patches/*.patch "$runtime_dir/provenance/"
           cp qemu-sptm/COPYING "$runtime_dir/LICENSE-QEMU.txt"
-
-          (
-            cd "$runtime_dir"
-            find . -maxdepth 1 -type f ! -name 'SHA256SUMS.txt' -print0 |
-              sort -z |
-              xargs -0 sha256sum > SHA256SUMS.txt
-          )
-
+          (cd "$runtime_dir"; find . -maxdepth 1 -type f ! -name 'SHA256SUMS.txt' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
           printf '%s\n' "DLL_COUNT=$dll_count" | tee qemu-proof/runtime-summary.txt
           printf '%s\n' "UPSTREAM_COMMIT=2867d847d3471560e773120ee50c42dbcbb6d60b" | tee -a qemu-proof/runtime-summary.txt
 
@@ -166,12 +169,8 @@ jobs:
           $env:PATH = "$runtime;$systemRoot\System32;$systemRoot"
           $output = & "$runtime\qemu-system-aarch64.exe" -M help 2>&1
           $output | Set-Content -Encoding utf8 "qemu-proof/standalone-machine-list.txt"
-          if ($LASTEXITCODE -ne 0) {
-            throw "Standalone qemu-system-aarch64.exe failed with exit code $LASTEXITCODE"
-          }
-          if (-not ($output -match '(?m)^darwin\s')) {
-            throw "Standalone QEMU runtime does not expose the darwin machine"
-          }
+          if ($LASTEXITCODE -ne 0) { throw "Standalone qemu-system-aarch64.exe failed with exit code $LASTEXITCODE" }
+          if (-not ($output -match '(?m)^darwin\s')) { throw "Standalone QEMU runtime does not expose the darwin machine" }
 
       - name: Upload proof artifact
         uses: actions/upload-artifact@v4
