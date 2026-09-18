@@ -24,15 +24,15 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The exact ffaa8cb E2E trace still first sees 0x12ed0000 at
+            // The exact b1295ce E2E trace still first sees 0x12ed0000 at
             // the load from boot-state slot 0x...090b80 at 0x...0b3978.
-            // The added 0x...0b3000 caller interval contains no earlier
-            // carrier of that value, so extend only this producer search
-            // one more page upstream and preserve both SPTM proof windows.
+            // The newly traced 0x...0b2000 page contains no earlier carrier,
+            // so continue the producer search one page farther upstream while
+            // preserving one-insn TCG and both SPTM proof windows unchanged.
             "-accel", "tcg,one-insn-per-tb=on",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070b2000+0x1b60,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
+            "-dfilter", "0xfffffff0070b1000+0x2b60,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
