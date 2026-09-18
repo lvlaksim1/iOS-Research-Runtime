@@ -24,16 +24,16 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // Persist QEMU diagnostics directly into the runtime log directory.
-            // Execution now reaches 0xfffffff0070b0ff8, whose TB contains
-            // LDR W9,[X24,#4] followed by CBZ W9. No successor TB is executed,
-            // even though both the fall-through and branch target remain inside
-            // this filter. Capture CPU register state and exceptions in the same
-            // narrow virtual window so the next E2E run exposes X24 plus the
-            // syndrome/fault address of the first post-MMU memory-access stall.
+            // The latest Windows E2E reaches translated SPTM execution and then
+            // takes its first real Data Abort at ELR 0xfffffff0070a3bc4 with
+            // FAR 0x00003ef012ed0000. The previous filter started at 0x...0b0000,
+            // so it captured the later exception loop but not the faulting TB.
+            // Trace only the narrow 0x...0a3000 window to expose the exact
+            // instruction and source registers without producing another
+            // multi-gigabyte trace of the subsequent Prefetch Abort loop.
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070b0000+0x20000"
+            "-dfilter", "0xfffffff0070a3000+0x2000"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
