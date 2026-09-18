@@ -24,13 +24,14 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The exact expanded trace starts at 0x...0d7704 with X2 already
-            // equal to 0x12ed0000. Its LR is 0x...0b3a58, proving the value is
-            // supplied by the caller. Trace that narrow caller window next.
+            // Exact E2E evidence now proves the caller stores X2=0x12ed0000
+            // into [0xfffffff007100000+0x730] at 0x...0b3980, after loading
+            // it from the boot-state slot at 0x...090b80. Move only this
+            // caller trace earlier to find where that source slot is formed.
             "-accel", "tcg,one-insn-per-tb=on",
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070b3900+0x160,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
+            "-dfilter", "0xfffffff0070b3600+0x560,0xfffffff0070d7b50+0x50,0xfffffff0070dad50+0x20"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
