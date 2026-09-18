@@ -1,0 +1,16 @@
+diff --git a/include/xnu/boot/xnuboot.h b/include/xnu/boot/xnuboot.h
+--- a/include/xnu/boot/xnuboot.h
++++ b/include/xnu/boot/xnuboot.h
+@@ -8,9 +8,9 @@
+ #include "target/arm/cpu-qom.h"
+ #include "qemu/notify.h"
+ 
+-#define ONE_KB        BIT(10)
+-#define ONE_MB        BIT(20)
+-#define ONE_GB        BIT(30)
++#define ONE_KB        BIT_ULL(10)
++#define ONE_MB        BIT_ULL(20)
++#define ONE_GB        BIT_ULL(30)
+ 
+ #define DARWIN_PAGE_SIZE_KB           (( 16 ))
+ #define DARWIN_HUGE_PAGE_SIZE_MB      (( 32 ))
