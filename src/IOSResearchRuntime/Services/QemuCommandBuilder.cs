@@ -24,16 +24,14 @@ public sealed class QemuCommandBuilder
             "-nographic",
             "-serial", "mon:stdio",
             "-m", "8G",
-            // The faulting memset-like block at 0x...0a3bc4 is now identified:
-            // STNP Q0, Q0, [X0] faults because X0 is already malformed on entry.
-            // Its LR is 0xfffffff0070d7d04, so the next evidence we need is the
-            // caller that constructs/passes that X0. Trace only that caller window;
-            // keeping the filter narrow avoids re-capturing the known callee and
-            // the later Prefetch Abort loop while preserving register state at the
-            // call site immediately before control transfers to 0x...0a3ba0.
+            // The caller trace proves X0 is still canonical at 0x...0d7c1c but is
+            // 0x00003ef012ed0000 by 0x...0d7cf4. The last captured block branches
+            // from 0x...0d7c88 to 0x...0dad6c, outside the previous dfilter, so the
+            // actual high-bit transformation is hidden in that branch target path.
+            // Trace only the 0x...0da000 window next to capture that missing logic.
             "-D", debugLog,
             "-d", "in_asm,exec,nochain,cpu,int,unimp,guest_errors,cpu_reset",
-            "-dfilter", "0xfffffff0070d7000+0x2000"
+            "-dfilter", "0xfffffff0070da000+0x2000"
         };
 
         var sptm = Path.Combine(firmware, "sptm");
