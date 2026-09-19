@@ -66,17 +66,13 @@ Console.WriteLine("[integration] Provisioning start.");
 await toolBootstrap.BootstrapAllAsync(cancellationToken);
 await resourceBootstrap.BootstrapAllAsync(cancellationToken);
 await rawProvisioning.PrepareAsync(ProvisioningProfile.Default, cancellationToken);
-
-var recoveryRamdisk = Path.Combine(layout.FirmwareDirectory, "ramdisk.dmg");
-var sourceApfs = ApfsStructuralEvidence.Read(recoveryRamdisk);
-Console.WriteLine($"[apfs-evidence] source NXSB offset=0x{sourceApfs.SuperblockOffset:X}, xid={sourceApfs.Xid}, xp-desc-base={sourceApfs.XpDescBase}, xp-data-base={sourceApfs.XpDataBase}");
-
 await ramdiskProvisioning.PrepareAsync(cancellationToken);
 
-var rebuiltApfs = ApfsStructuralEvidence.Read(recoveryRamdisk);
 var apfsEvidencePath = Path.Combine(layout.LogDirectory, "apfs-structural-evidence.json");
-ApfsStructuralEvidence.Write(apfsEvidencePath, sourceApfs, rebuiltApfs);
-Console.WriteLine($"[apfs-evidence] rebuilt NXSB offset=0x{rebuiltApfs.SuperblockOffset:X}, xid={rebuiltApfs.Xid}, xp-desc-base={rebuiltApfs.XpDescBase}, xp-data-base={rebuiltApfs.XpDataBase}");
+if (!File.Exists(apfsEvidencePath) || new FileInfo(apfsEvidencePath).Length == 0)
+{
+    throw new InvalidDataException("Decoded APFS structural evidence was not produced by ios-ramdisk-tool.");
+}
 Console.WriteLine($"[apfs-evidence] APFS_STRUCTURAL_EVIDENCE={apfsEvidencePath}");
 
 var validator = new FirmwareBundleValidator(layout);
