@@ -23,12 +23,13 @@ import (
 const symlinkXattrName = "com.apple.fs.symlink"
 
 type options struct {
-	input        string
-	output       string
-	sysrootTar   string
-	launchdPlist string
-	rcodesign    string
-	hashesOut    string
+	input         string
+	output        string
+	sysrootTar    string
+	launchdPlist  string
+	rcodesign     string
+	hashesOut     string
+	nxEvidenceOut string
 }
 
 func main() {
@@ -40,6 +41,7 @@ func main() {
 	flag.StringVar(&opts.launchdPlist, "launchd-plist", "", "launch daemon plist")
 	flag.StringVar(&opts.rcodesign, "rcodesign", "", "path to rcodesign.exe")
 	flag.StringVar(&opts.hashesOut, "hashes-out", "", "output file for collected CDHashes")
+	flag.StringVar(&opts.nxEvidenceOut, "nx-evidence-out", "", "optional output file for decoded source/rebuilt APFS NXSB evidence")
 	flag.Parse()
 
 	if err := run(opts); err != nil {
@@ -165,6 +167,12 @@ func run(opts options) error {
 
 	if err := rawFile.Sync(); err != nil {
 		return fmt.Errorf("flush patched APFS container: %w", err)
+	}
+
+	if opts.nxEvidenceOut != "" {
+		if err := writeNXEvidenceFile(opts.nxEvidenceOut, opts.input, rawFile); err != nil {
+			return fmt.Errorf("write APFS NX evidence: %w", err)
+		}
 	}
 
 	stat, err := rawFile.Stat()
