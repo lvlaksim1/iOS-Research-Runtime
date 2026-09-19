@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 )
 
 type apfsNXEvidence struct {
@@ -16,6 +17,26 @@ func writeNXEvidence(writer io.Writer, source, rebuilt apfsNXSnapshot) error {
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(apfsNXEvidence{Source: source, Rebuilt: rebuilt}); err != nil {
 		return fmt.Errorf("encode APFS NX evidence: %w", err)
+	}
+	return nil
+}
+
+func writeNXEvidenceFile(outputPath, sourcePath string, rebuilt io.ReaderAt) error {
+	source, err := readSourceNXSnapshot(sourcePath)
+	if err != nil {
+		return fmt.Errorf("read source APFS NX evidence: %w", err)
+	}
+	rebuiltSnapshot, err := readNXSnapshot(rebuilt, 0)
+	if err != nil {
+		return fmt.Errorf("read rebuilt APFS NX evidence: %w", err)
+	}
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("create APFS NX evidence output: %w", err)
+	}
+	defer file.Close()
+	if err := writeNXEvidence(file, source, rebuiltSnapshot); err != nil {
+		return err
 	}
 	return nil
 }
