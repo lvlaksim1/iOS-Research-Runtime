@@ -39,6 +39,7 @@ public sealed class RamdiskProvisioningService
         var patchedRamdisk = Path.Combine(stagingDirectory, "ramdisk.dmg");
         var hashList = Path.Combine(stagingDirectory, "all_hashes");
         var trustCache = Path.Combine(stagingDirectory, "ramdisk.tc");
+        var apfsEvidence = Path.Combine(_layout.LogDirectory, "apfs-structural-evidence.json");
 
         try
         {
@@ -54,7 +55,8 @@ public sealed class RamdiskProvisioningService
                     "--sysroot-tar", _layout.IosCliToolsArchive,
                     "--launchd-plist", _layout.LaunchdPlist,
                     "--rcodesign", _layout.RcodesignExecutable,
-                    "--hashes-out", hashList
+                    "--hashes-out", hashList,
+                    "--nx-evidence-out", apfsEvidence
                 ],
                 _layout.DataDirectory,
                 cancellationToken);
@@ -72,6 +74,16 @@ public sealed class RamdiskProvisioningService
                 throw new InvalidDataException(
                     "ios-ramdisk-tool не создал список CDHash.");
             }
+
+            if (!File.Exists(apfsEvidence) || new FileInfo(apfsEvidence).Length == 0)
+            {
+                throw new InvalidDataException(
+                    "ios-ramdisk-tool не создал APFS structural evidence.");
+            }
+
+            ProgressChanged?.Invoke(
+                this,
+                $"[apfs-evidence] APFS_STRUCTURAL_EVIDENCE={apfsEvidence}");
 
             var hashCount = File.ReadLines(hashList)
                 .Count(line => !string.IsNullOrWhiteSpace(line));
