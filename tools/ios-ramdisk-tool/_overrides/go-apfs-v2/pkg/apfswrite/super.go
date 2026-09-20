@@ -262,6 +262,7 @@ func (b volCtx) volumeSuperblock() *apfsSuperblock {
 	vsb.NumSymlinks = b.numSymlinks
 	vsb.TotalBlocksAlloced = b.postIPBlocks
 	vsb.VolUUID = b.volUUID
+	vsb.LastModTime = b.timestamp
 	vsb.FsFlags = apfsFSUnencrypted
 	copy(vsb.FormattedBy.ID[:], formatterID)
 	vsb.FormattedBy.Timestamp = b.timestamp
