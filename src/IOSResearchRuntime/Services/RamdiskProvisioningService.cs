@@ -81,6 +81,12 @@ public sealed class RamdiskProvisioningService
                     "ios-ramdisk-tool не создал APFS structural evidence.");
             }
 
+            var sourceRamdiskBytes = new FileInfo(sourceRamdisk).Length;
+            var patchedRamdiskBytes = new FileInfo(patchedRamdisk).Length;
+            ProgressChanged?.Invoke(
+                this,
+                $"[ramdisk-packaging] source_dmg_bytes={sourceRamdiskBytes} patched_dmg_bytes={patchedRamdiskBytes}");
+
             ProgressChanged?.Invoke(
                 this,
                 $"[apfs-evidence] APFS_STRUCTURAL_EVIDENCE={apfsEvidence}");
