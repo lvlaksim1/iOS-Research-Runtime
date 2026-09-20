@@ -30,6 +30,12 @@ func writeNXEvidenceFile(outputPath, sourcePath string, rebuilt io.ReaderAt) err
 	if err != nil {
 		return fmt.Errorf("read rebuilt APFS NX evidence: %w", err)
 	}
+	if source.Volume == nil {
+		return fmt.Errorf("read source APFS APSB evidence: volume superblock not found")
+	}
+	if rebuiltSnapshot.Volume == nil {
+		return fmt.Errorf("read rebuilt APFS APSB evidence: volume superblock not found")
+	}
 	file, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("create APFS NX evidence output: %w", err)
