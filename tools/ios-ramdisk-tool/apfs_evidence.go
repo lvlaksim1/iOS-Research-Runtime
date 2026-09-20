@@ -6,37 +6,76 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/deploymenttheory/go-apfs-v2/pkg/apfs"
 	"github.com/deploymenttheory/go-apfs-v2/pkg/disk"
 )
 
-type apfsNXSnapshot struct {
-	BlockSize                  uint32 `json:"blockSize"`
-	BlockCount                 uint64 `json:"blockCount"`
-	Features                   uint64 `json:"features"`
+type apfsVolumeSnapshot struct {
+	FSIndex                    uint32 `json:"fsIndex"`
+	CompatibleFeatures         uint64 `json:"compatibleFeatures"`
 	ReadOnlyCompatibleFeatures uint64 `json:"readOnlyCompatibleFeatures"`
 	IncompatibleFeatures       uint64 `json:"incompatibleFeatures"`
-	ContainerUUID              string `json:"containerUuid"`
-	OID                        uint64 `json:"oid"`
-	XID                        uint64 `json:"xid"`
-	NextOID                    uint64 `json:"nextOid"`
-	NextXID                    uint64 `json:"nextXid"`
-	XpDescBlocks               uint32 `json:"xpDescBlocks"`
-	XpDataBlocks               uint32 `json:"xpDataBlocks"`
-	XpDescBase                 uint64 `json:"xpDescBase"`
-	XpDataBase                 uint64 `json:"xpDataBase"`
-	XpDescNext                 uint32 `json:"xpDescNext"`
-	XpDataNext                 uint32 `json:"xpDataNext"`
-	XpDescIndex                uint32 `json:"xpDescIndex"`
-	XpDescLen                  uint32 `json:"xpDescLen"`
-	XpDataIndex                uint32 `json:"xpDataIndex"`
-	XpDataLen                  uint32 `json:"xpDataLen"`
-	SpacemanOID                uint64 `json:"spacemanOid"`
+	MetaCryptoMajorVersion     uint16 `json:"metaCryptoMajorVersion"`
+	MetaCryptoMinorVersion     uint16 `json:"metaCryptoMinorVersion"`
+	MetaCryptoFlags            uint32 `json:"metaCryptoFlags"`
+	MetaCryptoPersistentClass  uint32 `json:"metaCryptoPersistentClass"`
+	MetaCryptoKeyOSVersion     uint32 `json:"metaCryptoKeyOsVersion"`
+	MetaCryptoKeyRevision      uint16 `json:"metaCryptoKeyRevision"`
+	RootTreeType               uint32 `json:"rootTreeType"`
+	ExtentrefTreeType          uint32 `json:"extentrefTreeType"`
+	SnapMetaTreeType           uint32 `json:"snapMetaTreeType"`
 	OmapOID                    uint64 `json:"omapOid"`
-	ReaperOID                  uint64 `json:"reaperOid"`
-	Flags                      uint64 `json:"flags"`
-	LatestCheckpointXID        uint64 `json:"latestCheckpointXid"`
-	LatestCheckpointNextXID    uint64 `json:"latestCheckpointNextXid"`
-	LatestCheckpointBlock      uint64 `json:"latestCheckpointBlock"`
+	RootTreeOID                uint64 `json:"rootTreeOid"`
+	ExtentrefTreeOID           uint64 `json:"extentrefTreeOid"`
+	SnapMetaTreeOID            uint64 `json:"snapMetaTreeOid"`
+	RevertToXID                uint64 `json:"revertToXid"`
+	RevertToSblockOID          uint64 `json:"revertToSblockOid"`
+	NextObjID                  uint64 `json:"nextObjId"`
+	NumberOfFiles              uint64 `json:"numberOfFiles"`
+	NumberOfDirectories        uint64 `json:"numberOfDirectories"`
+	NumberOfSymlinks           uint64 `json:"numberOfSymlinks"`
+	NumberOfOtherFSObjects     uint64 `json:"numberOfOtherFsObjects"`
+	SnapshotCount              uint64 `json:"snapshotCount"`
+	TotalBlocksAllocated       uint64 `json:"totalBlocksAllocated"`
+	TotalBlocksFreed           uint64 `json:"totalBlocksFreed"`
+	VolumeUUID                 string `json:"volumeUuid"`
+	ModificationTime           uint64 `json:"modificationTime"`
+	VolumeFlags                uint64 `json:"volumeFlags"`
+	Role                       uint16 `json:"role"`
+	RootToXID                  uint64 `json:"rootToXid"`
+	SnapMetaExtOID             uint64 `json:"snapMetaExtOid"`
+	VolumeGroupID              string `json:"volumeGroupId"`
+}
+
+type apfsNXSnapshot struct {
+	BlockSize                  uint32              `json:"blockSize"`
+	BlockCount                 uint64              `json:"blockCount"`
+	Features                   uint64              `json:"features"`
+	ReadOnlyCompatibleFeatures uint64              `json:"readOnlyCompatibleFeatures"`
+	IncompatibleFeatures       uint64              `json:"incompatibleFeatures"`
+	ContainerUUID              string              `json:"containerUuid"`
+	OID                        uint64              `json:"oid"`
+	XID                        uint64              `json:"xid"`
+	NextOID                    uint64              `json:"nextOid"`
+	NextXID                    uint64              `json:"nextXid"`
+	XpDescBlocks               uint32              `json:"xpDescBlocks"`
+	XpDataBlocks               uint32              `json:"xpDataBlocks"`
+	XpDescBase                 uint64              `json:"xpDescBase"`
+	XpDataBase                 uint64              `json:"xpDataBase"`
+	XpDescNext                 uint32              `json:"xpDescNext"`
+	XpDataNext                 uint32              `json:"xpDataNext"`
+	XpDescIndex                uint32              `json:"xpDescIndex"`
+	XpDescLen                  uint32              `json:"xpDescLen"`
+	XpDataIndex                uint32              `json:"xpDataIndex"`
+	XpDataLen                  uint32              `json:"xpDataLen"`
+	SpacemanOID                uint64              `json:"spacemanOid"`
+	OmapOID                    uint64              `json:"omapOid"`
+	ReaperOID                  uint64              `json:"reaperOid"`
+	Flags                      uint64              `json:"flags"`
+	LatestCheckpointXID        uint64              `json:"latestCheckpointXid"`
+	LatestCheckpointNextXID    uint64              `json:"latestCheckpointNextXid"`
+	LatestCheckpointBlock      uint64              `json:"latestCheckpointBlock"`
+	Volume                     *apfsVolumeSnapshot `json:"volume"`
 }
 
 func readSourceNXSnapshot(filename string) (apfsNXSnapshot, error) {
@@ -62,7 +101,7 @@ func readNXSnapshot(reader io.ReaderAt, containerOffset int64) (apfsNXSnapshot, 
 	snapshot := apfsNXSnapshot{
 		BlockSize: u32(36), BlockCount: u64(40), Features: u64(48),
 		ReadOnlyCompatibleFeatures: u64(56), IncompatibleFeatures: u64(64),
-		ContainerUUID: fmt.Sprintf("%s-%s-%s-%s-%s", hex.EncodeToString(uuid[0:4]), hex.EncodeToString(uuid[4:6]), hex.EncodeToString(uuid[6:8]), hex.EncodeToString(uuid[8:10]), hex.EncodeToString(uuid[10:16])),
+		ContainerUUID: formatUUID(uuid),
 		OID: u64(8), XID: u64(16), NextOID: u64(88), NextXID: u64(96),
 		XpDescBlocks: u32(104), XpDataBlocks: u32(108), XpDescBase: u64(112), XpDataBase: u64(120),
 		XpDescNext: u32(128), XpDataNext: u32(132), XpDescIndex: u32(136), XpDescLen: u32(140),
@@ -89,5 +128,74 @@ func readNXSnapshot(reader io.ReaderAt, containerOffset int64) (apfsNXSnapshot, 
 			snapshot.LatestCheckpointBlock = blockNumber
 		}
 	}
+	volume, err := readAPFSVolumeSnapshot(reader, containerOffset, snapshot.BlockSize, snapshot.BlockCount)
+	if err != nil {
+		return apfsNXSnapshot{}, err
+	}
+	snapshot.Volume = volume
 	return snapshot, nil
+}
+
+func readAPFSVolumeSnapshot(reader io.ReaderAt, containerOffset int64, blockSize uint32, blockCount uint64) (*apfsVolumeSnapshot, error) {
+	magic := make([]byte, 4)
+	for block := uint64(0); block < blockCount; block++ {
+		offset := containerOffset + int64(block)*int64(blockSize)
+		if _, err := reader.ReadAt(magic, offset+32); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, fmt.Errorf("read APSB magic at block %d: %w", block, err)
+		}
+		if string(magic) != "APSB" {
+			continue
+		}
+		superblock := apfs.NewVolumeSuperblock()
+		if err := superblock.ReadFrom(reader, offset, false); err != nil {
+			continue
+		}
+		return &apfsVolumeSnapshot{
+			FSIndex: superblock.FSIndex,
+			CompatibleFeatures: superblock.CompatibleFeaturesFlags,
+			ReadOnlyCompatibleFeatures: superblock.ReadOnlyCompatibleFeaturesFlags,
+			IncompatibleFeatures: superblock.IncompatibleFeaturesFlags,
+			MetaCryptoMajorVersion: superblock.MetaCryptoMajorVersion,
+			MetaCryptoMinorVersion: superblock.MetaCryptoMinorVersion,
+			MetaCryptoFlags: superblock.MetaCryptoFlags,
+			MetaCryptoPersistentClass: superblock.MetaCryptoPersistentClass,
+			MetaCryptoKeyOSVersion: superblock.MetaCryptoKeyOSVersion,
+			MetaCryptoKeyRevision: superblock.MetaCryptoKeyRevision,
+			RootTreeType: superblock.RootTreeType,
+			ExtentrefTreeType: superblock.ExtentrefTreeType,
+			SnapMetaTreeType: superblock.SnapMetaTreeType,
+			OmapOID: superblock.OmapOID,
+			RootTreeOID: superblock.RootTreeOID,
+			ExtentrefTreeOID: superblock.ExtentrefTreeOID,
+			SnapMetaTreeOID: superblock.SnapMetaTreeOID,
+			RevertToXID: superblock.RevertToXID,
+			RevertToSblockOID: superblock.RevertToSblockOID,
+			NextObjID: superblock.NextObjID,
+			NumberOfFiles: superblock.NumberOfFiles,
+			NumberOfDirectories: superblock.NumberOfDirectories,
+			NumberOfSymlinks: superblock.NumberOfSymlinks,
+			NumberOfOtherFSObjects: superblock.NumberOfOtherFileSystemObjects,
+			SnapshotCount: superblock.SnapshotCount,
+			TotalBlocksAllocated: superblock.TotalBlocksAllocated,
+			TotalBlocksFreed: superblock.TotalBlocksFreed,
+			VolumeUUID: formatUUID(superblock.VolumeUUID[:]),
+			ModificationTime: superblock.ModificationTime,
+			VolumeFlags: superblock.VolumeFlags,
+			Role: superblock.Role,
+			RootToXID: superblock.RootToXID,
+			SnapMetaExtOID: superblock.SnapMetaExtOID,
+			VolumeGroupID: formatUUID(superblock.VolumeGroupID[:]),
+		}, nil
+	}
+	return nil, fmt.Errorf("APFS APSB volume superblock not found")
+}
+
+func formatUUID(uuid []byte) string {
+	if len(uuid) != 16 {
+		return hex.EncodeToString(uuid)
+	}
+	return fmt.Sprintf("%s-%s-%s-%s-%s", hex.EncodeToString(uuid[0:4]), hex.EncodeToString(uuid[4:6]), hex.EncodeToString(uuid[6:8]), hex.EncodeToString(uuid[8:10]), hex.EncodeToString(uuid[10:16]))
 }
