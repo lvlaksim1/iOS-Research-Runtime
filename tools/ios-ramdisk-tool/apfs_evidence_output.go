@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/deploymenttheory/go-apfs-v2/pkg/apfs"
 )
 
 type apfsNXEvidence struct {
@@ -52,45 +54,61 @@ func writeNXEvidenceFile(outputPath, sourcePath string, rebuilt *os.File) error 
 }
 
 func preserveMetaCryptoKeyOSVersion(file *os.File, keyOSVersion uint32) error {
-	nx, err := readNXSnapshot(file, 0)
+	container, closer, err := apfs.OpenImage(file.Name(), nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("open rebuilt APFS container: %w", err)
 	}
-	blockSize := int(nx.BlockSize)
+	defer closer.Close()
+
+	volumeIDs, err := container.VolumeObjectIdentifiers()
+	if err != nil {
+		return fmt.Errorf("resolve rebuilt APFS volume object id: %w", err)
+	}
+	if len(volumeIDs) == 0 {
+		return fmt.Errorf("rebuilt APFS container has no volumes")
+	}
+	volumeOID := volumeIDs[0]
+
+	paddr, err := container.CheckpointMap.PhysicalAddressByObjectIdentifier(volumeOID)
+	if err != nil || paddr == 0 {
+		descriptor, lookupErr := container.ObjectMapBTree.DescriptorByObjectIdentifier(container.Reader, volumeOID, container.Superblock.XID)
+		if lookupErr != nil {
+			return fmt.Errorf("resolve rebuilt APFS volume paddr: %w", lookupErr)
+		}
+		if descriptor == nil || descriptor.Value.ObjectPhysicalAddress == 0 {
+			return fmt.Errorf("resolve rebuilt APFS volume paddr: mapping missing for object %d", volumeOID)
+		}
+		paddr = descriptor.Value.ObjectPhysicalAddress
+	}
+
+	blockSize := int(container.Superblock.BlockSize)
 	if blockSize < 112 {
 		return fmt.Errorf("invalid APFS block size %d", blockSize)
 	}
 	block := make([]byte, blockSize)
-	for paddr := uint64(0); paddr < nx.BlockCount; paddr++ {
-		offset := int64(paddr) * int64(blockSize)
-		if _, err := file.ReadAt(block, offset); err != nil && err != io.EOF {
-			return fmt.Errorf("read APFS block %d: %w", paddr, err)
-		}
-		if string(block[32:36]) != "APSB" {
-			continue
-		}
-		binary.LittleEndian.PutUint32(block[108:112], keyOSVersion)
-		binary.LittleEndian.PutUint64(block[:8], apfsFletcher64(block[8:]))
-		if apfsFletcher64(block[8:]) != binary.LittleEndian.Uint64(block[:8]) {
-			return fmt.Errorf("APSB checksum validation failed at block %d", paddr)
-		}
-		if _, err := file.WriteAt(block, offset); err != nil {
-			return fmt.Errorf("write APSB block %d: %w", paddr, err)
-		}
-		return file.Sync()
+	offset := int64(paddr) * int64(blockSize)
+	if _, err := file.ReadAt(block, offset); err != nil && err != io.EOF {
+		return fmt.Errorf("read APSB block %d: %w", paddr, err)
 	}
-	return fmt.Errorf("APFS APSB volume superblock not found")
-}
+	if string(block[32:36]) != "APSB" {
+		return fmt.Errorf("resolved APFS volume block %d is not APSB", paddr)
+	}
 
-func apfsFletcher64(data []byte) uint64 {
-	const modulus uint64 = 0xffffffff
-	var sum1 uint64
-	var sum2 uint64
-	for offset := 0; offset+4 <= len(data); offset += 4 {
-		sum1 = (sum1 + uint64(binary.LittleEndian.Uint32(data[offset:offset+4]))) % modulus
-		sum2 = (sum2 + sum1) % modulus
+	binary.LittleEndian.PutUint32(block[108:112], keyOSVersion)
+	checksum, err := apfs.CalculateFletcher64(block[8:], 0)
+	if err != nil {
+		return fmt.Errorf("calculate APSB checksum at block %d: %w", paddr, err)
 	}
-	check1 := modulus - ((sum1 + sum2) % modulus)
-	check2 := modulus - ((sum1 + check1) % modulus)
-	return (check2 << 32) | check1
+	binary.LittleEndian.PutUint64(block[:8], checksum)
+	validated, err := apfs.CalculateFletcher64(block[8:], 0)
+	if err != nil {
+		return fmt.Errorf("validate APSB checksum at block %d: %w", paddr, err)
+	}
+	if validated != binary.LittleEndian.Uint64(block[:8]) {
+		return fmt.Errorf("APSB checksum validation failed at block %d", paddr)
+	}
+	if _, err := file.WriteAt(block, offset); err != nil {
+		return fmt.Errorf("write APSB block %d: %w", paddr, err)
+	}
+	return file.Sync()
 }
