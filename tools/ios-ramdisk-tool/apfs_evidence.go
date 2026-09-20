@@ -128,11 +128,9 @@ func readNXSnapshot(reader io.ReaderAt, containerOffset int64) (apfsNXSnapshot, 
 			snapshot.LatestCheckpointBlock = blockNumber
 		}
 	}
-	volume, err := readAPFSVolumeSnapshot(reader, containerOffset, snapshot.BlockSize, snapshot.BlockCount)
-	if err != nil {
-		return apfsNXSnapshot{}, err
+	if volume, err := readAPFSVolumeSnapshot(reader, containerOffset, snapshot.BlockSize, snapshot.BlockCount); err == nil {
+		snapshot.Volume = volume
 	}
-	snapshot.Volume = volume
 	return snapshot, nil
 }
 
