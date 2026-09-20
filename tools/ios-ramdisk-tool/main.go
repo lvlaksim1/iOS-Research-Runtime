@@ -141,6 +141,29 @@ func run(opts options) error {
 		return errors.New("source volume has unsupported volume-group metadata")
 	}
 
+	snapshotCount, err := volume.NumberOfSnapshots()
+	if err != nil {
+		return fmt.Errorf("read snapshot count: %w", err)
+	}
+	snapshots := make([]apfswrite.SnapshotSpec, 0, snapshotCount)
+	for index := 0; index < snapshotCount; index++ {
+		snapshot, err := volume.Snapshot(index)
+		if err != nil {
+			return fmt.Errorf("read snapshot %d: %w", index, err)
+		}
+		if snapshot.SnapshotMetadata == nil {
+			return fmt.Errorf("snapshot %d has no metadata", index)
+		}
+		modTime := snapshot.SnapshotMetadata.ChangeTime
+		if modTime == 0 {
+			modTime = snapshot.SnapshotMetadata.CreationTime
+		}
+		snapshots = append(snapshots, apfswrite.SnapshotSpec{
+			Name:    snapshot.SnapshotMetadata.Name,
+			ModTime: time.Unix(0, int64(modTime)),
+		})
+	}
+
 	rawFile, err := os.CreateTemp(filepath.Dir(opts.output), ".ios-ramdisk-*.raw")
 	if err != nil {
 		return fmt.Errorf("create raw APFS staging image: %w", err)
@@ -159,6 +182,7 @@ func run(opts options) error {
 		Role:          role,
 		VolumeGroupID: groupID,
 		Root:          root,
+		Snapshots:     snapshots,
 	}
 
 	if err := apfswrite.CreateContainer(rawFile, 0, createOpts); err != nil {
