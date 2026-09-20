@@ -34,6 +34,9 @@ type apfsNXSnapshot struct {
 	OmapOID                    uint64 `json:"omapOid"`
 	ReaperOID                  uint64 `json:"reaperOid"`
 	Flags                      uint64 `json:"flags"`
+	LatestCheckpointXID        uint64 `json:"latestCheckpointXid"`
+	LatestCheckpointNextXID    uint64 `json:"latestCheckpointNextXid"`
+	LatestCheckpointBlock      uint64 `json:"latestCheckpointBlock"`
 }
 
 func readSourceNXSnapshot(filename string) (apfsNXSnapshot, error) {
@@ -56,7 +59,7 @@ func readNXSnapshot(reader io.ReaderAt, containerOffset int64) (apfsNXSnapshot, 
 	u32 := func(at int) uint32 { return binary.LittleEndian.Uint32(buffer[at : at+4]) }
 	u64 := func(at int) uint64 { return binary.LittleEndian.Uint64(buffer[at : at+8]) }
 	uuid := buffer[72:88]
-	return apfsNXSnapshot{
+	snapshot := apfsNXSnapshot{
 		BlockSize: u32(36), BlockCount: u64(40), Features: u64(48),
 		ReadOnlyCompatibleFeatures: u64(56), IncompatibleFeatures: u64(64),
 		ContainerUUID: fmt.Sprintf("%s-%s-%s-%s-%s", hex.EncodeToString(uuid[0:4]), hex.EncodeToString(uuid[4:6]), hex.EncodeToString(uuid[6:8]), hex.EncodeToString(uuid[8:10]), hex.EncodeToString(uuid[10:16])),
@@ -64,5 +67,27 @@ func readNXSnapshot(reader io.ReaderAt, containerOffset int64) (apfsNXSnapshot, 
 		XpDescBlocks: u32(104), XpDataBlocks: u32(108), XpDescBase: u64(112), XpDataBase: u64(120),
 		XpDescNext: u32(128), XpDataNext: u32(132), XpDescIndex: u32(136), XpDescLen: u32(140),
 		XpDataIndex: u32(144), XpDataLen: u32(148), SpacemanOID: u64(152), OmapOID: u64(160), ReaperOID: u64(168), Flags: u64(0x4d8),
-	}, nil
+		LatestCheckpointXID: u64(16), LatestCheckpointNextXID: u64(96), LatestCheckpointBlock: 0,
+	}
+	if snapshot.BlockSize == 0 {
+		return apfsNXSnapshot{}, fmt.Errorf("APFS NXSB has zero block size")
+	}
+	for index := uint64(0); index < uint64(snapshot.XpDescBlocks); index++ {
+		blockNumber := snapshot.XpDescBase + index
+		blockOffset := containerOffset + int64(blockNumber)*int64(snapshot.BlockSize)
+		checkpoint := make([]byte, 0x580)
+		if _, err := reader.ReadAt(checkpoint, blockOffset); err != nil && err != io.EOF {
+			return apfsNXSnapshot{}, fmt.Errorf("read checkpoint descriptor block %d: %w", blockNumber, err)
+		}
+		if len(checkpoint) < 104 || string(checkpoint[32:36]) != "NXSB" {
+			continue
+		}
+		xid := binary.LittleEndian.Uint64(checkpoint[16:24])
+		if xid >= snapshot.LatestCheckpointXID {
+			snapshot.LatestCheckpointXID = xid
+			snapshot.LatestCheckpointNextXID = binary.LittleEndian.Uint64(checkpoint[96:104])
+			snapshot.LatestCheckpointBlock = blockNumber
+		}
+	}
+	return snapshot, nil
 }
