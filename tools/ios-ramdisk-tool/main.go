@@ -179,6 +179,7 @@ func run(opts options) error {
 		CaseSensitive: !caseInsensitive,
 		ContainerUUID: containerUUID,
 		VolumeUUID:    volumeUUID,
+		FixedTime:     time.Unix(0, int64(volume.Superblock.ModificationTime)),
 		Role:          role,
 		VolumeGroupID: groupID,
 		Root:          root,
