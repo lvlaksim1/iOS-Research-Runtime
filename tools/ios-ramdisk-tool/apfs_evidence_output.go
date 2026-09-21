@@ -73,7 +73,7 @@ func readMappedAPFSVolumeSnapshot(filename string) (*apfsVolumeSnapshot, error) 
 		return nil, fmt.Errorf("resolved APFS volume has no object map")
 	}
 	superblock := volume.Superblock
-	rootDescriptor, err := volume.ObjectMapBTree.DescriptorByObjectIdentifier(container.Reader, superblock.RootTreeOID, superblock.ObjectHeader.TransactionIdentifier)
+	rootDescriptor, err := volume.ObjectMapBTree.DescriptorByObjectIdentifier(container.Reader, superblock.RootTreeOID, superblock.XID)
 	if err != nil {
 		return nil, fmt.Errorf("resolve live-volume root-tree oid %d: %w", superblock.RootTreeOID, err)
 	}
