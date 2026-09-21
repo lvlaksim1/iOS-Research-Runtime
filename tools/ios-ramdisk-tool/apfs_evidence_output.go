@@ -29,8 +29,9 @@ func writeNXEvidenceFile(outputPath, sourcePath string, rebuilt *os.File) error 
 	if err != nil {
 		return fmt.Errorf("read source APFS NX evidence: %w", err)
 	}
-	if source.Volume == nil {
-		return fmt.Errorf("read source APFS APSB evidence: volume superblock not found")
+	source.Volume, err = readMappedAPFSVolumeSnapshot(sourcePath)
+	if err != nil {
+		return fmt.Errorf("resolve source APFS live-volume evidence: %w", err)
 	}
 	if err := preserveMetaCryptoKeyOSVersion(rebuilt, source.Volume.MetaCryptoKeyOSVersion); err != nil {
 		return fmt.Errorf("preserve APFS MetaCryptoKeyOSVersion: %w", err)
@@ -39,8 +40,9 @@ func writeNXEvidenceFile(outputPath, sourcePath string, rebuilt *os.File) error 
 	if err != nil {
 		return fmt.Errorf("read rebuilt APFS NX evidence: %w", err)
 	}
-	if rebuiltSnapshot.Volume == nil {
-		return fmt.Errorf("read rebuilt APFS APSB evidence: volume superblock not found")
+	rebuiltSnapshot.Volume, err = readMappedAPFSVolumeSnapshot(rebuilt.Name())
+	if err != nil {
+		return fmt.Errorf("resolve rebuilt APFS live-volume evidence: %w", err)
 	}
 	file, err := os.Create(outputPath)
 	if err != nil {
@@ -51,6 +53,59 @@ func writeNXEvidenceFile(outputPath, sourcePath string, rebuilt *os.File) error 
 		return err
 	}
 	return nil
+}
+
+func readMappedAPFSVolumeSnapshot(filename string) (*apfsVolumeSnapshot, error) {
+	container, closer, err := apfs.OpenImage(filename, nil)
+	if err != nil {
+		return nil, fmt.Errorf("open APFS container: %w", err)
+	}
+	defer closer.Close()
+
+	volume, err := container.VolumeBySelector("0")
+	if err != nil {
+		return nil, fmt.Errorf("resolve active APFS volume: %w", err)
+	}
+	if volume.Superblock == nil {
+		return nil, fmt.Errorf("resolved APFS volume has no superblock")
+	}
+	superblock := volume.Superblock
+	return &apfsVolumeSnapshot{
+		FSIndex: superblock.FSIndex,
+		CompatibleFeatures: superblock.CompatibleFeaturesFlags,
+		ReadOnlyCompatibleFeatures: superblock.ReadOnlyCompatibleFeaturesFlags,
+		IncompatibleFeatures: superblock.IncompatibleFeaturesFlags,
+		MetaCryptoMajorVersion: superblock.MetaCryptoMajorVersion,
+		MetaCryptoMinorVersion: superblock.MetaCryptoMinorVersion,
+		MetaCryptoFlags: superblock.MetaCryptoFlags,
+		MetaCryptoPersistentClass: superblock.MetaCryptoPersistentClass,
+		MetaCryptoKeyOSVersion: superblock.MetaCryptoKeyOSVersion,
+		MetaCryptoKeyRevision: superblock.MetaCryptoKeyRevision,
+		RootTreeType: superblock.RootTreeType,
+		ExtentrefTreeType: superblock.ExtentrefTreeType,
+		SnapMetaTreeType: superblock.SnapMetaTreeType,
+		OmapOID: superblock.OmapOID,
+		RootTreeOID: superblock.RootTreeOID,
+		ExtentrefTreeOID: superblock.ExtentrefTreeOID,
+		SnapMetaTreeOID: superblock.SnapMetaTreeOID,
+		RevertToXID: superblock.RevertToXID,
+		RevertToSblockOID: superblock.RevertToSblockOID,
+		NextObjID: superblock.NextObjID,
+		NumberOfFiles: superblock.NumberOfFiles,
+		NumberOfDirectories: superblock.NumberOfDirectories,
+		NumberOfSymlinks: superblock.NumberOfSymlinks,
+		NumberOfOtherFSObjects: superblock.NumberOfOtherFileSystemObjects,
+		SnapshotCount: superblock.SnapshotCount,
+		TotalBlocksAllocated: superblock.TotalBlocksAllocated,
+		TotalBlocksFreed: superblock.TotalBlocksFreed,
+		VolumeUUID: formatUUID(superblock.VolumeUUID[:]),
+		ModificationTime: superblock.ModificationTime,
+		VolumeFlags: superblock.VolumeFlags,
+		Role: superblock.Role,
+		RootToXID: superblock.RootToXID,
+		SnapMetaExtOID: superblock.SnapMetaExtOID,
+		VolumeGroupID: formatUUID(superblock.VolumeGroupID[:]),
+	}, nil
 }
 
 func preserveMetaCryptoKeyOSVersion(file *os.File, keyOSVersion uint32) error {
