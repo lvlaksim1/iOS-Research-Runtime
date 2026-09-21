@@ -10,6 +10,12 @@ import (
 	"github.com/deploymenttheory/go-apfs-v2/pkg/disk"
 )
 
+type apfsTreeRecordSnapshot struct {
+	Index    int    `json:"index"`
+	KeyHex   string `json:"keyHex"`
+	ValueHex string `json:"valueHex"`
+}
+
 type apfsTreeSnapshot struct {
 	OID              uint64 `json:"oid"`
 	PhysicalAddress  uint64 `json:"physicalAddress"`
@@ -20,6 +26,7 @@ type apfsTreeSnapshot struct {
 	NodeFlags        uint16 `json:"nodeFlags"`
 	NodeLevel        uint16 `json:"nodeLevel"`
 	NodeNumberOfKeys uint32 `json:"nodeNumberOfKeys"`
+	Records          []apfsTreeRecordSnapshot `json:"records,omitempty"`
 	StoredChecksum   uint64 `json:"storedChecksum"`
 	ComputedChecksum uint64 `json:"computedChecksum"`
 	ChecksumValid    bool   `json:"checksumValid"`
