@@ -26,6 +26,14 @@ type apfsVolumeSnapshot struct {
 	SnapMetaTreeType           uint32 `json:"snapMetaTreeType"`
 	OmapOID                    uint64 `json:"omapOid"`
 	RootTreeOID                uint64 `json:"rootTreeOid"`
+	RootTreePhysicalAddress    uint64 `json:"rootTreePhysicalAddress"`
+	RootTreeHeaderOID          uint64 `json:"rootTreeHeaderOid"`
+	RootTreeHeaderXID          uint64 `json:"rootTreeHeaderXid"`
+	RootTreeHeaderType         uint32 `json:"rootTreeHeaderType"`
+	RootTreeHeaderSubtype      uint32 `json:"rootTreeHeaderSubtype"`
+	RootTreeStoredChecksum     uint64 `json:"rootTreeStoredChecksum"`
+	RootTreeComputedChecksum   uint64 `json:"rootTreeComputedChecksum"`
+	RootTreeChecksumValid      bool   `json:"rootTreeChecksumValid"`
 	ExtentrefTreeOID           uint64 `json:"extentrefTreeOid"`
 	SnapMetaTreeOID            uint64 `json:"snapMetaTreeOid"`
 	RevertToXID                uint64 `json:"revertToXid"`
