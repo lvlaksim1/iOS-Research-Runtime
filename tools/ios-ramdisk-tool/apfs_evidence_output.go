@@ -65,6 +65,12 @@ func readMappedTreeSnapshot(container *apfs.Container, volume *apfs.Volume, oid 
 	computed, err := apfs.CalculateFletcher64(block[8:], 0)
 	if err != nil { return nil, fmt.Errorf("calculate live-volume %s checksum at block %d: %w", label, paddr, err) }
 	stored := binary.LittleEndian.Uint64(block[:8])
+	node := apfs.NewBTreeNode()
+	if err := node.ReadData(block); err != nil { return nil, fmt.Errorf("parse live-volume %s B-tree root at block %d: %w", label, paddr, err) }
+	records := make([]apfsTreeRecordSnapshot, 0, len(node.Entries))
+	for index, entry := range node.Entries {
+		records = append(records, apfsTreeRecordSnapshot{Index:index, KeyHex:fmt.Sprintf("%x", entry.KeyData), ValueHex:fmt.Sprintf("%x", entry.ValueData)})
+	}
 	return &apfsTreeSnapshot{
 		OID: oid,
 		PhysicalAddress: paddr,
@@ -75,6 +81,7 @@ func readMappedTreeSnapshot(container *apfs.Container, volume *apfs.Volume, oid 
 		NodeFlags: binary.LittleEndian.Uint16(block[32:34]),
 		NodeLevel: binary.LittleEndian.Uint16(block[34:36]),
 		NodeNumberOfKeys: binary.LittleEndian.Uint32(block[36:40]),
+		Records: records,
 		StoredChecksum: stored,
 		ComputedChecksum: computed,
 		ChecksumValid: stored == computed,
