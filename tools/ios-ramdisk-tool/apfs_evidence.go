@@ -11,15 +11,18 @@ import (
 )
 
 type apfsTreeSnapshot struct {
-	OID             uint64 `json:"oid"`
-	PhysicalAddress uint64 `json:"physicalAddress"`
-	HeaderOID       uint64 `json:"headerOid"`
-	HeaderXID       uint64 `json:"headerXid"`
-	HeaderType      uint32 `json:"headerType"`
-	HeaderSubtype   uint32 `json:"headerSubtype"`
-	StoredChecksum  uint64 `json:"storedChecksum"`
+	OID              uint64 `json:"oid"`
+	PhysicalAddress  uint64 `json:"physicalAddress"`
+	HeaderOID        uint64 `json:"headerOid"`
+	HeaderXID        uint64 `json:"headerXid"`
+	HeaderType       uint32 `json:"headerType"`
+	HeaderSubtype    uint32 `json:"headerSubtype"`
+	NodeFlags        uint16 `json:"nodeFlags"`
+	NodeLevel        uint16 `json:"nodeLevel"`
+	NodeNumberOfKeys uint32 `json:"nodeNumberOfKeys"`
+	StoredChecksum   uint64 `json:"storedChecksum"`
 	ComputedChecksum uint64 `json:"computedChecksum"`
-	ChecksumValid   bool   `json:"checksumValid"`
+	ChecksumValid    bool   `json:"checksumValid"`
 }
 
 type apfsVolumeSnapshot struct {
