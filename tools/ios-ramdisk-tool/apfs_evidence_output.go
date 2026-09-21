@@ -66,12 +66,12 @@ func readMappedTreeSnapshot(container *apfs.Container, volume *apfs.Volume, oid 
 	if err != nil { return nil, fmt.Errorf("calculate live-volume %s checksum at block %d: %w", label, paddr, err) }
 	stored := binary.LittleEndian.Uint64(block[:8])
 	node := apfs.NewBTreeNode()
-	if err := node.ReadData(block); err != nil { return nil, fmt.Errorf("parse live-volume %s B-tree root at block %d: %w", label, paddr, err) }
+	if err := node.ReadData(block); err != nil { return nil, fmt.Errorf("parse live-volume %s B-tree node at block %d: %w", label, paddr, err) }
 	records := make([]apfsTreeRecordSnapshot, 0, len(node.Entries))
 	for index, entry := range node.Entries {
 		records = append(records, apfsTreeRecordSnapshot{Index:index, KeyHex:fmt.Sprintf("%x", entry.KeyData), ValueHex:fmt.Sprintf("%x", entry.ValueData)})
 	}
-	return &apfsTreeSnapshot{
+	snapshot := &apfsTreeSnapshot{
 		OID: oid,
 		PhysicalAddress: paddr,
 		HeaderOID: binary.LittleEndian.Uint64(block[8:16]),
@@ -85,7 +85,19 @@ func readMappedTreeSnapshot(container *apfs.Container, volume *apfs.Volume, oid 
 		StoredChecksum: stored,
 		ComputedChecksum: computed,
 		ChecksumValid: stored == computed,
-	}, nil
+	}
+	if snapshot.NodeLevel > 0 {
+		children := make([]*apfsTreeSnapshot, 0, len(node.Entries))
+		for index, entry := range node.Entries {
+			if len(entry.ValueData) < 8 { return nil, fmt.Errorf("parse live-volume %s child %d at block %d: index value is %d bytes", label, index, paddr, len(entry.ValueData)) }
+			childOID := binary.LittleEndian.Uint64(entry.ValueData[:8])
+			child, err := readMappedTreeSnapshot(container, volume, childOID, treeType, fmt.Sprintf("%s-child-%d", label, index))
+			if err != nil { return nil, err }
+			children = append(children, child)
+		}
+		snapshot.Children = children
+	}
+	return snapshot, nil
 }
 
 func readMappedAPFSVolumeSnapshot(filename string) (*apfsVolumeSnapshot, error) {
