@@ -69,7 +69,32 @@ func readMappedAPFSVolumeSnapshot(filename string) (*apfsVolumeSnapshot, error) 
 	if volume.Superblock == nil {
 		return nil, fmt.Errorf("resolved APFS volume has no superblock")
 	}
+	if volume.ObjectMapBTree == nil {
+		return nil, fmt.Errorf("resolved APFS volume has no object map")
+	}
 	superblock := volume.Superblock
+	rootDescriptor, err := volume.ObjectMapBTree.DescriptorByObjectIdentifier(container.Reader, superblock.RootTreeOID, superblock.ObjectHeader.TransactionIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("resolve live-volume root-tree oid %d: %w", superblock.RootTreeOID, err)
+	}
+	if rootDescriptor == nil || rootDescriptor.Value.ObjectPhysicalAddress == 0 {
+		return nil, fmt.Errorf("resolve live-volume root-tree oid %d: mapping missing", superblock.RootTreeOID)
+	}
+	rootPaddr := rootDescriptor.Value.ObjectPhysicalAddress
+	blockSize := int(container.Superblock.BlockSize)
+	if blockSize < 32 {
+		return nil, fmt.Errorf("invalid APFS block size %d", blockSize)
+	}
+	rootBlock := make([]byte, blockSize)
+	if _, err := container.Reader.ReadAt(rootBlock, int64(rootPaddr)*int64(blockSize)); err != nil && err != io.EOF {
+		return nil, fmt.Errorf("read live-volume root-tree block %d: %w", rootPaddr, err)
+	}
+	computedChecksum, err := apfs.CalculateFletcher64(rootBlock[8:], 0)
+	if err != nil {
+		return nil, fmt.Errorf("calculate live-volume root-tree checksum at block %d: %w", rootPaddr, err)
+	}
+	storedChecksum := binary.LittleEndian.Uint64(rootBlock[0:8])
+
 	return &apfsVolumeSnapshot{
 		FSIndex: superblock.FSIndex,
 		CompatibleFeatures: superblock.CompatibleFeaturesFlags,
@@ -86,6 +111,14 @@ func readMappedAPFSVolumeSnapshot(filename string) (*apfsVolumeSnapshot, error) 
 		SnapMetaTreeType: superblock.SnapMetaTreeType,
 		OmapOID: superblock.OmapOID,
 		RootTreeOID: superblock.RootTreeOID,
+		RootTreePhysicalAddress: rootPaddr,
+		RootTreeHeaderOID: binary.LittleEndian.Uint64(rootBlock[8:16]),
+		RootTreeHeaderXID: binary.LittleEndian.Uint64(rootBlock[16:24]),
+		RootTreeHeaderType: binary.LittleEndian.Uint32(rootBlock[24:28]),
+		RootTreeHeaderSubtype: binary.LittleEndian.Uint32(rootBlock[28:32]),
+		RootTreeStoredChecksum: storedChecksum,
+		RootTreeComputedChecksum: computedChecksum,
+		RootTreeChecksumValid: storedChecksum == computedChecksum,
 		ExtentrefTreeOID: superblock.ExtentrefTreeOID,
 		SnapMetaTreeOID: superblock.SnapMetaTreeOID,
 		RevertToXID: superblock.RevertToXID,
