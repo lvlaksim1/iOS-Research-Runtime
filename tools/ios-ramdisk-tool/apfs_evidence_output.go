@@ -31,220 +31,77 @@ func writeNXEvidence(writer io.Writer, source, rebuilt apfsNXSnapshot) error {
 
 func writeNXEvidenceFile(outputPath, sourcePath string, rebuilt *os.File) error {
 	source, err := readSourceNXSnapshot(sourcePath)
-	if err != nil {
-		return fmt.Errorf("read source APFS NX evidence: %w", err)
-	}
+	if err != nil { return fmt.Errorf("read source APFS NX evidence: %w", err) }
 	source.Volume, err = readMappedAPFSVolumeSnapshot(sourcePath)
-	if err != nil {
-		return fmt.Errorf("resolve source APFS live-volume evidence: %w", err)
-	}
-	if err := preserveMetaCryptoKeyOSVersion(rebuilt, source.Volume.MetaCryptoKeyOSVersion); err != nil {
-		return fmt.Errorf("preserve APFS MetaCryptoKeyOSVersion: %w", err)
-	}
+	if err != nil { return fmt.Errorf("resolve source APFS live-volume evidence: %w", err) }
+	if err := preserveMetaCryptoKeyOSVersion(rebuilt, source.Volume.MetaCryptoKeyOSVersion); err != nil { return fmt.Errorf("preserve APFS MetaCryptoKeyOSVersion: %w", err) }
 	rebuiltSnapshot, err := readNXSnapshot(rebuilt, 0)
-	if err != nil {
-		return fmt.Errorf("read rebuilt APFS NX evidence: %w", err)
-	}
+	if err != nil { return fmt.Errorf("read rebuilt APFS NX evidence: %w", err) }
 	rebuiltSnapshot.Volume, err = readMappedAPFSVolumeSnapshot(rebuilt.Name())
-	if err != nil {
-		return fmt.Errorf("resolve rebuilt APFS live-volume evidence: %w", err)
-	}
+	if err != nil { return fmt.Errorf("resolve rebuilt APFS live-volume evidence: %w", err) }
 	file, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("create APFS NX evidence output: %w", err)
-	}
+	if err != nil { return fmt.Errorf("create APFS NX evidence output: %w", err) }
 	defer file.Close()
 	return writeNXEvidence(file, source, rebuiltSnapshot)
 }
 
 func resolveTreePhysicalAddress(container *apfs.Container, volume *apfs.Volume, oid uint64, treeType uint32, label string) (uint64, error) {
 	storageType := treeType & apfsObjectStorageTypeMask
-	if storageType == apfsObjectPhysical {
-		// APFS physical objects use their OID directly as the physical block address.
-		// Extent-reference and snapshot-metadata trees are commonly physical trees and
-		// therefore are intentionally absent from the volume OMAP.
-		return oid, nil
-	}
-
+	if storageType == apfsObjectPhysical { return oid, nil }
 	descriptor, err := volume.ObjectMapBTree.DescriptorByObjectIdentifier(container.Reader, oid, volume.Superblock.XID)
-	if err != nil {
-		return 0, fmt.Errorf("resolve live-volume %s oid %d: %w", label, oid, err)
-	}
-	if descriptor == nil || descriptor.Value.ObjectPhysicalAddress == 0 {
-		return 0, fmt.Errorf("resolve live-volume %s oid %d: mapping missing", label, oid)
-	}
+	if err != nil { return 0, fmt.Errorf("resolve live-volume %s oid %d: %w", label, oid, err) }
+	if descriptor == nil || descriptor.Value.ObjectPhysicalAddress == 0 { return 0, fmt.Errorf("resolve live-volume %s oid %d: mapping missing", label, oid) }
 	return descriptor.Value.ObjectPhysicalAddress, nil
 }
 
 func readMappedTreeSnapshot(container *apfs.Container, volume *apfs.Volume, oid uint64, treeType uint32, label string) (*apfsTreeSnapshot, error) {
-	if oid == 0 {
-		return nil, nil
-	}
-
+	if oid == 0 { return nil, nil }
 	paddr, err := resolveTreePhysicalAddress(container, volume, oid, treeType, label)
-	if err != nil {
-		return nil, err
-	}
+	if err != nil { return nil, err }
 	blockSize := int(container.Superblock.BlockSize)
-	if blockSize < 32 {
-		return nil, fmt.Errorf("invalid APFS block size %d", blockSize)
-	}
+	if blockSize < 40 { return nil, fmt.Errorf("invalid APFS block size %d", blockSize) }
 	block := make([]byte, blockSize)
-	if _, err := container.Reader.ReadAt(block, int64(paddr)*int64(blockSize)); err != nil && err != io.EOF {
-		return nil, fmt.Errorf("read live-volume %s block %d: %w", label, paddr, err)
-	}
+	if _, err := container.Reader.ReadAt(block, int64(paddr)*int64(blockSize)); err != nil && err != io.EOF { return nil, fmt.Errorf("read live-volume %s block %d: %w", label, paddr, err) }
 	computed, err := apfs.CalculateFletcher64(block[8:], 0)
-	if err != nil {
-		return nil, fmt.Errorf("calculate live-volume %s checksum at block %d: %w", label, paddr, err)
-	}
+	if err != nil { return nil, fmt.Errorf("calculate live-volume %s checksum at block %d: %w", label, paddr, err) }
 	stored := binary.LittleEndian.Uint64(block[:8])
 	return &apfsTreeSnapshot{
-		OID:              oid,
-		PhysicalAddress:  paddr,
-		HeaderOID:        binary.LittleEndian.Uint64(block[8:16]),
-		HeaderXID:        binary.LittleEndian.Uint64(block[16:24]),
-		HeaderType:       binary.LittleEndian.Uint32(block[24:28]),
-		HeaderSubtype:    binary.LittleEndian.Uint32(block[28:32]),
-		StoredChecksum:   stored,
+		OID: oid,
+		PhysicalAddress: paddr,
+		HeaderOID: binary.LittleEndian.Uint64(block[8:16]),
+		HeaderXID: binary.LittleEndian.Uint64(block[16:24]),
+		HeaderType: binary.LittleEndian.Uint32(block[24:28]),
+		HeaderSubtype: binary.LittleEndian.Uint32(block[28:32]),
+		NodeFlags: binary.LittleEndian.Uint16(block[32:34]),
+		NodeLevel: binary.LittleEndian.Uint16(block[34:36]),
+		NodeNumberOfKeys: binary.LittleEndian.Uint32(block[36:40]),
+		StoredChecksum: stored,
 		ComputedChecksum: computed,
-		ChecksumValid:    stored == computed,
+		ChecksumValid: stored == computed,
 	}, nil
 }
 
 func readMappedAPFSVolumeSnapshot(filename string) (*apfsVolumeSnapshot, error) {
 	container, closer, err := apfs.OpenImage(filename, nil)
-	if err != nil {
-		return nil, fmt.Errorf("open APFS container: %w", err)
-	}
+	if err != nil { return nil, fmt.Errorf("open APFS container: %w", err) }
 	defer closer.Close()
 	volume, err := container.VolumeBySelector("0")
-	if err != nil {
-		return nil, fmt.Errorf("resolve active APFS volume: %w", err)
-	}
-	if volume.Superblock == nil {
-		return nil, fmt.Errorf("resolved APFS volume has no superblock")
-	}
-	if volume.ObjectMapBTree == nil {
-		return nil, fmt.Errorf("resolved APFS volume has no object map")
-	}
+	if err != nil { return nil, fmt.Errorf("resolve active APFS volume: %w", err) }
+	if volume.Superblock == nil { return nil, fmt.Errorf("resolved APFS volume has no superblock") }
+	if volume.ObjectMapBTree == nil { return nil, fmt.Errorf("resolved APFS volume has no object map") }
 	s := volume.Superblock
-
-	root, err := readMappedTreeSnapshot(container, volume, s.RootTreeOID, s.RootTreeType, "root-tree")
-	if err != nil {
-		return nil, err
-	}
-	extentref, err := readMappedTreeSnapshot(container, volume, s.ExtentrefTreeOID, s.ExtentrefTreeType, "extentref-tree")
-	if err != nil {
-		return nil, err
-	}
-	snapmeta, err := readMappedTreeSnapshot(container, volume, s.SnapMetaTreeOID, s.SnapMetaTreeType, "snapmeta-tree")
-	if err != nil {
-		return nil, err
-	}
-
-	v := &apfsVolumeSnapshot{
-		FSIndex:                    s.FSIndex,
-		CompatibleFeatures:         s.CompatibleFeaturesFlags,
-		ReadOnlyCompatibleFeatures: s.ReadOnlyCompatibleFeaturesFlags,
-		IncompatibleFeatures:       s.IncompatibleFeaturesFlags,
-		MetaCryptoMajorVersion:     s.MetaCryptoMajorVersion,
-		MetaCryptoMinorVersion:     s.MetaCryptoMinorVersion,
-		MetaCryptoFlags:            s.MetaCryptoFlags,
-		MetaCryptoPersistentClass:  s.MetaCryptoPersistentClass,
-		MetaCryptoKeyOSVersion:     s.MetaCryptoKeyOSVersion,
-		MetaCryptoKeyRevision:      s.MetaCryptoKeyRevision,
-		RootTreeType:               s.RootTreeType,
-		ExtentrefTreeType:          s.ExtentrefTreeType,
-		SnapMetaTreeType:           s.SnapMetaTreeType,
-		OmapOID:                    s.OmapOID,
-		RootTreeOID:                s.RootTreeOID,
-		ExtentrefTreeOID:           s.ExtentrefTreeOID,
-		ExtentrefTree:              extentref,
-		SnapMetaTreeOID:            s.SnapMetaTreeOID,
-		SnapMetaTree:               snapmeta,
-		RevertToXID:                s.RevertToXID,
-		RevertToSblockOID:          s.RevertToSblockOID,
-		NextObjID:                  s.NextObjID,
-		NumberOfFiles:              s.NumberOfFiles,
-		NumberOfDirectories:        s.NumberOfDirectories,
-		NumberOfSymlinks:           s.NumberOfSymlinks,
-		NumberOfOtherFSObjects:     s.NumberOfOtherFileSystemObjects,
-		SnapshotCount:              s.SnapshotCount,
-		TotalBlocksAllocated:       s.TotalBlocksAllocated,
-		TotalBlocksFreed:           s.TotalBlocksFreed,
-		VolumeUUID:                 formatUUID(s.VolumeUUID[:]),
-		ModificationTime:           s.ModificationTime,
-		VolumeFlags:                s.VolumeFlags,
-		Role:                       s.Role,
-		RootToXID:                  s.RootToXID,
-		SnapMetaExtOID:             s.SnapMetaExtOID,
-		VolumeGroupID:              formatUUID(s.VolumeGroupID[:]),
-	}
-	if root != nil {
-		v.RootTreePhysicalAddress = root.PhysicalAddress
-		v.RootTreeHeaderOID = root.HeaderOID
-		v.RootTreeHeaderXID = root.HeaderXID
-		v.RootTreeHeaderType = root.HeaderType
-		v.RootTreeHeaderSubtype = root.HeaderSubtype
-		v.RootTreeStoredChecksum = root.StoredChecksum
-		v.RootTreeComputedChecksum = root.ComputedChecksum
-		v.RootTreeChecksumValid = root.ChecksumValid
-	}
-	return v, nil
+	root, err := readMappedTreeSnapshot(container, volume, s.RootTreeOID, s.RootTreeType, "root-tree"); if err != nil { return nil, err }
+	extentref, err := readMappedTreeSnapshot(container, volume, s.ExtentrefTreeOID, s.ExtentrefTreeType, "extentref-tree"); if err != nil { return nil, err }
+	snapmeta, err := readMappedTreeSnapshot(container, volume, s.SnapMetaTreeOID, s.SnapMetaTreeType, "snapmeta-tree"); if err != nil { return nil, err }
+	v := &apfsVolumeSnapshot{FSIndex:s.FSIndex,CompatibleFeatures:s.CompatibleFeaturesFlags,ReadOnlyCompatibleFeatures:s.ReadOnlyCompatibleFeaturesFlags,IncompatibleFeatures:s.IncompatibleFeaturesFlags,MetaCryptoMajorVersion:s.MetaCryptoMajorVersion,MetaCryptoMinorVersion:s.MetaCryptoMinorVersion,MetaCryptoFlags:s.MetaCryptoFlags,MetaCryptoPersistentClass:s.MetaCryptoPersistentClass,MetaCryptoKeyOSVersion:s.MetaCryptoKeyOSVersion,MetaCryptoKeyRevision:s.MetaCryptoKeyRevision,RootTreeType:s.RootTreeType,ExtentrefTreeType:s.ExtentrefTreeType,SnapMetaTreeType:s.SnapMetaTreeType,OmapOID:s.OmapOID,RootTreeOID:s.RootTreeOID,ExtentrefTreeOID:s.ExtentrefTreeOID,ExtentrefTree:extentref,SnapMetaTreeOID:s.SnapMetaTreeOID,SnapMetaTree:snapmeta,RevertToXID:s.RevertToXID,RevertToSblockOID:s.RevertToSblockOID,NextObjID:s.NextObjID,NumberOfFiles:s.NumberOfFiles,NumberOfDirectories:s.NumberOfDirectories,NumberOfSymlinks:s.NumberOfSymlinks,NumberOfOtherFSObjects:s.NumberOfOtherFileSystemObjects,SnapshotCount:s.SnapshotCount,TotalBlocksAllocated:s.TotalBlocksAllocated,TotalBlocksFreed:s.TotalBlocksFreed,VolumeUUID:formatUUID(s.VolumeUUID[:]),ModificationTime:s.ModificationTime,VolumeFlags:s.VolumeFlags,Role:s.Role,RootToXID:s.RootToXID,SnapMetaExtOID:s.SnapMetaExtOID,VolumeGroupID:formatUUID(s.VolumeGroupID[:])}
+	if root != nil { v.RootTreePhysicalAddress=root.PhysicalAddress;v.RootTreeHeaderOID=root.HeaderOID;v.RootTreeHeaderXID=root.HeaderXID;v.RootTreeHeaderType=root.HeaderType;v.RootTreeHeaderSubtype=root.HeaderSubtype;v.RootTreeStoredChecksum=root.StoredChecksum;v.RootTreeComputedChecksum=root.ComputedChecksum;v.RootTreeChecksumValid=root.ChecksumValid }
+	return v,nil
 }
 
 func preserveMetaCryptoKeyOSVersion(file *os.File, keyOSVersion uint32) error {
-	container, closer, err := apfs.OpenImage(file.Name(), nil)
-	if err != nil {
-		return fmt.Errorf("open rebuilt APFS container: %w", err)
-	}
-	defer closer.Close()
-	volumeIDs, err := container.VolumeObjectIdentifiers()
-	if err != nil {
-		return fmt.Errorf("resolve rebuilt APFS volume object id: %w", err)
-	}
-	if len(volumeIDs) == 0 {
-		return fmt.Errorf("rebuilt APFS container has no volumes")
-	}
-	volumeOID := volumeIDs[0]
-	paddr, err := container.CheckpointMap.PhysicalAddressByObjectIdentifier(volumeOID)
-	if err != nil || paddr == 0 {
-		descriptor, lookupErr := container.ObjectMapBTree.DescriptorByObjectIdentifier(container.Reader, volumeOID, container.Superblock.XID)
-		if lookupErr != nil {
-			return fmt.Errorf("resolve rebuilt APFS volume paddr: %w", lookupErr)
-		}
-		if descriptor == nil || descriptor.Value.ObjectPhysicalAddress == 0 {
-			return fmt.Errorf("resolve rebuilt APFS volume paddr: mapping missing for object %d", volumeOID)
-		}
-		paddr = descriptor.Value.ObjectPhysicalAddress
-	}
-	blockSize := int(container.Superblock.BlockSize)
-	if blockSize < 112 {
-		return fmt.Errorf("invalid APFS block size %d", blockSize)
-	}
-	block := make([]byte, blockSize)
-	offset := int64(paddr) * int64(blockSize)
-	if _, err := file.ReadAt(block, offset); err != nil && err != io.EOF {
-		return fmt.Errorf("read APSB block %d: %w", paddr, err)
-	}
-	if string(block[32:36]) != "APSB" {
-		return fmt.Errorf("resolved APFS volume block %d is not APSB", paddr)
-	}
-	binary.LittleEndian.PutUint32(block[108:112], keyOSVersion)
-	checksum, err := apfs.CalculateFletcher64(block[8:], 0)
-	if err != nil {
-		return fmt.Errorf("calculate APSB checksum at block %d: %w", paddr, err)
-	}
-	binary.LittleEndian.PutUint64(block[:8], checksum)
-	validated, err := apfs.CalculateFletcher64(block[8:], 0)
-	if err != nil {
-		return fmt.Errorf("validate APSB checksum at block %d: %w", paddr, err)
-	}
-	if validated != binary.LittleEndian.Uint64(block[:8]) {
-		return fmt.Errorf("APSB checksum validation failed at block %d", paddr)
-	}
-	if _, err := file.WriteAt(block, offset); err != nil {
-		return fmt.Errorf("write APSB block %d: %w", paddr, err)
-	}
-	return file.Sync()
+	container, closer, err := apfs.OpenImage(file.Name(), nil); if err != nil { return fmt.Errorf("open rebuilt APFS container: %w",err) }; defer closer.Close()
+	volumeIDs, err := container.VolumeObjectIdentifiers(); if err != nil { return fmt.Errorf("resolve rebuilt APFS volume object id: %w",err) }; if len(volumeIDs)==0{return fmt.Errorf("rebuilt APFS container has no volumes")}
+	volumeOID:=volumeIDs[0];paddr,err:=container.CheckpointMap.PhysicalAddressByObjectIdentifier(volumeOID)
+	if err!=nil||paddr==0{descriptor,lookupErr:=container.ObjectMapBTree.DescriptorByObjectIdentifier(container.Reader,volumeOID,container.Superblock.XID);if lookupErr!=nil{return fmt.Errorf("resolve rebuilt APFS volume paddr: %w",lookupErr)};if descriptor==nil||descriptor.Value.ObjectPhysicalAddress==0{return fmt.Errorf("resolve rebuilt APFS volume paddr: mapping missing for object %d",volumeOID)};paddr=descriptor.Value.ObjectPhysicalAddress}
+	blockSize:=int(container.Superblock.BlockSize);if blockSize<112{return fmt.Errorf("invalid APFS block size %d",blockSize)};block:=make([]byte,blockSize);offset:=int64(paddr)*int64(blockSize);if _,err:=file.ReadAt(block,offset);err!=nil&&err!=io.EOF{return fmt.Errorf("read APSB block %d: %w",paddr,err)};if string(block[32:36])!="APSB"{return fmt.Errorf("resolved APFS volume block %d is not APSB",paddr)};binary.LittleEndian.PutUint32(block[108:112],keyOSVersion);checksum,err:=apfs.CalculateFletcher64(block[8:],0);if err!=nil{return fmt.Errorf("calculate APSB checksum at block %d: %w",paddr,err)};binary.LittleEndian.PutUint64(block[:8],checksum);validated,err:=apfs.CalculateFletcher64(block[8:],0);if err!=nil{return fmt.Errorf("validate APSB checksum at block %d: %w",paddr,err)};if validated!=binary.LittleEndian.Uint64(block[:8]){return fmt.Errorf("APSB checksum validation failed at block %d",paddr)};if _,err:=file.WriteAt(block,offset);err!=nil{return fmt.Errorf("write APSB block %d: %w",paddr,err)};return file.Sync()
 }
