@@ -27,6 +27,7 @@ type apfsTreeSnapshot struct {
 	NodeLevel        uint16 `json:"nodeLevel"`
 	NodeNumberOfKeys uint32 `json:"nodeNumberOfKeys"`
 	Records          []apfsTreeRecordSnapshot `json:"records,omitempty"`
+	Children         []*apfsTreeSnapshot `json:"children,omitempty"`
 	StoredChecksum   uint64 `json:"storedChecksum"`
 	ComputedChecksum uint64 `json:"computedChecksum"`
 	ChecksumValid    bool   `json:"checksumValid"`
