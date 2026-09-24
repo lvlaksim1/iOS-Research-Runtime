@@ -1,7 +1,8 @@
 # Next actions
 
-1. Reconcile Ramdisk Tool Windows run `36018076878` and exact Windows End-to-End Boot run `36018076770`, both bound to current product commit `1ff060bd867587cc0e4c04e3469d9fb6488147e3`.
-2. If validation fails before boot execution, inspect the exact job log and correct only the diagnostic implementation; do not change APFS writer semantics.
-3. If E2E produces the artifact, inspect the terminal boot log and enriched APFS structural evidence. Compare source vs rebuilt APSB diagnostics and root-tree/file-extent summaries, including bounds and overlap results.
-4. Use that evidence as the discriminator gate: only a concrete mount-significant mismatch may justify the smallest field/tree writer hypothesis. If neither APSB nor root-tree/file-extent evidence identifies a defect, move to a new read-only checkpoint/container-transaction discriminator.
-5. Keep the result bound to the exact product SHA and persist the evidence-backed conclusion before any semantic writer mutation.
+1. Do not rerun terminal-success Ramdisk Tool Windows `36018076878`; it already validates product SHA `1ff060bd867587cc0e4c04e3469d9fb6488147e3`.
+2. Continue waiting on the already-existing exact Windows End-to-End Boot `36018076770`, same SHA. It is currently in progress at job `107695937346`, step 11 `Run provisioning and Darwin root-shell proof`; do not start a replacement run merely for runtime-resume proof.
+3. When `36018076770` becomes terminal, inspect its exact job logs and end-to-end evidence artifact. Extract enriched source-vs-rebuilt APSB diagnostics, recursive root-tree evidence and file-extent owner/logical/physical/length/bounds/overlap evidence.
+4. Persist the exact-SHA-bound conclusion. Only concrete mount-significant discriminator evidence may justify the smallest corresponding writer hypothesis.
+5. If APSB/root-tree/file-extent evidence identifies no concrete defect, move to a new read-only checkpoint/container-transaction discriminator.
+6. Do not change APFS writer/allocation/XID/checkpoint/on-disk semantics before that discriminator gate is satisfied.
