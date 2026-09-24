@@ -11,26 +11,32 @@
 
 ## Migration progress
 
-Completed: stages 1-8.
-Next: stage 9 clean-runtime reinstantiation proof.
+Stages 1-9 are COMPLETE. The clean-runtime reinstantiation gate is PASS as recorded in `.context/runtime-tests/2026-09-24-clean-reinstantiation.md` and was reconciled before product work resumed.
 
-No product-code mutation has occurred during stages 1-8.
+`MIG-IOS-001` is therefore complete. Ordinary product development continues under `IOS-M1` with this same persistent Project Manager.
 
-## Verified technical boundary
+## Verified technical boundary before this cycle
 
-Product-code baseline:
-`3b0f5648f004f58daef526082b3d2a32d132edcf`.
+Product-code baseline before the diagnostic cycle: `3b0f5648f004f58daef526082b3d2a32d132edcf`.
 
-Exact Windows E2E:
+Prior exact Windows E2E:
 - run `35634992757`;
 - artifact `10655952032 / ios-darwin-windows-e2e`;
 - digest `sha256:49ea4772133376adcf79f2e5604e6a196d4b4d9c8d9fe12814ce6d03a98c1d73`;
 - XNU identifies `md0` and APFS repeatedly fails root mount with error 79.
 
-Independent extentref reconciliation:
-- source: 719 records, all refcount 1, 719 unique owners, 46,740 blocks; APSB net allocation 46,740;
-- rebuilt: 1,360 records, all refcount 1, 1,360 unique owners, 51,651 blocks; APSB net allocation 51,844;
-- rebuilt delta: 193 blocks, consistent with pinned writer-owned metadata allocation;
-- root/extentref/snapshot-metadata checksums exposed by the artifact are valid.
+Independent extentref reconciliation remains valid: raw extentref record-count divergence is not an active discriminator and no writer semantic mutation is justified by it.
 
-Conclusion: extentref count/conservation is no longer the active discriminator. Next engineering evidence is fuller APSB and root-tree semantics.
+## First post-migration engineering cycle
+
+A diagnostic-only APFS evidence change has been implemented on product authority `main` without changing APFS writer, allocation, XID/checkpoint, or other on-disk writer semantics.
+
+Exact product commit: `ff0e637733c2b1365d39e0af6152f75de34e0984`.
+
+The change:
+- emits APSB fields already exposed by pinned `go-apfs-v2`: unmount time, reserved/quota/allocated blocks, formatted-by, modified-by history, next document ID, ER-state OID and clone-info fields;
+- persists the recursively read root-tree snapshot including leaf records;
+- derives a compact file-extent summary with owner OID, logical offset, physical block, length, block count, crypto ID, container-bounds validation and physical-overlap count;
+- adds focused unit coverage for normal, overlap and out-of-bounds extent summaries.
+
+Exact Windows paths triggered for this SHA include Ramdisk Tool Windows run `36017905169` and Windows End-to-End Boot run `36017905181`. At this checkpoint both are still non-terminal, so no E2E outcome is inferred.
