@@ -2,16 +2,16 @@
 
 ## Active product blocker
 
-The rebuilt APFS recovery ramdisk is rejected during Darwin root mounting with error 79.
+The rebuilt APFS recovery ramdisk is rejected during Darwin root mounting with error 79 in the last terminal boot evidence.
 
-## Resolved evidence uncertainty
+## Resolved gates / uncertainty
 
-The legacy shift-154 extentref-conservation claim is no longer untrusted candidate knowledge: its numerical and writer-model claims were independently reproduced from exact E2E evidence and exact product code.
+- Persistent-manager migration and clean-runtime reinstantiation gate are complete; they no longer pause product work.
+- Legacy shift-154 extentref-conservation claims were independently reproduced. Raw extentref record-count divergence is not a justified writer-mutation discriminator.
+- Current diagnostic implementation at product SHA `1ff060bd867587cc0e4c04e3469d9fb6488147e3` passes Ramdisk Tool Windows run `36018076878`.
 
-## Remaining evidence gap
+## Current evidence gate
 
-Current APFS evidence omits several APSB fields already parsed by the pinned upstream library and does not persist the full recursively read root tree. Therefore no specific writer defect is yet proven.
+Exact Windows End-to-End Boot run `36018076770`, bound to `1ff060bd...`, is still in progress. Until it becomes terminal and its exact logs/artifact are inspected, enriched APSB/root-tree/file-extent evidence is not available for a new semantic conclusion.
 
-## Migration gate
-
-Product mutation remains paused only until stage 9 clean-runtime reinstantiation proof is complete. After that, the first allowed product change is diagnostic-only according to the engineering plan.
+APFS writer/allocation/XID/checkpoint/on-disk semantics remain fenced against change until concrete discriminator evidence identifies a defect.
