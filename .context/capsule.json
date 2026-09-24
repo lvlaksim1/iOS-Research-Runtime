@@ -1,0 +1,9 @@
+{
+  "schema": "context-capsule",
+  "version": "2.0.0-dev",
+  "source": "lvlaksim1/context-capsule",
+  "core_commit": "ec465bd31a02fdc2602fa4d4808ac8a99ccda480",
+  "installed_at": "2026-09-24",
+  "repository": "lvlaksim1/iOS-Research-Runtime",
+  "update_policy": "manual"
+}

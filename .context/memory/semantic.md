@@ -1,0 +1,6 @@
+# Semantic memory
+
+- The product already reaches XNU/APFS root mounting on Windows; the current verified failure boundary is rejection of the rebuilt recovery ramdisk with APFS error 79, not failure to launch QEMU. source: exact Windows E2E run 35634992757 for product SHA 3b0f5648f004f58daef526082b3d2a32d132edcf; authority: verified-ci plus verified-runtime.
+- The old rotating-worker autonomy became a second complex system and suffered a post-fence zombie write; project continuity must therefore be owned by one persistent Project Manager rather than by worker identity or shift state. source: Owner migration decision plus `lvlaksim1/ai-agent-lab` conservation/fencing history; authority: owner-directive plus verified-repository.
+- A technical statement produced by an invalid/fenced execution may remain useful evidence, but it is not durable project truth until independently reproduced. source: migration treatment of legacy checkpoint fde4f271641096f20249686f0bd730c2d1a7241f; authority: owner-directive plus verified-repository.
+- Manager continuity and product truth are separate: manager state lives on `manager-state`, while product claims are reconciled against `main` and exact CI/runtime evidence. source: Context Capsule v2 split-authority contract and Owner-approved project migration design; authority: core-contract plus owner-directive.
