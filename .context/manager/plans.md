@@ -2,32 +2,21 @@
 
 ## Migration status
 
-1. Exact baseline capture. COMPLETE.
-2. Durable knowledge separated from retired orchestration. COMPLETE.
-3. Persistent Project Manager installed with split manager/product authority. COMPLETE.
-4. Project-specific mandate established without rotating workers. COMPLETE.
-5. Manager registered in the shared Agent Control Plane without iOS-specific dispatcher logic. COMPLETE; ACP exact-snapshot verification returned OK.
-6. Legacy `ai-agent-lab` iOS autonomy archived and pending continuation terminalized as migrated. COMPLETE.
-7. Technical reconciliation of live product/E2E evidence and fenced shift-154 candidate claims. COMPLETE; narrow extentref-conservation conclusion independently reproduced.
-8. Compact engineering plan from the verified boundary. COMPLETE.
-9. Prove clean-runtime reinstantiation from repository state only. NEXT.
-10. After the migration gate passes, resume product development under this same manager.
+Persistent-manager migration and clean-runtime reinstantiation proof are COMPLETE. Product development has resumed under the same `ios-research-runtime-project-manager`; migration is not the next operation.
 
-## First post-migration engineering experiment
+## Active IOS-M1 engineering cycle
 
-No APFS writer mutation first.
-
-1. Extend the read-only APFS evidence model to persist APSB fields already available from the pinned parser: unmount time, reserve/quota blocks, formatted-by, modified-by history, next document ID, ER state OID and clone-info fields.
-2. Persist the recursively read root-tree snapshot instead of only its header/checksum.
-3. Add a compact root-tree semantic summary focused on file-extent records and verify rebuilt file extents against physical extentref coverage, owner IDs, lengths, overlap and container bounds.
-4. Run the exact Windows E2E path on that diagnostic-only change.
-5. Use the resulting evidence as a decision gate:
-   - mount-significant APSB mismatch -> smallest field-specific writer fix;
-   - root-tree/file-extent inconsistency -> smallest tree/extent writer fix;
-   - neither -> move to checkpoint/container transaction semantics with another read-only discriminator.
-6. Only after a discriminator identifies a concrete defect may writer semantics change.
-7. A claimed root-cause fix or root-shell milestone should receive independent Auditor verification before being treated as closed.
+1. Read-only APSB/root-tree/file-extent diagnostics were implemented; a compile-only diagnostic field-name defect was corrected at current product SHA `1ff060bd867587cc0e4c04e3469d9fb6488147e3` without changing writer semantics. COMPLETE.
+2. Ramdisk Tool Windows validation `36018076878` for that SHA is terminal SUCCESS. COMPLETE.
+3. Continue the already-existing Windows End-to-End Boot run `36018076770`; it is currently in progress in job `107695937346`, step 11 `Run provisioning and Darwin root-shell proof`. Do not rerun it merely because the Runtime changed.
+4. When that exact run becomes terminal, inspect exact job logs and the end-to-end evidence artifact. Integrate source-vs-rebuilt APSB diagnostics, recursive root-tree evidence and file-extent summaries including owner IDs, logical/physical ranges, bounds and overlap results.
+5. Use that evidence as discriminator gate:
+   - mount-significant APSB mismatch -> smallest field-specific writer hypothesis;
+   - root-tree/file-extent inconsistency -> smallest tree/extent writer hypothesis;
+   - neither -> next read-only checkpoint/container-transaction discriminator.
+6. Do not change APFS writer/allocation/XID/checkpoint/on-disk semantics without concrete new discriminator evidence.
+7. A claimed root-cause fix or root-shell milestone should receive independent Auditor verification before closure.
 
 ## Development discipline
 
-A new runtime reinstantiates this same manager. Progress is measured by verified reduction of uncertainty or movement toward root shell, not by commit count, scheduler activity, or diagnostic volume.
+A new Runtime reinstantiates this same manager. Progress is measured by verified reduction of uncertainty or movement toward root shell, not commit count, scheduler activity, or diagnostic volume.
