@@ -4,22 +4,19 @@ Persistent manager: `ios-research-runtime-project-manager`.
 Manager-state authority: `manager-state`.
 Product authority: `main`.
 
-## Completed
+## Durable commitment
 
-Migration stages 1-8 are complete.
+`MIG-IOS-001` is completed. `IOS-M1` remains active: reach verified recovery `launchd` and root-shell boot on Windows.
 
-The manager is installed and registered in the shared Agent Control Plane; the old rotating-worker iOS autonomy is archived and has no pending executable event.
+## Exact recovered product coordinates
 
-Legacy shift-154 extentref claims were independently reproduced from exact E2E artifact 10655952032 and exact product code. The raw extentref-count difference does not justify another semantic writer change.
+Current product SHA: `1ff060bd867587cc0e4c04e3469d9fb6488147e3` (live `main`).
+The change is diagnostic-only: enriched APSB/root-tree/file-extent evidence; no APFS writer/allocation/XID/checkpoint/on-disk semantic mutation.
 
-## Verified product boundary
+Ramdisk Tool Windows `36018076878`: terminal SUCCESS at the exact SHA; tests, Windows build, smoke test and helper artifact upload succeeded.
 
-Product-code baseline: `3b0f5648f004f58daef526082b3d2a32d132edcf`.
-Windows E2E run: `35634992757`.
-Current failure: repeated APFS `mountroot error 79` after `BSD root: md0`.
+Windows End-to-End Boot `36018076770`: still IN PROGRESS at the exact SHA. Job `107695937346` is executing step 11 `Run provisioning and Darwin root-shell proof`; evidence collection/upload remains pending.
 
-## Next operation
+## Continuation
 
-Stage 9: clean-runtime reinstantiation proof.
-
-After that proof, resume development with the diagnostic-only APSB/root-tree evidence experiment recorded in `.context/manager/plans.md`.
+Do not restart the engineering cycle and do not rerun the existing E2E merely because the Runtime changed. When `36018076770` becomes terminal, inspect its exact job logs and artifact, integrate enriched APSB/root-tree/file-extent evidence, and only then choose the next discriminator or smallest evidence-backed writer hypothesis. Writer semantics remain fenced until concrete discriminator evidence exists.
