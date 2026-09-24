@@ -4,19 +4,24 @@ Persistent manager: `ios-research-runtime-project-manager`.
 Manager-state authority: `manager-state`.
 Product authority: `main`.
 
-## Durable commitment
+## Manager-state protection
 
-`MIG-IOS-001` is completed. `IOS-M1` remains active: reach verified recovery `launchd` and root-shell boot on Windows.
+Owner-authorized IOSPM-001 adoption is included in this sealed generation.
 
-## Exact recovered product coordinates
+The manager is bound to Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29`. The manifest requires manager-state coherence and points to `.context/manager/state-integrity.json`. Replacement runtimes must pass that marker before consequential continuation.
 
-Current product SHA: `1ff060bd867587cc0e4c04e3469d9fb6488147e3` (live `main`).
-The change is diagnostic-only: enriched APSB/root-tree/file-extent evidence; no APFS writer/allocation/XID/checkpoint/on-disk semantic mutation.
+Final IOSPM-001 closure is pending independent Auditor verification of this deployed snapshot.
 
-Ramdisk Tool Windows `36018076878`: terminal SUCCESS at the exact SHA; tests, Windows build, smoke test and helper artifact upload succeeded.
+## Durable product commitment
 
-Windows End-to-End Boot `36018076770`: still IN PROGRESS at the exact SHA. Job `107695937346` is executing step 11 `Run provisioning and Darwin root-shell proof`; evidence collection/upload remains pending.
+`IOS-M1` remains active: reach verified recovery `launchd` and root-shell boot on Windows.
+
+Current product SHA: `1ff060bd867587cc0e4c04e3469d9fb6488147e3` (live `main`). No product change is part of the capsule adoption.
+
+Ramdisk Tool Windows `36018076878`: terminal SUCCESS.
+
+Windows End-to-End Boot `36018076770`: terminal FAILURE; artifact `10815533344` was uploaded and serial evidence still reports repeated APFS mountroot error 79.
 
 ## Continuation
 
-Do not restart the engineering cycle and do not rerun the existing E2E merely because the Runtime changed. When `36018076770` becomes terminal, inspect its exact job logs and artifact, integrate enriched APSB/root-tree/file-extent evidence, and only then choose the next discriminator or smallest evidence-backed writer hypothesis. Writer semantics remain fenced until concrete discriminator evidence exists.
+After the coherence retest, continue from the existing artifact. Do not restart the engineering cycle or rerun the completed E2E merely because the Runtime changed. Writer semantics remain fenced until concrete discriminator evidence exists.

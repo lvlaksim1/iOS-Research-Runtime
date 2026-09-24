@@ -23,7 +23,8 @@
     "goals": ".context/manager/goals.md",
     "intentions": ".context/manager/intentions.md",
     "plans": ".context/manager/plans.md",
-    "contract": ".context/manager/CONTRACT.md"
+    "contract": ".context/manager/CONTRACT.md",
+    "state_integrity": ".context/manager/state-integrity.json"
   },
   "memory": {
     "index": ".context/memory/index.md",
@@ -43,7 +44,8 @@
     ".context/rules/project-rules.md"
   ],
   "decisions": [
-    ".context/decisions/DEC-0001-persistent-manager-migration.md"
+    ".context/decisions/DEC-0001-persistent-manager-migration.md",
+    ".context/decisions/DEC-0002-manager-state-coherence-adoption.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"
@@ -91,7 +93,8 @@
     "supplied_execution_fence_enforced": true,
     "evidence_backed_external_completion_required": true,
     "terminal_execution_cleanup_required": true,
-    "external_gate_reconciliation_required": true
+    "external_gate_reconciliation_required": true,
+    "manager_state_coherence_required": true
   },
   "updated_at": "2026-09-24",
   "context_version": "2.0.0-dev",

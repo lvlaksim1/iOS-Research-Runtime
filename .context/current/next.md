@@ -1,8 +1,8 @@
 # Next actions
 
-1. Do not rerun terminal-success Ramdisk Tool Windows `36018076878`; it already validates product SHA `1ff060bd867587cc0e4c04e3469d9fb6488147e3`.
-2. Continue waiting on the already-existing exact Windows End-to-End Boot `36018076770`, same SHA. It is currently in progress at job `107695937346`, step 11 `Run provisioning and Darwin root-shell proof`; do not start a replacement run merely for runtime-resume proof.
-3. When `36018076770` becomes terminal, inspect its exact job logs and end-to-end evidence artifact. Extract enriched source-vs-rebuilt APSB diagnostics, recursive root-tree evidence and file-extent owner/logical/physical/length/bounds/overlap evidence.
-4. Persist the exact-SHA-bound conclusion. Only concrete mount-significant discriminator evidence may justify the smallest corresponding writer hypothesis.
-5. If APSB/root-tree/file-extent evidence identifies no concrete defect, move to a new read-only checkpoint/container-transaction discriminator.
-6. Do not change APFS writer/allocation/XID/checkpoint/on-disk semantics before that discriminator gate is satisfied.
+1. Complete independent Auditor verification that this iOS manager snapshot is correctly bound to remediated Core `3a942bd269ec7ee164575589e702e5074da30a29`, has a valid sealed generation, is READY/recoverable, and did not change product `main`.
+2. After IOSPM-001 closure, resume `IOS-M1` from the already-produced artifact `10815533344`; do not rerun terminal E2E `36018076770` merely for continuity.
+3. Extract and compare enriched source-vs-rebuilt APSB diagnostics, recursive root-tree evidence, and file-extent owner/logical/physical/length/bounds/overlap evidence.
+4. Persist the exact-SHA-bound conclusion.
+5. Only concrete mount-significant discriminator evidence may justify the smallest corresponding APFS writer hypothesis.
+6. If the enriched evidence identifies no concrete defect, move to a new read-only checkpoint/container-transaction discriminator.

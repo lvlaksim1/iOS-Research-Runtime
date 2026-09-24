@@ -103,6 +103,16 @@ For substantial work use:
 
 Completion claims require verification. Persistence follows semantic change, not every runtime event or confirming CI run.
 
+### Coherent durable state publication
+
+A semantically coupled Persist has a durable coherence boundary. The manager-state authority branch carries a Core-managed integrity marker that seals the hashes of beliefs, goals, intentions, plans, current state/blockers/next, and the latest handoff as one logical generation.
+
+A Persist is not complete until that marker matches every coupled file. Prefer publishing the coupled changes and the new marker in one atomic Git commit. If transport limitations require multiple commits, leave the previous marker unchanged until every coupled file is final, then publish the new marker last. Any intermediate mixed snapshot MUST be treated as NOT READY and MUST NOT authorize consequential continuation in a replacement runtime.
+
+A replacement runtime must pass the integrity check before using the durable state as a coherent reinstantiation snapshot. Reconciliation may repair semantic disagreement only after the snapshot is structurally coherent; it is not a substitute for detecting interrupted publication.
+
+Legacy v2 capsules that predate the integrity marker do not silently gain this guarantee. They become protected only through explicit Core repair/bootstrap, which creates the first sealed generation.
+
 ## 10. Self-modification boundary
 
 The manager may update its beliefs, plans, working state, and memory within mandate.
