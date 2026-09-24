@@ -1,7 +1,10 @@
 # Next actions
 
-1. Register `ios-research-runtime-project-manager` in the shared Agent Control Plane using the standard persistent-agent registry model only.
-2. Formally mark the old `ai-agent-lab` iOS production object as RETIRED/MIGRATED without deleting its evidence and without re-enabling any old scheduler.
-3. Reconcile the current `main` product state, exact E2E evidence, and candidate shift-154 technical conclusions from independent sources.
-4. Build a compact hypothesis-driven engineering plan for `mountroot error 79`.
-5. Prove clean-runtime reinstantiation before resuming APFS product mutation.
+1. Prove a clean runtime can discover `main`, redirect to `manager-state`, reinstate manager ID `ios-research-runtime-project-manager`, restore the active commitments and recover this exact next engineering plan without relying on prior chat context.
+2. Persist the stage-9 result and close the migration gate if successful.
+3. Resume product development under the same persistent manager with a diagnostic-only APFS evidence change:
+   - fuller APSB fields;
+   - full root-tree snapshot;
+   - file-extent consistency summary.
+4. Run exact Windows E2E and use the evidence to select a concrete writer hypothesis.
+5. Do not change APFS writer semantics until that discriminator identifies a specific defect.

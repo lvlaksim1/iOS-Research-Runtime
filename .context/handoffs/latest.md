@@ -1,24 +1,25 @@
 # Latest handoff
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager-state branch: `manager-state`.
-Product authority branch: `main`.
+Manager-state authority: `manager-state`.
+Product authority: `main`.
 
-## Last completed work
+## Completed
 
-Migration stages 1-2 are complete. The project baseline and retained technical evidence were recorded.
+Migration stages 1-8 are complete.
 
-Stages 3-4 establish this persistent Project Manager and its project-specific mandate.
+The manager is installed and registered in the shared Agent Control Plane; the old rotating-worker iOS autonomy is archived and has no pending executable event.
 
-## Verified current state
+Legacy shift-154 extentref claims were independently reproduced from exact E2E artifact 10655952032 and exact product code. The raw extentref-count difference does not justify another semantic writer change.
 
-Product-code baseline entering migration:
-`3b0f5648f004f58daef526082b3d2a32d132edcf`.
+## Verified product boundary
 
-Exact Windows E2E run `35634992757` is bound to that SHA and fails at APFS root mounting with repeated error 79 after XNU identifies `md0`.
-
-Legacy checkpoint `fde4f271...` remains candidate evidence pending independent revalidation.
+Product-code baseline: `3b0f5648f004f58daef526082b3d2a32d132edcf`.
+Windows E2E run: `35634992757`.
+Current failure: repeated APFS `mountroot error 79` after `BSD root: md0`.
 
 ## Next operation
 
-Register this manager in the shared Agent Control Plane and complete the legacy migration record.
+Stage 9: clean-runtime reinstantiation proof.
+
+After that proof, resume development with the diagnostic-only APSB/root-tree evidence experiment recorded in `.context/manager/plans.md`.

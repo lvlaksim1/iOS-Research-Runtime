@@ -45,7 +45,9 @@
   "decisions": [
     ".context/decisions/DEC-0001-persistent-manager-migration.md"
   ],
-  "dialogues": [],
+  "dialogues": [
+    ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"
+  ],
   "history": [],
   "runtime": {
     "authoritative_paths": [],

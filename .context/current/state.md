@@ -3,38 +3,34 @@
 ## Governance topology
 
 - persistent manager: `ios-research-runtime-project-manager`;
-- manager-state authority branch: `manager-state`;
-- product authority branch: `main`;
+- manager-state authority: `manager-state`;
+- product authority: `main`;
 - discovery branch: `main`;
-- old `ai-agent-lab` shift-worker production is superseded for this project and remains disabled.
+- Agent Control Plane registration: verified at `705346c3bc702343ac1e1a25fd6e4a0bde1a3d6f`;
+- legacy `ai-agent-lab` iOS autonomy: ARCHIVED / MIGRATED.
 
 ## Migration progress
 
-Completed:
-- stages 1-2: exact baseline capture and separation of durable technical knowledge from retired orchestration;
-- stage 3: project-local Context Capsule v2 installation is being published;
-- stage 4: the manager mandate is being established without rotating workers.
+Completed: stages 1-8.
+Next: stage 9 clean-runtime reinstantiation proof.
 
-Pending:
-- stage 5: shared Agent Control Plane registration;
-- stage 6: formal retirement/migration marker in the legacy autonomy;
-- stage 7: independent technical reconciliation;
-- stage 8: engineering plan from verified evidence;
-- stage 9: clean-runtime reinstantiation proof;
-- later development/resume tests.
+No product-code mutation has occurred during stages 1-8.
 
-## Product baseline
+## Verified technical boundary
 
-Last product-code baseline before migration documentation:
+Product-code baseline:
 `3b0f5648f004f58daef526082b3d2a32d132edcf`.
 
-Exact Windows E2E evidence:
+Exact Windows E2E:
 - run `35634992757`;
-- branch `main`;
-- head SHA `3b0f5648f004f58daef526082b3d2a32d132edcf`;
-- artifact `ios-darwin-windows-e2e`;
-- artifact digest `sha256:49ea4772133376adcf79f2e5604e6a196d4b4d9c8d9fe12814ce6d03a98c1d73`;
-- result: FAILURE at Darwin root-shell proof;
-- repeated runtime discriminator: APFS `mountroot failed, error: 79` after `BSD root: md0`.
+- artifact `10655952032 / ios-darwin-windows-e2e`;
+- digest `sha256:49ea4772133376adcf79f2e5604e6a196d4b4d9c8d9fe12814ce6d03a98c1d73`;
+- XNU identifies `md0` and APFS repeatedly fails root mount with error 79.
 
-No product code has been changed by migration stages 1-4.
+Independent extentref reconciliation:
+- source: 719 records, all refcount 1, 719 unique owners, 46,740 blocks; APSB net allocation 46,740;
+- rebuilt: 1,360 records, all refcount 1, 1,360 unique owners, 51,651 blocks; APSB net allocation 51,844;
+- rebuilt delta: 193 blocks, consistent with pinned writer-owned metadata allocation;
+- root/extentref/snapshot-metadata checksums exposed by the artifact are valid.
+
+Conclusion: extentref count/conservation is no longer the active discriminator. Next engineering evidence is fuller APSB and root-tree semantics.
