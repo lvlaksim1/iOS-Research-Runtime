@@ -9,10 +9,10 @@
 - completion evidence: stages 1-9 are durably represented; clean-runtime reinstantiation is PASS and product development has resumed.
 
 ### IOSPM-001 protected-state adoption
-- status: completed in this sealed manager-state generation
-- source: direct Owner remediation directive plus independent retest 001
+- status: completed and independently closed
+- source: direct Owner remediation directive plus final Auditor retest `AUD-2026-09-24-IOSPM-001-RETEST-002`
 - responsibility: `ios-research-runtime-project-manager`
-- completion condition: bind this manager to remediated Context Capsule Core and publish a coherent generation without changing product `main`.
+- completion evidence: remediated Core bound, coherent sealed generation independently verified, product `main` unchanged, IOSPM-001 CLOSED / High confidence.
 
 ## Active commitments
 

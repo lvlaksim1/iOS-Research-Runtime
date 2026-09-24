@@ -23,4 +23,4 @@ A new Runtime reinstantiates this same manager. Progress is measured by verified
 
 ## Manager-state coherence protection
 
-This manager is now being bound to remediated Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29` and its first sealed generation. Subsequent replacement runtimes must pass the integrity marker before consequential continuation. This adoption changes manager-state governance only; it does not change product `main` or APFS semantics.
+This manager is bound to remediated Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29`; final Auditor retest closed IOSPM-001. Every subsequent replacement Runtime must pass the integrity marker before consequential continuation. The next engineering operation is plan step 4: analyze existing artifact `10815533344` without rerunning E2E `36018076770`.
