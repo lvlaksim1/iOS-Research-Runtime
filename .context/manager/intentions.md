@@ -1,20 +1,22 @@
 # Manager intentions and commitments
 
-## Active commitments
+## Completed commitments
 
 ### MIG-IOS-001 — persistent-manager migration
-- status: accepted/active
+- status: completed
 - source: direct Owner directive on 2026-09-24
 - responsibility: `ios-research-runtime-project-manager`
-- commitment: complete migration from the retired `ai-agent-lab` shift-worker model to the project-local persistent Project Manager model, including registration, legacy retirement, technical reconciliation, engineering plan, and clean-runtime reinstantiation proof.
-- completion evidence: all agreed migration gates are durably represented and independently re-readable from GitHub.
+- completion evidence: stages 1-9 are durably represented; `.context/runtime-tests/2026-09-24-clean-reinstantiation.md` records the terminal clean-runtime result **PASS**, and that result was reconciled before product development resumed.
+
+## Active commitments
 
 ### IOS-M1 — first Windows boot milestone
 - status: accepted/active
 - source: project goal plus Owner direction to resume development under the new model
 - responsibility: `ios-research-runtime-project-manager`
 - commitment: drive the project toward verified recovery `launchd` and root-shell boot on Windows.
-- execution gate: technical product mutation remains paused until the migration/reconciliation gates explicitly allow development to resume.
+- current execution: first post-migration diagnostic-only APFS evidence cycle is running against product commit `ff0e637733c2b1365d39e0af6152f75de34e0984`; exact Windows E2E run `36017905181` is non-terminal at the current checkpoint.
+- semantic fence: do not change APFS writer/allocation/XID/checkpoint/on-disk semantics until diagnostic evidence identifies a concrete defect.
 
 ## Superseded operating model
 
