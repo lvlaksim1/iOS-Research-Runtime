@@ -12,7 +12,7 @@
 - status: completed and independently closed
 - source: direct Owner remediation directive plus final Auditor retest `AUD-2026-09-24-IOSPM-001-RETEST-002`
 - responsibility: `ios-research-runtime-project-manager`
-- completion evidence: remediated Core bound, coherent sealed generation independently verified, product `main` unchanged, IOSPM-001 CLOSED / High confidence.
+- completion evidence: remediated Core bound, coherent sealed generation independently verified, product `main` unchanged during adoption, IOSPM-001 CLOSED / High confidence.
 
 ## Active commitments
 
@@ -20,10 +20,11 @@
 - status: accepted/active
 - source: project goal plus Owner direction to resume development under the persistent manager
 - responsibility: `ios-research-runtime-project-manager`
-- commitment: drive the project toward verified recovery `launchd` and root-shell boot on Windows.
-- current execution: continue the diagnostic-only APFS evidence cycle at exact product SHA `1ff060bd867587cc0e4c04e3469d9fb6488147e3`. Ramdisk Tool Windows `36018076878` is terminal SUCCESS. Windows E2E `36018076770` is terminal FAILURE and produced artifact `10815533344`; error 79 persists.
-- continuation rule: do not rerun the completed E2E merely for continuity. Inspect the existing artifact and integrate enriched APSB/root-tree/file-extent evidence before selecting the next discriminator.
-- semantic fence: do not change APFS writer/allocation/XID/checkpoint/on-disk semantics until diagnostic evidence identifies a concrete defect.
+- commitment: drive the project to verified recovery `launchd` and a verified root shell on Windows.
+- reconciled execution boundary: live `main` is `669f2b989cf2ab5a0958ca517334a485062e8406`. The raw-APFS packaging correction (`d743b2e...`) and regression test (`b3befaeb...`) superseded the former APFS error-79 boundary. Exact E2E `36127395221` reaches `launchd` but does not obtain root shell because AMFI rejects `/bin/bash` with code-signature validation and launch-constraint violations.
+- current evidence: Ramdisk Tool Windows `36125764919` SUCCESS; qemu-sptm Windows Gate `36125764912` SUCCESS; Windows E2E `36127395221` FAILURE at root-shell proof; artifact `10862632528`, digest `sha256:456d1d12887572fa60570ce717c3bf32c850c46a6eebc9df93049a089601d809`.
+- continuation rule: do not return to APFS error-79 diagnostics unless live evidence regresses to an APFS mount failure. Continue from the current launchd/AMFI boundary.
+- semantic fence: avoid speculative broad signing/trust-cache/security-policy changes. Select the smallest evidence-backed change that can prove `/bin/bash` execution and the root-shell milestone.
 
 ## Superseded operating model
 

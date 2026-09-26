@@ -2,7 +2,18 @@
 
 ## Active product blocker
 
-The rebuilt APFS recovery ramdisk is still rejected during Darwin root mounting with error 79 in exact E2E `36018076770` at product SHA `1ff060bd867587cc0e4c04e3469d9fb6488147e3`.
+Current `main` reaches recovery `launchd`, but the root-shell proof fails because AMFI repeatedly rejects `/bin/bash` with code-signature validation failure and `Launch Constraint Violation (enforcing)`.
+
+Exact current evidence:
+- product SHA: `669f2b989cf2ab5a0958ca517334a485062e8406`;
+- Windows E2E: `36127395221`;
+- job: `108046547984`;
+- artifact: `10862632528`;
+- artifact digest: `sha256:456d1d12887572fa60570ce717c3bf32c850c46a6eebc9df93049a089601d809`.
+
+## Superseded blocker
+
+APFS `mountroot failed, error: 79` was the earlier boundary at `1ff060bd...` and prior revisions. It is not reproduced in the current exact E2E after the raw-APFS packaging correction and must not drive new work unless it reappears in fresh exact-SHA evidence.
 
 ## Governance status
 
@@ -10,6 +21,4 @@ IOSPM-001 is CLOSED / Medium severity / High confidence. No governance blocker p
 
 ## Current evidence gate
 
-Analyze enriched artifact `10815533344` before choosing the next APFS hypothesis. Error 79 persistence alone does not identify the concrete writer defect.
-
-APFS writer/allocation/XID/checkpoint/on-disk semantics remain fenced against change until concrete discriminator evidence identifies a defect.
+Before changing signing/trust-cache/launch policy semantics, identify a narrow discriminator for why the intended `/bin/bash` execution is rejected by AMFI. Broad speculative security-policy changes are not justified.

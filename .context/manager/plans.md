@@ -2,20 +2,18 @@
 
 ## Migration status
 
-Persistent-manager migration and clean-runtime reinstantiation proof are COMPLETE. Product development has resumed under the same `ios-research-runtime-project-manager`; migration is not the next operation.
+Persistent-manager migration and clean-runtime reinstantiation proof are COMPLETE. IOSPM-001 is independently CLOSED. Product development remains under the same `ios-research-runtime-project-manager`.
 
 ## Active IOS-M1 engineering cycle
 
-1. Read-only APSB/root-tree/file-extent diagnostics were implemented; a compile-only diagnostic field-name defect was corrected at current product SHA `1ff060bd867587cc0e4c04e3469d9fb6488147e3` without changing writer semantics. COMPLETE.
-2. Ramdisk Tool Windows validation `36018076878` for that SHA is terminal SUCCESS. COMPLETE.
-3. Windows End-to-End Boot run `36018076770` is terminal FAILURE at the exact product SHA and uploaded end-to-end artifact `10815533344`; repeated APFS mountroot error 79 remains. COMPLETE as an execution gate.
-4. Inspect the existing end-to-end artifact and integrate source-vs-rebuilt APSB diagnostics, recursive root-tree evidence and file-extent summaries including owner IDs, logical/physical ranges, bounds and overlap results. NEXT.
-5. Use that evidence as discriminator gate:
-   - mount-significant APSB mismatch -> smallest field-specific writer hypothesis;
-   - root-tree/file-extent inconsistency -> smallest tree/extent writer hypothesis;
-   - neither -> next read-only checkpoint/container-transaction discriminator.
-6. Do not change APFS writer/allocation/XID/checkpoint/on-disk semantics without concrete new discriminator evidence.
-7. A claimed root-cause fix or root-shell milestone should receive independent Auditor verification before closure.
+1. Reconcile the post-capsule product history from `1ff060bd...` through live `main` `669f2b989cf2ab5a0958ca517334a485062e8406`. COMPLETE.
+2. Confirm the raw-APFS packaging change at `d743b2e...` and its test at `b3befaeb...`. COMPLETE.
+3. Verify current Windows gates and E2E. Ramdisk Tool Windows `36125764919` SUCCESS; qemu-sptm Windows Gate `36125764912` SUCCESS; Windows E2E `36127395221` reaches `launchd` but fails root-shell proof. COMPLETE as an evidence gate.
+4. Treat APFS mount error 79 as superseded for the current branch unless a future exact-SHA run reproduces it. COMPLETE.
+5. NEXT: inspect the current root-shell execution path, trust-cache/CDHash generation and launchd service configuration against exact artifact/log evidence from `36127395221` / artifact `10862632528`, with focus on why AMFI classifies `/bin/bash` as violating launch constraints despite the intended trust-cache path.
+6. Form one narrow discriminator for the AMFI failure before changing product code. Prefer read-only or validation-only evidence first.
+7. If the discriminator identifies a concrete signing/trust-cache/launch-constraint defect, implement the smallest corresponding change and rerun the minimum exact Windows validation plus E2E needed to prove root-shell behavior.
+8. A claimed root-shell milestone should receive independent Auditor verification before closure.
 
 ## Development discipline
 
@@ -23,4 +21,4 @@ A new Runtime reinstantiates this same manager. Progress is measured by verified
 
 ## Manager-state coherence protection
 
-This manager is bound to remediated Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29`; final Auditor retest closed IOSPM-001. Every subsequent replacement Runtime must pass the integrity marker before consequential continuation. The next engineering operation is plan step 4: analyze existing artifact `10815533344` without rerunning E2E `36018076770`.
+This manager remains bound to remediated Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29`. Every replacement Runtime must pass the sealed-generation integrity marker before consequential continuation.

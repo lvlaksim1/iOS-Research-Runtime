@@ -12,14 +12,20 @@ The manager remains bound to Context Capsule Core `3a942bd269ec7ee164575589e702e
 
 ## Durable product commitment
 
-`IOS-M1` remains active: reach verified recovery `launchd` and root-shell boot on Windows.
+`IOS-M1` remains active: verified recovery `launchd` plus verified root shell on Windows.
 
-Current product SHA: `1ff060bd867587cc0e4c04e3469d9fb6488147e3` (live `main`).
+Live product SHA: `669f2b989cf2ab5a0958ca517334a485062e8406`.
 
-Ramdisk Tool Windows `36018076878`: SUCCESS.
-Windows End-to-End Boot `36018076770`: FAILURE with repeated APFS mountroot error 79.
-Existing artifact: `10815533344`.
+Verified current boundary:
+- raw-APFS packaging correction: `d743b2e728d9cda194c7e76909f76a5f1704194f`;
+- regression test: `b3befaeb8c0f2635623d3d8a56226199d2d0753e`;
+- Ramdisk Tool Windows `36125764919`: SUCCESS;
+- qemu-sptm Windows Gate `36125764912`: SUCCESS;
+- Windows End-to-End Boot `36127395221`: FAILURE at root-shell proof;
+- artifact `10862632528`, digest `sha256:456d1d12887572fa60570ce717c3bf32c850c46a6eebc9df93049a089601d809`.
+
+The current E2E reaches `BSD root: md0` and `launchd`; APFS mount error 79 is not present. Root shell is blocked by repeated AMFI code-signature validation failure and launch-constraint enforcement for `/bin/bash`.
 
 ## Continuation
 
-Owner directed planned development to resume after IOSPM-001 closure. Continue from the existing artifact: analyze enriched APSB/root-tree/file-extent evidence before any writer-semantic change. Do not restart the engineering cycle or rerun the completed E2E merely because the Runtime changed.
+Continue from the launchd/AMFI boundary. Inspect shell signature/CDHash/trust-cache/service evidence, define one narrow discriminator, and make no broad speculative security-policy mutation. Do not restart the obsolete APFS error-79 cycle unless fresh evidence reproduces it.
