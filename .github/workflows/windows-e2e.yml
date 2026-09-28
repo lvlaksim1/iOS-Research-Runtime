@@ -67,11 +67,22 @@ jobs:
               "X-GitHub-Api-Version" = "2022-11-28"
               "User-Agent" = "iOS-Research-Runtime-CI"
             }
-            $url = "https://api.github.com/repos/$env:REPOSITORY/actions/workflows/qemu-sptm-windows.yml/runs?branch=main&status=success&per_page=1"
+            $url = "https://api.github.com/repos/$env:REPOSITORY/actions/workflows/qemu-sptm-windows.yml/runs?branch=main&status=success&per_page=20"
             $response = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
-            $run = $response.workflow_runs | Select-Object -First 1
+            $run = $null
+            foreach ($candidate in $response.workflow_runs) {
+              $artifactsUrl = "https://api.github.com/repos/$env:REPOSITORY/actions/runs/$($candidate.id)/artifacts?per_page=100"
+              $artifacts = Invoke-RestMethod -Uri $artifactsUrl -Headers $headers -Method Get
+              $gateArtifact = $artifacts.artifacts |
+                Where-Object { $_.name -eq "qemu-sptm-windows-gate" -and -not $_.expired } |
+                Select-Object -First 1
+              if ($gateArtifact) {
+                $run = $candidate
+                break
+              }
+            }
             if (!$run) {
-              throw "No successful qemu-sptm Windows Gate run is available"
+              throw "No successful qemu-sptm Windows Gate run with an available qemu-sptm-windows-gate artifact is available"
             }
             $runId = [string]$run.id
             $runSha = [string]$run.head_sha
