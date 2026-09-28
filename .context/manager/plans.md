@@ -1,49 +1,57 @@
 # Manager plans
 
-## Current checkpoint
+## Continuous PP-RM package
 
-Product authority:
-- `main@cbba4060db543d4a2b800f7c15b2a700e69f6961`
+Package: `IOS-M1-CONTINUOUS-001`
 
-Exact current CI:
-- Ramdisk Tool Windows `36483217843`: SUCCESS
-- Windows Build `36483217817`: SUCCESS
-- Windows End-to-End Boot `36483217835`: FAILURE before Darwin boot
-- Windows Full Package `36483310512`: SKIPPED
+High-level objective:
+Advance the current product from `main@cbba4060db543d4a2b800f7c15b2a700e69f6961` to verified Windows recovery `launchd` plus verified root shell, using evidence-driven bounded A/B turns.
 
-Current E2E blocker:
-- job `109133700969`
-- failed step: `Download QEMU runtime from gate`
-- exact failure: artifact `qemu-sptm-windows-gate` not found
-- downstream provisioning/root-shell steps were skipped
+## Immediate work
 
-## OCB evidence checkpoint
+1. Reconcile current `main` and exact current CI.
+2. Diagnose why E2E expects `qemu-sptm-windows-gate` but cannot download it.
+3. Repair the existing gate/artifact path with the smallest evidence-backed repository change. Do not change iOS/APFS semantics merely to bypass infrastructure.
+4. Run/observe exact-SHA Windows E2E.
+5. If E2E reaches a product/boot failure, diagnose and fix the next evidence-supported defect within IOS-M1 scope.
+6. Continue A/B turns through subsequent build/CI/boot iterations without returning to Manager merely because an intermediate stage failed.
+7. Continue until IOS-M1 is achieved or a genuine stop condition is reached.
 
-Observed publication sequence across targeted runs:
-1. full production turn: update-ref attempt1=EXPLICIT_OSB, attempt2=EXPLICIT_OSB, no publication;
-2. minimal targeted probe #1: same target update-ref attempt1=SUCCESS, publication confirmed;
-3. minimal targeted probe #2, same request parameters with main already at target: attempt1=EXPLICIT_OSB, attempt2=EXPLICIT_OSB, attempt3=SUCCESS.
+## Worker autonomy inside this package
 
-Interpretation:
-- request context/sequence appears to affect passability;
-- a third exact-identical attempt can succeed after two explicit OSBs;
-- current evidence is too small and partly idempotent to set a universal permanent retry count;
-- any mutation retry policy must preserve exact server-state reconciliation.
+Workers MAY:
+- inspect repository history, workflows, source, tests, logs, artifacts metadata, and exact run/job evidence;
+- make narrow repository changes needed to repair build, workflow, QEMU gate, ramdisk, boot integration, or other IOS-M1 execution defects;
+- add/adjust deterministic regression coverage directly related to a fix;
+- commit/publish changes to `main` when the live branch still matches the worker's reconciled base;
+- observe and classify resulting CI;
+- choose tactical implementation details when evidence supports them.
 
-## Next development sequence
+Workers MUST NOT:
+- publish releases;
+- mutate `manager-state`;
+- change milestone, authority topology, or persistent-agent architecture;
+- introduce broad speculative APFS/security changes without evidence;
+- perform destructive unrelated repository operations.
 
-1. Keep PP-RM paused while Manager owns this checkpoint.
-2. Before any new A/B run, deliberately reseed Mailbox/Pulse/Trace because the current Mailbox is stale after the minimal targeted probes.
-3. Resolve the current E2E infrastructure blocker by restoring/producing the expected `qemu-sptm-windows-gate` artifact or otherwise repairing the existing gate path using repository evidence; do not change iOS/APFS product semantics merely to bypass the missing artifact.
-4. Rerun Windows End-to-End Boot against exact product SHA `cbba4060...`.
-5. Classify the first genuine boot-stage result for `cbba4060...`:
-   - persistent APFS error 79 -> Manager checkpoint;
-   - recovery `launchd` / AMFI boundary -> Manager checkpoint;
-   - unexpected regression -> Manager checkpoint;
-   - root shell -> evaluate IOS-M1 completion;
-   - infrastructure/tool ambiguity -> Manager checkpoint.
-6. Separately review OCB retry policy from the accumulated Trace evidence. Until a deliberate Manager decision is persisted, treat the third attempt as experimentally supported but not universal.
+## OCB
 
-## Continuity
+Operational parameters remain:
+- explicit OSB only;
+- exact request attempt 1;
+- if explicit OSB, exact-identical attempt 2;
+- if attempt 2 also explicit OSB, exact-identical attempt 3;
+- no attempt 4;
+- authoritative state reconciliation after mutation attempt sequences;
+- ambiguous mutation => no blind replay.
 
-Every replacement Manager runtime must verify the sealed generation before consequential action. Live Scheduled Task registers never replace Manager-state authority.
+## Handoff behavior
+
+Each runtime does one bounded meaningful unit of work. If the objective is not complete and no genuine stop condition exists:
+- publish next Mailbox generation with factual checkpoint and next bounded action;
+- verify read-back;
+- append Trace SEND;
+- arm partner as LAST TOOL OPERATION;
+- zero tool calls afterward.
+
+CI waiting is not a Manager stop. If evidence is still running, hand off a WAIT_CI turn to the partner.

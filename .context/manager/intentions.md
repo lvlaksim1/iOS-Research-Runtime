@@ -1,41 +1,32 @@
 # Manager intentions and commitments
 
-## Completed
-
-### MIG-IOS-001
-- status: completed
-- responsibility: `ios-research-runtime-project-manager`
-
-### IOSPM-001 protected-state adoption
-- status: completed and independently closed
-
-### IOS-PP-RM-PILOT-001
-- status: completed / PASS on attempt 2
-- result: A1 -> B2 -> A3 -> FINAL completed with exact SEND/ACK handoffs and safe terminal state.
-- durable corrections: bounded read-only register stabilization; authoritative GitHub operation counts come from tagged Trace events.
-
-### OCB3 targeted retry experiment
-- status: completed / evidence captured
-- first minimal targeted publication probe: attempt1=SUCCESS and `main` moved to `cbba4060...`.
-- repeated minimal probe with same request parameters while `main` already equaled target: attempt1=EXPLICIT_OSB, attempt2=EXPLICIT_OSB, attempt3=SUCCESS.
-- conclusion: third identical attempt can improve passability in at least one observed run; evidence is insufficient to make three attempts a permanent universal rule.
-- responsibility: `ios-research-runtime-project-manager`
-
 ## Active
 
 ### IOS-M1 — first Windows boot milestone
 - status: active
 - responsibility: `ios-research-runtime-project-manager`
+- objective: verified recovery `launchd` plus verified root shell on Windows.
 - current product: `main@cbba4060db543d4a2b800f7c15b2a700e69f6961`
-- current exact-SHA gate state: ramdisk tool and Windows build PASS; E2E blocked before boot because artifact `qemu-sptm-windows-gate` is missing.
-- commitment: restore exact E2E execution for current SHA, then continue evidence-driven boot investigation to verified `launchd` and root shell.
+- immediate technical state: raw-APFS restoration published; narrow Windows gates pass; E2E is blocked before Darwin boot by missing `qemu-sptm-windows-gate` artifact.
 
-### IOS-PP-RM-001 — PP-RM production execution
-- status: admitted / paused at Manager checkpoint
+### IOS-PP-RM-001 — continuous production execution
+- status: active
 - responsibility: `ios-research-runtime-project-manager`
-- next runtime action requires deliberate Manager reseed because current Mailbox is stale relative to project truth.
-- A/B remain execution carriers only; Manager retains strategy and durable state ownership.
+- mode: continuous A/B turns under one Manager package, without artificial stops after intermediate stages.
+- worker responsibility: one bounded technical turn, verified side effects, durable handoff, then successor arm as the final tool operation.
+- stop only for genuine Manager conditions: objective achieved; authority/scope change required; destructive/high-impact action outside mandate; unresolved ambiguous mutation; PP-RM invariant failure that cannot be safely repaired; or a strategic fork that changes milestone/architecture rather than tactics.
+- ordinary CI failure, missing artifact, reproducible build/test failure, and evidence-backed tactical fixes remain inside the continuous package.
 
-## Superseded
+## OCB operating commitment
 
-The retired `ai-agent-lab` rotating shift-worker/OTK factory remains superseded and must not be re-enabled.
+- Explicit OSB only.
+- Maximum three exact-identical attempts total for the same request when each previous attempt is explicit OSB.
+- No automatic fourth attempt.
+- After any mutation attempt sequence, reconcile authoritative server state.
+- Never blindly duplicate an ambiguous mutation.
+
+## Completed evidence
+
+- PP-RM admission pilot PASS.
+- Raw-APFS restoration published at `cbba4060...`.
+- OCB3 experiments captured, including one observed `OSB -> OSB -> SUCCESS` sequence.
