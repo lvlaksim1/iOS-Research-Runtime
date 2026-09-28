@@ -1,13 +1,15 @@
 # Procedural memory
 
-- Before product work, reconcile exact live `main` and distinguish current product state from historical verified evidence. source: split-authority contract plus 2026-09-28 rollback reconciliation; authority: core-contract plus verified-repository.
-- For APFS investigation, define one concrete hypothesis and discriminator before semantic changes; prefer read-only evidence, make the smallest evidence-supported change, run exact Windows validation/E2E, then classify supported/rejected/unresolved. source: Owner-approved migration discipline; authority: owner-directive plus verified-project-history.
-- A new Manager runtime reinstates `ios-research-runtime-project-manager`, verifies sealed state, reconciles `main`, and continues active commitments. source: Context Capsule Manager Contract; authority: core-contract plus owner-directive.
-- Product milestone completion requires exact repository and test/runtime evidence; commit volume or narrative reports are insufficient. source: project rules; authority: owner-directive plus verified-project-history.
-- PP-RM procedure: Manager issues a bounded package; A/B fresh-reads and validates Mailbox/Trace, ACKs, executes one bounded turn, completes all side effects, writes Pulse and next Mailbox, exact-read-backs, records SEND, then arms one successor as the final tool operation. source: Owner-provided PP-RM specification; authority: owner-provided-evidence.
-- Before production admission, run the A1 -> B2 -> A3 -> FINAL PP-RM pilot, verify handoff/read-back/ACK/Pulse/Trace/last-operation invariants, collect GitHub passability evidence, then stop for Manager review. source: Owner-provided PP-RM specification plus direct Owner instruction 2026-09-28; authority: owner-provided-evidence plus owner-directive.
-- OCB classification: only explicit OSB on a GitHub request is automatically handled as OCB. Timeout, HTTP/API, network, tool-unavailable and unknown errors are not automatically OCB. source: Owner-provided PP-RM specification; authority: owner-provided-evidence.
-- Initial OCB response: one exact identical retry after explicit OSB is desired but not mandatory; skip only with recorded reason. No automatic third identical request. source: direct Owner correction 2026-09-28; authority: owner-directive.
-- Never blindly duplicate an ambiguous mutation; reconcile authoritative server state first and use idempotency/deduplication. source: PP-RM specification; authority: owner-provided-evidence.
-- Record operation_id and outcome telemetry for GitHub requests so Manager can measure first-attempt success, OSB incidence, retry recovery, exhaustion and ambiguity. source: direct Owner optimization goal; authority: owner-directive.
-- After pilot, Manager explicitly analyzes results and may revise OCB conditions/timing/handling. Optimization target is minimum OCB impact on Scheduler <-> GitHub throughput without sacrificing correctness. source: direct Owner correction 2026-09-28; authority: owner-directive.
+- Before product work, reconcile exact live `main` and distinguish current product state from historical evidence.
+- PP-RM A/B executes one bounded turn per runtime and uses Mailbox/Pulse/Trace for transport and evidence.
+- Handoff order: validate -> ACK -> bounded work -> finish side effects -> Pulse -> outbound Mailbox -> bounded read-back stabilization -> Trace SEND -> successor arm as LAST TOOL OPERATION -> zero post-arm tool calls.
+- Register read-back stabilization: after one register mutation, use up to three fresh read-only Scheduled Tasks reads to observe the exact intended state. Never repeat the mutation solely because the first read is stale.
+- Repeated message_id must never repeat product side effects; deduplicate before work.
+- Scheduler delay alone is not protocol failure and never authorizes timeout takeover.
+- GitHub telemetry uses one uniquely tagged Trace event per request/attempt. Authoritative totals are calculated from those events by Manager; worker aggregate summaries are advisory only.
+- OCB: explicit OSB on a GitHub request may receive one desired exact-identical retry; retry is not mandatory; no automatic third identical request.
+- Non-OSB timeout/API/network/tool failures are not automatically OCB.
+- Never blindly repeat an ambiguous GitHub mutation; reconcile server state first when possible.
+- Pilot admission evidence: attempt 2 A1 -> B2 -> A3 -> FINAL PASS; 4/4 GitHub READ first-attempt success; zero explicit OSB. OCB retry effectiveness remains untested.
+- At a high-level checkpoint, A/B stops successor chaining and returns exact repository/CI/runtime evidence to Manager.
+- A/B ordinary execution never mutates `manager-state`; Manager persists durable meaning.

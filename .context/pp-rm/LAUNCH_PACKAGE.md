@@ -1,267 +1,140 @@
 # PP-RM Launch Package — iOS Research Runtime
 
-Status: PREPARED / NOT ARMED
+Status: PRODUCTION ADMITTED / IOS-M1-R1 READY TO ARM
 Manager: `ios-research-runtime-project-manager`
-Manager-state target generation: 6
-Pilot package: `IOS-PP-RM-PILOT-001`
-Queued production package: `IOS-M1-R1`
+Manager generation: 7 after seal
 Product baseline: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`
 
-This is the Manager-side launch recipe. Live Mailbox/Pulse/Trace state belongs to native Scheduled Tasks.
+## Admission result
 
-## 1. Slot gate
+`IOS-PP-RM-PILOT-001`:
+- attempt 1 safely stopped on immediate read-back mismatch; eventual server state matched the write;
+- bounded read-only stabilization was added;
+- attempt 2 completed A1 -> B2 -> A3 -> FINAL PASS;
+- actual attempt-2 GitHub READ events: 4/4 first-attempt success;
+- explicit OSB=0, other GitHub errors=0, ambiguous outcomes=0;
+- Worker FINAL aggregate undercounted requests, so tagged Trace events are authoritative;
+- scheduler delays of minutes were observed without baton corruption.
 
-Before launch:
-- list Scheduled Tasks;
-- require external enabled tasks <= 3;
-- keep one spare active slot for A/B handoff peak.
+OCB remains provisional because the pilot did not produce an explicit OSB.
 
-Expected PP-RM load:
-- steady state: 1 active worker;
-- handoff peak: max 2 active workers;
-- disabled Mailbox/Pulse/Trace: 0 active slots.
+## Stable PP-RM objects
 
-## 2. Create exactly five objects
+Reuse the existing five native objects:
+1. Worker A
+2. Worker B
+3. Runtime Mailbox
+4. Pulse Register
+5. Trace Register
 
-1. `PP-RM Worker A`
-2. `PP-RM Worker B`
-3. `PP-RM Runtime Mailbox`
-4. `PP-RM Pulse Register`
-5. `PP-RM Trace Register`
+Mailbox/Pulse/Trace stay disabled permanently. Workers alternate one-shot A -> B -> A. Never self-rearm.
 
-Create all five inert/disabled. Record task IDs. Patch Worker A/B prompts after all IDs are known.
+## Responsibility boundary
 
-Mailbox, Pulse and Trace remain disabled permanently. Workers use one-shot A -> B -> A alternation. Self-rearm is forbidden.
+Manager owns direction, priorities, decomposition, acceptance criteria, strategy, durable state and high-level checkpoints.
 
-## 3. Authority boundary
+A/B owns only bounded tactical execution inside the active package and PP-RM handoff.
 
-Manager owns:
-- direction and priorities;
-- decomposition and acceptance criteria;
-- package scope;
-- strategy;
-- high-level checkpoints;
-- durable `manager-state`.
+A/B must not mutate `manager-state`, widen package scope, publish releases, or choose a new APFS/AMFI strategy at a Manager checkpoint.
 
-A/B owns only bounded tactical execution and PP-RM handoff inside the active package.
+## Production protocol
 
-A/B must not:
-- change milestone or priority;
-- widen package scope;
-- mutate `manager-state` during ordinary work;
-- publish releases;
-- revive legacy OTK/shift-worker orchestration.
-
-## 4. Worker protocol
-
-Both workers use the same protocol with mirrored A/B IDs.
+For every A/B runtime:
 
 1. First protocol operation: fresh-read Mailbox and Trace.
-2. Validate generation, owner, message_id, seq, from/to, payload, SHA-256 and prior SEND.
-3. On mismatch: one FAIL event, no product work, no successor arm, STOP.
-4. ACK valid inbound message.
-5. Restore factual checkpoint; reconcile live GitHub state when needed.
-6. Execute exactly one bounded turn.
-7. Complete all product/GitHub side effects before handoff.
-8. Write Pulse `TURN_COMPLETE`.
-9. If package checkpoint/stop condition is reached: publish checkpoint/final state, exact read-back, write FINAL/CHECKPOINT, do not arm successor, STOP.
-10. Otherwise publish next generation for partner with new message_id/seq/payload/hash and ack=NONE.
-11. Fresh-read-back exact Mailbox.
-12. On mismatch: FAIL and STOP without successor.
-13. Write Trace SEND.
-14. LAST TOOL OPERATION: arm exactly one partner one-shot.
-15. After successor arm: ZERO tool calls.
+2. Validate work_package, manager_generation, generation, owner, state, message_id, from/to, seq, exact payload hash and prior SEND/ACK requirements.
+3. Deduplicate message_id before any product side effect.
+4. ACK valid inbound baton.
+5. Reconcile current `main` before consequential GitHub writes.
+6. Execute exactly one bounded tactical turn.
+7. Complete and verify all product/GitHub side effects before handoff.
+8. Update Pulse.
+9. Publish next Mailbox or high-level checkpoint.
+10. Register read-back stabilization: make up to THREE fresh read-only Scheduled Tasks reads. Never repeat the register mutation solely because visibility is stale.
+11. Append uniquely tagged Trace evidence.
+12. If continuing: LAST TOOL OPERATION is arming exactly one partner one-shot; after arm, ZERO tool calls.
+13. If checkpoint: do not arm successor; publish FINAL/CHECKPOINT as terminal protocol write.
 
-## 5. Initial OCB policy
+## GitHub / OCB policy
 
-OCB is the working model for an explicit OSB returned on a GitHub tool request.
-
-Initial policy:
-- treat OSB as routine platform behavior, not ownership loss or project failure;
-- after an explicit OSB, one exact identical retry is DESIRED, not mandatory;
-- a retry may be skipped if there is a concrete reason; record the reason;
-- when retrying, tool and all request parameters must remain identical;
-- no automatic third identical request in the initial policy;
-- timeout, HTTP/API error, network/connection failure, tool unavailable and unknown error are not automatically OCB;
-- never blindly duplicate an ambiguous mutation; reconcile actual server state first when possible;
-- OCB never changes baton ownership, Manager authority or package scope.
-
-The initial OCB policy is experimental. It MUST be reviewed after the pilot.
-
-For every GitHub request record:
+For every GitHub request append a uniquely tagged Trace event with:
+- work_package;
+- generation;
+- worker;
 - operation_id;
-- generation and worker;
-- operation class READ|WRITE|OTHER;
-- attempt1 result;
-- retry decision;
-- retry skip reason if any;
-- attempt2 result if performed;
-- final result;
-- server-side/read-back evidence when relevant.
+- operation_class READ|WRITE|OTHER;
+- attempt number;
+- result.
 
-Suggested final-result vocabulary:
-`SUCCESS`, `SUCCESS_AFTER_OCB`, `OCB_EXHAUSTED`, `OTHER_ERROR`, `AMBIGUOUS`.
+Explicit OSB:
+- classify as OCB;
+- one exact identical retry is desired, not mandatory;
+- if skipped, record reason;
+- no automatic third identical request.
 
-Primary OCB objective:
+Non-OSB timeout/API/network/tool errors are not automatically OCB.
 
-> Minimize OCB impact on successful Scheduled Task <-> GitHub request throughput while preserving correctness, idempotency and unambiguous side effects.
+For a mutating request with ambiguous outcome:
+- do not blindly replay;
+- first reconcile actual GitHub server state when possible;
+- preserve idempotency/deduplication;
+- if ambiguity remains, return Manager checkpoint.
 
-## 6. Register initialization
+Authoritative aggregate metrics are computed from tagged Trace events by Manager. Worker-written aggregate counts are advisory only.
 
-Runtime Mailbox, disabled:
+## Active production package — IOS-M1-R1
 
-```text
-PP-RM DATA REGISTER — KEEP DISABLED
-schema=1
-service=PP-RM
-generation=1
-owner=A
-state=INIT
-message_id=NONE
-seq=0
-ack=NONE
-```
+Objective:
+Restore the known raw-APFS packaging correction onto the current rolled-back product line and establish the exact current Windows E2E boundary.
 
-Pulse, disabled:
+Baseline:
+`main@85d408075ab8a66f6d16043029eb2255956eb1b9`.
 
-```text
-PP-RM DATA REGISTER — KEEP DISABLED
-schema=1
-service=PP-RM
-generation=0
-actor=NONE
-phase=INIT
-```
+Exact allowed restoration:
+- historical `d743b2e728d9cda194c7e76909f76a5f1704194f`: only `tools/ios-ramdisk-tool/main.go`; replace DMG rewrap of rebuilt APFS with exact raw APFS output and associated messages/helper.
+- historical `b3befaeb8c0f2635623d3d8a56226199d2d0753e`: only `tools/ios-ramdisk-tool/main_test.go`; add the exact-byte raw APFS regression test.
 
-Trace, disabled:
+Execution stages:
+1. inspect current target files and exact historical commit diffs/parents;
+2. apply only the scoped semantics;
+3. run minimum deterministic tests/build for `tools/ios-ramdisk-tool`;
+4. if green, run exact Windows E2E;
+5. keep collecting tagged OCB/passability telemetry.
 
-```text
-PP-RM TRACE REGISTER — KEEP DISABLED
-schema=1
-service=PP-RM
-status=INIT
-trace_begin
-```
+High-level checkpoint / stop conditions:
+- recovery `launchd` / AMFI boundary reached;
+- APFS error 79 persists;
+- different unexpected regression;
+- package objective complete;
+- ambiguous side effect;
+- PP-RM invariant failure;
+- a broader APFS/AMFI/security-policy decision is required.
 
-Before first arm verify all five objects are disabled.
+At a checkpoint A/B must not choose the next strategic direction.
 
-## 7. Mandatory pilot before production
+## Production bootstrap
 
-Do NOT start `IOS-M1-R1` first.
+With all five objects disabled:
 
-Run `IOS-PP-RM-PILOT-001`:
+1. install production Worker A/B prompts containing exact native task IDs;
+2. seed Mailbox with:
+   - work_package=IOS-M1-R1
+   - manager_generation=7
+   - generation=1
+   - owner=A
+   - state=READY
+   - sender=MANAGER
+   - seq=0
+   - unique bootstrap message_id
+   - exact package payload + SHA-256
+3. seed Trace `status=RUNNING` and one MANAGER bootstrap SEND record;
+4. seed Pulse `phase=PACKAGE_READY`;
+5. fresh-read all three registers and verify exact state using read-only stabilization if necessary;
+6. arm Worker A only;
+7. after Worker A arm, launcher makes no further PP-RM state mutation.
 
-```text
-A1
--> test-001
--> B2 fresh read + validation + ACK
--> test-002
--> A3 fresh read + validation + ACK
--> FINAL
-```
+## Stop / restart
 
-Pilot verifies:
-- generation/order and A/B owner;
-- exact message_id/seq/payload/hash;
-- SEND/ACK;
-- Pulse;
-- exact Mailbox read-back;
-- successor arm is last tool operation;
-- zero post-arm calls;
-- workers disabled after FINAL;
-- registers remain disabled;
-- slot budget is respected.
+Stopping both workers does not prove an already-started runtime is physically dead. Restart only after reconciling Mailbox/Trace/Pulse and ruling out ambiguous predecessor state. Never arm A and B together.
 
-### GitHub observation during pilot
-
-Pilot workers must perform bounded, non-destructive GitHub reads from `lvlaksim1/iOS-Research-Runtime` so Scheduler -> GitHub passability is actually measured.
-
-At minimum:
-- read live `main`/HEAD;
-- fetch one known repository file or commit.
-
-Do not mutate product `main` merely to provoke OCB.
-
-Every GitHub request is recorded with OCB telemetry.
-
-If explicit OSB occurs, one exact identical retry is desired; if skipped, record why.
-
-Pilot FINAL must summarize:
-- total GitHub requests;
-- first-attempt successes;
-- explicit OSB count;
-- identical retries attempted;
-- retries skipped and reasons;
-- SUCCESS_AFTER_OCB;
-- OCB_EXHAUSTED;
-- non-OSB errors;
-- ambiguous outcomes;
-- operation classes affected.
-
-## 8. Mandatory Manager checkpoint after pilot
-
-After pilot FINAL, do not automatically continue to product work.
-
-Manager must:
-1. verify Mailbox/Pulse/Trace and admission invariants;
-2. analyze Scheduler <-> GitHub passability;
-3. analyze OCB incidence and retry effectiveness;
-4. decide whether the OCB model needs adjustment;
-5. persist any durable adjustment before product work;
-6. only then authorize `IOS-M1-R1`.
-
-Useful metrics:
-- first-attempt success rate;
-- OSB incidence;
-- recovery rate after desired identical retry;
-- OCB exhaustion;
-- distribution by request type;
-- any evidence that retry conditions/timing/operation sequencing deserve separate experiments.
-
-If pilot data is insufficient, record that explicitly. The model remains provisional.
-
-## 9. Production admission
-
-PP-RM is admitted to product work only when:
-- all five objects exist;
-- three registers are disabled;
-- A/B prompts contain correct IDs;
-- slot budget is valid;
-- A arms only B and B only A;
-- pilot handoff PASS;
-- read-back and ACK verified;
-- no post-arm tool operation observed;
-- Manager completed OCB/passability review.
-
-## 10. Queued production package IOS-M1-R1
-
-After admission:
-- baseline: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`;
-- inspect exact historical diffs for `d743b2e728d9cda194c7e76909f76a5f1704194f` and `b3befaeb8c0f2635623d3d8a56226199d2d0753e`;
-- restore only the raw-APFS correction and its regression coverage;
-- run minimum deterministic validation;
-- if green, run Windows E2E;
-- return HIGH-LEVEL CHECKPOINT at launchd/AMFI, persistent APFS error 79, unexpected regression, ambiguous side effect or PP-RM invariant failure.
-
-Do not independently select the next strategic APFS/AMFI direction at that checkpoint.
-
-Continue OCB telemetry during production to refine the model using representative GitHub operations.
-
-## 11. Launch sequence
-
-After explicit Owner launch command:
-
-1. enforce slot budget;
-2. create all five objects disabled;
-3. patch exact IDs into A/B prompts;
-4. initialize Mailbox/Pulse/Trace;
-5. run pilot A1 -> B2 -> A3 -> FINAL;
-6. stop;
-7. Manager reviews pilot and OCB/passability evidence;
-8. adjust policy if needed;
-9. only after Manager admission seed and arm `IOS-M1-R1`.
-
-Current runtime status:
-- native PP-RM objects: NOT YET CREATED;
-- pilot: NOT YET RUN;
-- `IOS-M1-R1`: QUEUED / NOT ARMED.
+Current next action: seal Manager generation 7, configure the existing A/B pair for production, seed `IOS-M1-R1`, verify, and arm Worker A.

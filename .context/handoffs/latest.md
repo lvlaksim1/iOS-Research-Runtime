@@ -1,37 +1,43 @@
 # Latest handoff
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager-state authority: `manager-state`.
 Product authority: `main`.
+Manager authority: `manager-state`.
 
-## Readiness
-Generation 6 corrects the PP-RM launch package to pilot-first admission plus the Owner's OCB refinement.
+## Manager checkpoint
 
-Canonical launch recipe: `.context/pp-rm/LAUNCH_PACKAGE.md`.
+PP-RM admission pilot has completed and been reviewed.
 
-PP-RM remains PREPARED / NOT ARMED.
+Attempt 1:
+- two GitHub READ operations succeeded first attempt;
+- runtime stopped safely on immediate read-back mismatch;
+- server Mailbox later showed the exact intended generation-2 state;
+- no successor was armed.
 
-## Product
-Live `main`: `85d408075ab8a66f6d16043029eb2255956eb1b9`, code-equivalent to `3b0f564...` plus discovery metadata.
-Conservative boundary: E2E `35634992757` failed APFS root mount with error 79.
-Historical controlled-restoration evidence: `d743b2e...`, `b3befaeb...`, and later `669f2b...` launchd/AMFI result.
+Attempt 2:
+- exact A1 -> B2 -> A3 -> FINAL;
+- SEND/ACK test-001 and test-002 verified;
+- both workers ended disabled;
+- Mailbox/Pulse/Trace remained disabled;
+- four actual GitHub READ events, all successful on first attempt;
+- explicit OSB=0, other GitHub errors=0, ambiguous outcomes=0.
 
-## Launch order
-1. enforce slot budget;
-2. create five objects disabled;
-3. install exact A/B IDs/prompts;
-4. run `IOS-PP-RM-PILOT-001`, A1 -> B2 -> A3 -> FINAL;
-5. collect GitHub request/OCB telemetry;
-6. stop for Manager review;
-7. refine OCB policy if evidence supports it;
-8. only then admit `IOS-M1-R1`.
+Manager finding:
+- bounded read-only register stabilization is required after writes;
+- final telemetry counts are derived from tagged Trace events because Worker FINAL undercounted 4 reads as 3;
+- scheduler delay is tolerated and does not authorize timeout takeover;
+- OCB policy remains provisional because no OSB occurred.
 
-## OCB correction
-- explicit OSB is handled as OCB;
-- one exact identical retry is desired, not mandatory;
-- retry skip requires a reason;
-- non-OSB errors are not automatically OCB;
-- ambiguous mutations are not blindly repeated;
-- Manager analyzes pilot results with the primary goal of reducing OCB impact on Scheduler <-> GitHub throughput while preserving correctness.
+## Production admission
 
-`IOS-M1-R1` remains QUEUED / NOT ARMED.
+PP-RM is admitted for `IOS-M1-R1` after sealed generation 7.
+
+Current product: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`.
+
+Exact scoped restoration:
+- `d743b2e...` -> `tools/ios-ramdisk-tool/main.go`, write rebuilt recovery image as exact raw APFS bytes rather than DMG rewrap;
+- `b3befaeb...` -> `tools/ios-ramdisk-tool/main_test.go`, exact-byte raw-APFS regression test.
+
+A/B execute bounded tactical turns only. At launchd/AMFI, persistent APFS error 79, unexpected regression, ambiguous side effect, protocol failure, or objective completion, stop chaining and return evidence to Manager.
+
+Production PP-RM has not yet been armed by this Persist.

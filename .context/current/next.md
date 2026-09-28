@@ -1,16 +1,14 @@
 # Next actions
 
-Canonical launch recipe: `.context/pp-rm/LAUNCH_PACKAGE.md`.
-
-1. On explicit Owner launch command, verify external active Scheduled Tasks <= 3.
-2. Create exactly five canonical PP-RM objects; leave all disabled.
-3. Patch Worker A/B prompts with exact IDs; keep Mailbox/Pulse/Trace disabled.
-4. Initialize registers to canonical INIT state.
-5. Run `IOS-PP-RM-PILOT-001`: A1 -> B2 -> A3 -> FINAL.
-6. During pilot, perform bounded read-only GitHub requests and record OCB telemetry.
-7. For explicit OSB, one exact identical retry is desired but not mandatory; record retry or skip reason.
-8. After pilot FINAL, do not arm production work. Return to Manager.
-9. Manager verifies admission criteria and analyzes Scheduler <-> GitHub passability/OCB results.
-10. If needed, adjust OCB policy and seal a new generation.
-11. Only after Manager production admission seed and arm `IOS-M1-R1`.
-12. Preserve `main` as product authority and `manager-state` as Manager authority.
+1. Seal Manager generation 7 with pilot PASS, read-back stabilization, authoritative Trace counting, and production admission.
+2. Reconfigure existing PP-RM Worker A/B from pilot-only prompts to production package `IOS-M1-R1`; do not create another worker pair.
+3. Seed production Mailbox/Trace/Pulse while all five PP-RM objects are disabled.
+4. Fresh-read and verify all production register state.
+5. Arm Worker A only.
+6. A/B fresh-reconcile live `main`, inspect exact historical diffs, and restore only:
+   - raw APFS output semantics from `d743b2e...`;
+   - regression coverage from `b3befaeb...`.
+7. Run minimum deterministic validation; if green, run exact Windows E2E.
+8. Continue A/B bounded turns until a defined high-level checkpoint.
+9. At launchd/AMFI, persistent error 79, unexpected regression, ambiguous side effect, protocol failure, or objective completion: stop successor chaining and return exact evidence to Manager.
+10. Continue tagged OCB telemetry in production; do not infer OCB optimization from the zero-OSB pilot.
