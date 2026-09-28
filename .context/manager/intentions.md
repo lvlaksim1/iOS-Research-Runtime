@@ -11,26 +11,30 @@
 
 ### IOS-PP-RM-PILOT-001
 - status: completed / PASS on attempt 2
-- result: A1 -> B2 -> A3 -> FINAL completed with exact SEND/ACK handoffs and all workers/registers in safe terminal state.
-- corrective finding: single immediate read-back can false-fail; bounded read-only stabilization is now required.
-- telemetry finding: Worker aggregate undercounted GitHub operations; Manager must derive authoritative counts from Trace events.
-- GitHub passability: attempt 2 = 4/4 first-attempt READ success; both attempts combined = 6/6; explicit OSB = 0.
-- OCB conclusion: insufficient OSB evidence to optimize retry policy; keep provisional.
+- result: A1 -> B2 -> A3 -> FINAL completed with exact SEND/ACK handoffs and safe terminal state.
+- durable corrections: bounded read-only register stabilization; authoritative GitHub operation counts come from tagged Trace events.
+
+### OCB3 targeted retry experiment
+- status: completed / evidence captured
+- first minimal targeted publication probe: attempt1=SUCCESS and `main` moved to `cbba4060...`.
+- repeated minimal probe with same request parameters while `main` already equaled target: attempt1=EXPLICIT_OSB, attempt2=EXPLICIT_OSB, attempt3=SUCCESS.
+- conclusion: third identical attempt can improve passability in at least one observed run; evidence is insufficient to make three attempts a permanent universal rule.
+- responsibility: `ios-research-runtime-project-manager`
 
 ## Active
 
 ### IOS-M1 — first Windows boot milestone
 - status: active
 - responsibility: `ios-research-runtime-project-manager`
-- goal: verified recovery `launchd` plus verified root shell on Windows.
+- current product: `main@cbba4060db543d4a2b800f7c15b2a700e69f6961`
+- current exact-SHA gate state: ramdisk tool and Windows build PASS; E2E blocked before boot because artifact `qemu-sptm-windows-gate` is missing.
+- commitment: restore exact E2E execution for current SHA, then continue evidence-driven boot investigation to verified `launchd` and root shell.
 
 ### IOS-PP-RM-001 — PP-RM production execution
-- status: admitted/active
+- status: admitted / paused at Manager checkpoint
 - responsibility: `ios-research-runtime-project-manager`
-- production package: `IOS-M1-R1`
-- admission basis: pilot PASS plus Manager review in generation 7.
-- execution boundary: A/B execute bounded tactical work only; Manager retains direction, priorities, acceptance criteria, strategy and high-level checkpoints.
-- completion condition for current package: return a high-level evidence checkpoint at launchd/AMFI, persistent APFS error 79, unexpected regression, ambiguous side effect, protocol failure, or package objective completion.
+- next runtime action requires deliberate Manager reseed because current Mailbox is stale relative to project truth.
+- A/B remain execution carriers only; Manager retains strategy and durable state ownership.
 
 ## Superseded
 

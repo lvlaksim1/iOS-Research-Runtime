@@ -1,35 +1,63 @@
 # PP-RM Launch Package — iOS Research Runtime
 
-Status: PRODUCTION / TEMPORARY OCB3 EXPERIMENT
+Status: PAUSED AT MANAGER CHECKPOINT
 Manager: `ios-research-runtime-project-manager`
-Manager generation: 8 after seal
-Product main before experiment: `85d408075ab8a66f6d16043029eb2255956eb1b9`
-Prepared commit: `cbba4060db543d4a2b800f7c15b2a700e69f6961`
+Target sealed generation after save: 9
+Product: `main@cbba4060db543d4a2b800f7c15b2a700e69f6961`
 
-## Stable protocol
+## Native object IDs
 
-Reuse existing Worker A/B and disabled Mailbox/Pulse/Trace. Manager owns strategy; A/B own bounded execution only. Successor arm remains the final tool operation.
+- Worker A: `6abac75982308191b786450088217776`
+- Worker B: `6abac76297c8819182c048fcbc619ef0`
+- Runtime Mailbox: `6abac714ddb481919ab9cb13afc4f8f8`
+- Pulse Register: `6abac73339dc8191ba6bf26104fc2aa9`
+- Trace Register: `6abac750fee081918af4522336615f29`
 
-## Temporary targeted OCB3 experiment
+All five objects are currently disabled.
 
-Scope ONLY:
-`update-ref(main -> cbba4060db543d4a2b800f7c15b2a700e69f6961)`.
+## Current checkpoint
 
-Procedure:
-1. Fresh-read `main`; require `85d408075ab8a66f6d16043029eb2255956eb1b9`.
-2. Attempt update-ref once.
-3. If explicit OSB, exact-identical attempt 2.
-4. If attempt 2 is explicit OSB, exact-identical attempt 3.
-5. No attempt 4.
-6. After success or attempt 3, fresh-read `main`.
-7. Classify from actual branch state:
-   - `main=cbba4060...` => success; continue WAIT_CI.
-   - `main=85d4080...` => not published; Manager checkpoint.
-   - anything else/ambiguous => fail-stop Manager checkpoint.
-8. Trace each attempt independently.
+The raw-APFS restoration is published.
 
-This temporary three-attempt allowance does not replace permanent OCB policy. Manager reviews evidence afterward.
+Exact current CI:
+- Ramdisk Tool Windows: PASS
+- Windows Build: PASS
+- Windows End-to-End Boot: FAIL before Darwin boot because `qemu-sptm-windows-gate` artifact is missing.
 
-## After successful publication
+OCB3 evidence:
+- full production publication turn: explicit OSB -> explicit OSB -> no publication;
+- minimal targeted probe #1: SUCCESS on attempt 1 -> publication;
+- minimal targeted probe #2: explicit OSB -> explicit OSB -> SUCCESS on attempt 3.
 
-Observe existing CI for the published SHA. Do not add workflows. Return high-level checkpoint at gate failure, exact Windows E2E completion, APFS error 79, launchd/AMFI, unexpected regression, ambiguity or package objective completion.
+The third exact-identical request is experimentally supported as potentially useful but is not yet a permanent universal retry rule.
+
+## Important runtime fence
+
+The latest Trace is valid experiment evidence, but the current Mailbox/Pulse are stale relative to Manager/product truth because the minimal probes bypassed ordinary baton progression.
+
+DO NOT arm Worker A or B from the current register contents.
+
+Before any next run:
+
+1. restore and verify sealed Manager generation 9;
+2. reconcile live `main`;
+3. inspect current CI/infrastructure state;
+4. define one bounded Manager package;
+5. reseed Mailbox/Pulse/Trace to a new clean generation/package;
+6. verify all three registers disabled and exact;
+7. patch worker prompts if package logic changed;
+8. arm exactly one owner worker.
+
+## Next intended package
+
+Objective: restore current-SHA Windows E2E execution by resolving the missing `qemu-sptm-windows-gate` artifact path without changing unrelated iOS/APFS semantics.
+
+Expected stop conditions:
+- infrastructure restored and E2E reaches a real boot-stage boundary;
+- persistent APFS error 79;
+- recovery `launchd` / AMFI boundary;
+- verified root shell;
+- unexpected regression;
+- ambiguous side effect or PP-RM invariant failure.
+
+Successor arm remains the final tool operation of each worker turn. After arm, zero tool calls.

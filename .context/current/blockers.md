@@ -1,21 +1,37 @@
 # Current blockers and open risks
 
-## Active blocker
+## Active blocker — current exact-SHA E2E infrastructure
 
-Prepared raw-APFS restoration commit `cbba4060...` exists but is unpublished because the first production `update-ref` and its exact-identical retry both received explicit OSB.
+Product `main@cbba4060db543d4a2b800f7c15b2a700e69f6961` is published and its narrow Windows gates pass.
 
-Current `main` remains `85d4080...`; CI/E2E for the prepared commit has not started.
+Windows End-to-End Boot run `36483217835` fails before Darwin execution because expected artifact `qemu-sptm-windows-gate` cannot be downloaded.
 
-## Temporary experiment
+Exact failing job/step:
+- job `109133700969` (`boot-proof`)
+- step `Download QEMU runtime from gate`
+- error: `Unable to download artifact(s): Artifact not found for name: qemu-sptm-windows-gate`
 
-Owner authorized a controlled third-request experiment:
-- same update-ref;
-- attempts 1 -> 2 -> 3 only when each preceding attempt returns explicit OSB;
-- no fourth request;
-- reconcile `main` afterward.
+Consequence:
+- no current-SHA APFS/root-shell evidence exists yet;
+- do not attribute this E2E failure to raw-APFS product semantics;
+- restore the gate artifact path before interpreting boot behavior.
 
-Controls:
-- reuse existing prepared commit;
-- no unrelated mutation before classification;
-- unexpected/ambiguous branch state => Manager checkpoint;
-- result does not automatically become permanent policy.
+## OCB operational risk
+
+Observed `update-ref` passability is non-deterministic across runtime context:
+- full production turn: OSB, OSB;
+- minimal targeted publication probe: SUCCESS on first attempt;
+- repeated minimal probe: OSB, OSB, SUCCESS on third attempt.
+
+A third exact-identical request is now empirically justified as potentially useful, but evidence remains too small to declare a universal permanent retry count.
+
+Safety controls remain:
+- exact-identical replay only for explicit OSB when policy permits;
+- no blind replay of ambiguous mutations;
+- authoritative server-state reconciliation after mutation attempts.
+
+## PP-RM continuity risk
+
+All five PP-RM objects are disabled, but Mailbox state is stale because the minimal probes intentionally bypassed normal baton progression.
+
+Before any further A/B execution, Manager must reseed and verify Mailbox/Pulse/Trace from current sealed Manager state.

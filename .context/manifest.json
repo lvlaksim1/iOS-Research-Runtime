@@ -31,7 +31,8 @@
     "semantic": ".context/memory/semantic.md",
     "procedural": ".context/memory/procedural.md",
     "episodes": [
-      ".context/memory/episodes/2026-09-24-persistent-manager-migration.md"
+      ".context/memory/episodes/2026-09-24-persistent-manager-migration.md",
+      ".context/memory/episodes/2026-09-29-pp-rm-ocb3-e2e-checkpoint.md"
     ]
   },
   "current": {
@@ -48,7 +49,8 @@
     ".context/decisions/DEC-0002-manager-state-coherence-adoption.md",
     ".context/decisions/DEC-0003-pp-rm-execution-runtime.md",
     ".context/decisions/DEC-0004-pp-rm-pilot-ocb-refinement.md",
-    ".context/decisions/DEC-0005-pp-rm-production-admission.md"
+    ".context/decisions/DEC-0005-pp-rm-production-admission.md",
+    ".context/decisions/DEC-0006-ocb-third-request-experiment.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"
@@ -99,7 +101,7 @@
     "external_gate_reconciliation_required": true,
     "manager_state_coherence_required": true
   },
-  "updated_at": "2026-09-28",
+  "updated_at": "2026-09-29",
   "context_version": "2.0.0-dev",
   "authority": {
     "manager_state_branch": "manager-state",
