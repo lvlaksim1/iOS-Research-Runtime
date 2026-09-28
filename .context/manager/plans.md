@@ -1,70 +1,41 @@
 # Manager plans
 
-## Governance and recovery
+## Current authority
+- product: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`
+- Manager: `manager-state`
+- canonical PP-RM launch recipe: `.context/pp-rm/LAUNCH_PACKAGE.md`
 
-Persistent-manager migration is COMPLETE. IOSPM-001 is independently CLOSED. Manager-state was recovered and verified coherent on 2026-09-28. Product authority and Manager authority remain split: `main` vs `manager-state`.
+## PP-RM launch and admission
+1. Enforce slot budget: external active Scheduled Tasks <= 3.
+2. Create five canonical PP-RM objects disabled.
+3. Patch exact IDs into Worker A/B.
+4. Run `IOS-PP-RM-PILOT-001`, not product work.
+5. Pilot executes A1 -> B2 -> A3 -> FINAL and proves read-back/ACK/Pulse/Trace/successor-arm-last.
+6. Pilot also performs bounded read-only GitHub requests and records OCB telemetry.
+7. Stop after pilot FINAL.
+8. Manager analyzes first-attempt success, explicit OSB incidence, desired identical-retry recovery, exhaustion, non-OSB errors and ambiguity.
+9. If evidence justifies a change, revise OCB policy and seal a new generation.
+10. Only after Manager production admission seed `IOS-M1-R1`.
 
-PP-RM launch recipe: `.context/pp-rm/LAUNCH_PACKAGE.md`.
+## Initial OCB policy
+- explicit OSB -> OCB event;
+- one exact identical retry is desired, not mandatory;
+- retry skip requires a reason;
+- no automatic third identical request;
+- non-OSB errors are not automatically OCB;
+- ambiguous mutations are not blindly duplicated;
+- OCB never changes baton ownership or authority;
+- policy is provisional and empirically reviewed after pilot.
 
-## Product reconciliation after rollback
+Optimization target: maximize successful Scheduled Task <-> GitHub request throughput by reducing practical OCB impact while preserving correctness.
 
-1. Verify live product `main`. COMPLETE: `85d408075ab8a66f6d16043029eb2255956eb1b9`.
-2. Compare it to the old product baseline `3b0f5648f004f58daef526082b3d2a32d132edcf`. COMPLETE: only Context Capsule discovery files differ; product code is unchanged.
-3. Reclassify the previous `669f2b...` launchd/AMFI state as historical verified evidence, not current product state. COMPLETE.
-4. Use exact E2E `35634992757` at the code-equivalent baseline as the conservative current technical boundary until new exact-current-SHA runtime evidence exists. COMPLETE.
+## Queued IOS-M1-R1
+After admission:
+1. inspect exact diffs of `d743b2e...` and `b3befaeb...`;
+2. restore only raw-APFS correction plus regression coverage;
+3. run minimum deterministic validation;
+4. if green, run Windows E2E;
+5. return HIGH-LEVEL CHECKPOINT at launchd/AMFI, persistent APFS error 79, unexpected regression, ambiguous side effect or PP-RM invariant failure.
 
-## PP-RM operating plan
-
-The Manager owns strategy. PP-RM A/B owns only bounded execution of the current work package.
-
-Normal cycle:
-1. Manager publishes one high-level work package: objective, product baseline, allowed scope/effects, forbidden effects, verification contract, and checkpoint/stop conditions.
-2. Fresh A/B runtime validates inbound Mailbox state and ACKs the prior baton.
-3. It reconciles live `main` before consequential product writes.
-4. It executes one bounded turn only.
-5. It completes all product side effects before publishing handoff.
-6. It writes Pulse, Runtime Mailbox, performs exact read-back, records SEND/Trace, then arms exactly one successor as the final tool operation.
-7. After arming successor, the predecessor performs no further tool operations.
-8. If a high-level checkpoint/stop condition is reached, it writes the evidence/checkpoint and does not continue strategic work; Manager must review and issue the next work package.
-
-A/B MUST NOT:
-- change the project milestone, Manager mandate, priority ordering, or work-package objective;
-- mutate `manager-state` as part of ordinary execution;
-- revive the retired shift-worker factory;
-- publish production releases;
-- perform broad speculative APFS/security-policy mutations outside the active work package;
-- treat OCB itself as ownership/authority change.
-
-OCB handling:
-- absence of an expected server response is routine OCB, not proof of hostile blocking;
-- retry read/query operations as needed;
-- before retrying a mutating operation, read back authoritative server state when possible and preserve idempotency/deduplication;
-- escalate to Manager only if side-effect state becomes ambiguous, the protocol invariant cannot be re-established, or a new strategic decision is required.
-
-## Initial PP-RM work package — IOS-M1-R1
-
-Objective: restore the previously verified raw-APFS packaging correction onto the current rolled-back product line and determine the new exact runtime boundary.
-
-Baseline:
-- product authority: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`;
-- manager authority: sealed generation 5 on `manager-state`.
-
-Evidence-backed changes to recover:
-- product change from historical commit `d743b2e728d9cda194c7e76909f76a5f1704194f`: emit rebuilt ramdisk as raw APFS rather than wrapping it back into DMG;
-- regression test from `b3befaeb8c0f2635623d3d8a56226199d2d0753e`.
-
-Execution:
-1. Inspect the exact diffs of `d743b2e...` and `b3befaeb...` against their parents; do not blindly restore unrelated later commits.
-2. Reapply only the evidence-backed product/test semantics to current `main`.
-3. Run the minimum relevant deterministic test/build gate.
-4. If the narrow gate passes, run the Windows E2E needed to establish the exact current boot boundary.
-5. Classify result:
-   - reaches launchd / AMFI boundary again -> HIGH-LEVEL CHECKPOINT to Manager with exact SHA/run/log evidence; do not independently choose the next AMFI strategy;
-   - still fails APFS error 79 -> HIGH-LEVEL CHECKPOINT to Manager with exact evidence and comparison against historical successful correction;
-   - unexpected different regression -> HIGH-LEVEL CHECKPOINT to Manager;
-   - tooling/OCB without ambiguous side effects -> handle routinely and continue;
-   - ambiguous mutating side effect or PP-RM invariant violation -> FAIL-STOP and return to Manager.
-
-## Manager-state coherence protection
-
-Every replacement Manager runtime must pass the sealed-generation integrity marker before consequential continuation. PP-RM operational baton/mailbox state is not manager identity and does not replace Context Capsule persistence.
+## Coherence
+Every replacement Manager runtime must verify sealed manager state before consequential continuation. PP-RM operational state does not replace Context Capsule persistence.

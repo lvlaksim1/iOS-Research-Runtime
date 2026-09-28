@@ -46,7 +46,8 @@
   "decisions": [
     ".context/decisions/DEC-0001-persistent-manager-migration.md",
     ".context/decisions/DEC-0002-manager-state-coherence-adoption.md",
-    ".context/decisions/DEC-0003-pp-rm-execution-runtime.md"
+    ".context/decisions/DEC-0003-pp-rm-execution-runtime.md",
+    ".context/decisions/DEC-0004-pp-rm-pilot-ocb-refinement.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"

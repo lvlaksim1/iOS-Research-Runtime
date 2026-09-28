@@ -1,49 +1,36 @@
 # Current state
 
 ## Governance topology
-
 - persistent manager: `ios-research-runtime-project-manager`;
 - manager-state authority: `manager-state`;
 - product authority: `main`;
-- discovery branch: `main`;
 - Context Capsule Core: `3a942bd269ec7ee164575589e702e5074da30a29`;
-- manager-state coherence protection: enabled and sealed;
-- PP-RM: approved execution Runtime mechanism, Manager-side launch package prepared, runtime objects not yet armed.
+- PP-RM: approved execution Runtime; pilot-first launch package prepared;
+- native PP-RM objects: not yet created or armed.
 
-## Manager readiness
-
-Manager identity, mandate, BDI state, Core provenance, and sealed-state integrity are READY.
-
-PP-RM responsibility boundary:
-- Manager: development direction, priorities, strategy, work packages, high-level checkpoints, durable project state.
-- A/B: continuous bounded execution, evidence production, Mailbox/Pulse/Trace handoff.
-- A/B do not own the project commitment and do not mutate `manager-state` during ordinary execution.
+## Responsibility boundary
+- Manager: direction, priorities, decomposition, acceptance criteria, strategy, packages, high-level checkpoints, durable state.
+- A/B: bounded execution, evidence and handoff only.
+- A/B do not own commitments and do not ordinarily mutate `manager-state`.
 
 Canonical launch recipe: `.context/pp-rm/LAUNCH_PACKAGE.md`.
 
-## Product reconciliation
+## Product
+Live product: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`, code-equivalent to `3b0f564...` plus discovery metadata.
 
-Current live product: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`.
+Conservative boundary: exact E2E `35634992757` reached `BSD root: md0` and failed APFS root mount with error 79.
 
-Live compare proves this commit is the old product baseline `3b0f5648f004f58daef526082b3d2a32d132edcf` plus three discovery-only files. Product code is therefore on the old pre-raw-APFS line.
+Historical restoration evidence remains `d743b2e...`, `b3befaeb...`, and later `669f2b...` launchd/AMFI evidence.
 
-Conservative current technical boundary:
-- exact E2E `35634992757` at `3b0f564...`: failure;
-- runtime reached `BSD root: md0`;
-- APFS root mounting failed with error 79.
+## Launch stage
+First live package is `IOS-PP-RM-PILOT-001`, not `IOS-M1-R1`.
 
-Historical verified later progress is retained as evidence but is not current state:
-- `d743b2e...` raw-APFS output correction;
-- `b3befaeb...` regression test;
-- `669f2b...` later reached recovery `launchd`, then failed root-shell proof due AMFI/launch constraints for `/bin/bash`.
+Pilot purpose:
+- prove PP-RM admission invariants;
+- observe Scheduled Task -> GitHub passability;
+- collect OCB telemetry;
+- return to Manager for mandatory analysis.
 
-## Active commitments
+Initial OCB policy is provisional: after explicit OSB, one exact identical retry is desired, not mandatory.
 
-- `IOS-M1`: active — recovery launchd + verified root shell.
-- `IOS-PP-RM-001`: active — run development through PP-RM A/B under Manager authority.
-
-## Initial execution package
-
-`IOS-M1-R1` is prepared and serialized in the launch recipe. It restores only the known raw-APFS packaging correction/test, validates the exact current product line, and returns to Manager at the first high-level checkpoint.
-
-PP-RM launch is the next runtime action; no native PP-RM object has been armed by this Persist.
+`IOS-M1-R1` is QUEUED / NOT ARMED pending Manager pilot review and production admission.
