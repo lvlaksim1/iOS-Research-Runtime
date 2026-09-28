@@ -2,7 +2,9 @@
 
 ## Governance and recovery
 
-Persistent-manager migration is COMPLETE. IOSPM-001 is independently CLOSED. Manager-state generation 3 was recovered and verified coherent on 2026-09-28. Product authority and Manager authority remain split: `main` vs `manager-state`.
+Persistent-manager migration is COMPLETE. IOSPM-001 is independently CLOSED. Manager-state was recovered and verified coherent on 2026-09-28. Product authority and Manager authority remain split: `main` vs `manager-state`.
+
+PP-RM launch recipe: `.context/pp-rm/LAUNCH_PACKAGE.md`.
 
 ## Product reconciliation after rollback
 
@@ -45,7 +47,7 @@ Objective: restore the previously verified raw-APFS packaging correction onto th
 
 Baseline:
 - product authority: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`;
-- manager authority: sealed generation 4 on `manager-state` after this Persist.
+- manager authority: sealed generation 5 on `manager-state`.
 
 Evidence-backed changes to recover:
 - product change from historical commit `d743b2e728d9cda194c7e76909f76a5f1704194f`: emit rebuilt ramdisk as raw APFS rather than wrapping it back into DMG;

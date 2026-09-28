@@ -8,7 +8,7 @@
 - discovery branch: `main`;
 - Context Capsule Core: `3a942bd269ec7ee164575589e702e5074da30a29`;
 - manager-state coherence protection: enabled and sealed;
-- PP-RM: approved execution Runtime mechanism, prepared but not yet armed.
+- PP-RM: approved execution Runtime mechanism, Manager-side launch package prepared, runtime objects not yet armed.
 
 ## Manager readiness
 
@@ -18,6 +18,8 @@ PP-RM responsibility boundary:
 - Manager: development direction, priorities, strategy, work packages, high-level checkpoints, durable project state.
 - A/B: continuous bounded execution, evidence production, Mailbox/Pulse/Trace handoff.
 - A/B do not own the project commitment and do not mutate `manager-state` during ordinary execution.
+
+Canonical launch recipe: `.context/pp-rm/LAUNCH_PACKAGE.md`.
 
 ## Product reconciliation
 
@@ -42,6 +44,6 @@ Historical verified later progress is retained as evidence but is not current st
 
 ## Initial execution package
 
-`IOS-M1-R1` is prepared. It restores only the known raw-APFS packaging correction/test, validates the exact current product line, and returns to Manager at the first high-level checkpoint.
+`IOS-M1-R1` is prepared and serialized in the launch recipe. It restores only the known raw-APFS packaging correction/test, validates the exact current product line, and returns to Manager at the first high-level checkpoint.
 
-PP-RM launch is the next runtime action; it has not been armed by this manager-state Persist.
+PP-RM launch is the next runtime action; no native PP-RM object has been armed by this Persist.

@@ -6,9 +6,11 @@ Product authority: `main`.
 
 ## Recovery / readiness
 
-The manager was recovered on 2026-09-28 from sealed generation 3 at `bba84db4666f819af9f5f69dc4facdf78b48bf1a`. Core-managed recovery files match Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29`; all coupled generation-3 blob digests matched before this write-back.
+The manager was recovered on 2026-09-28 from sealed generation 3 at `bba84db4666f819af9f5f69dc4facdf78b48bf1a`. Core-managed recovery files match Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29`.
 
-Generation 4 reconciles the manager to the current rolled-back product line and adopts PP-RM as the approved execution Runtime mechanism.
+Generation 5 reconciles the Manager to the rolled-back product line, adopts PP-RM, and adds the exact Manager-side PP-RM launch recipe.
+
+Canonical launch recipe: `.context/pp-rm/LAUNCH_PACKAGE.md`.
 
 ## Current product authority
 
@@ -25,25 +27,16 @@ Historical later evidence retained for controlled recovery:
 
 ## PP-RM authority model
 
-Manager retains:
-- project responsibility;
-- priority and direction;
-- work-package definition;
-- strategy changes;
-- high-level checkpoints;
-- durable Context Capsule state.
+Manager retains project responsibility, priorities, strategy, work-package definition, high-level checkpoints, and durable Context Capsule state.
 
-A/B runtimes:
-- execute only the current bounded work package;
-- use Runtime Mailbox + ACK, Pulse, Trace, exact read-back;
-- arm successor as the final tool operation;
-- do not mutate `manager-state` during ordinary execution;
-- stop and return evidence when a high-level checkpoint condition is reached.
+A/B runtimes execute only the current bounded package using Runtime Mailbox + ACK, Pulse, Trace, exact read-back, and successor-arm-last. They do not mutate `manager-state` during ordinary execution.
 
-OCB is routine system behavior plus its handling model; safe retries are expected when a server response is missing, with read-back/idempotency before repeating side-effecting operations.
+OCB is routine system behavior plus its handling model; safe retries are expected for missing server responses, with read-back/idempotency before repeating side-effecting operations.
 
 ## First PP-RM package
 
 `IOS-M1-R1`: restore only the known raw-APFS packaging change from `d743b2e...` and its regression test from `b3befaeb...`, validate narrowly, then run exact Windows E2E. Return to Manager at launchd/AMFI, persistent APFS error 79, unexpected regression, ambiguous side effect, or PP-RM invariant failure.
+
+Launch recipe specifies exact five-object creation order, worker prompt template, bootstrap Mailbox/Trace/Pulse state, and arm sequence.
 
 PP-RM is PREPARED, NOT YET ARMED.
