@@ -6,26 +6,34 @@
 - status: completed
 - source: direct Owner directive on 2026-09-24
 - responsibility: `ios-research-runtime-project-manager`
-- completion evidence: stages 1-9 are durably represented; clean-runtime reinstantiation is PASS and product development has resumed.
+- completion evidence: stages 1-9 are durably represented; clean-runtime reinstantiation is PASS and product development resumed under the persistent manager.
 
 ### IOSPM-001 protected-state adoption
 - status: completed and independently closed
 - source: direct Owner remediation directive plus final Auditor retest `AUD-2026-09-24-IOSPM-001-RETEST-002`
 - responsibility: `ios-research-runtime-project-manager`
-- completion evidence: remediated Core bound, coherent sealed generation independently verified, product `main` unchanged during adoption, IOSPM-001 CLOSED / High confidence.
+- completion evidence: remediated Core bound, coherent sealed generation independently verified, IOSPM-001 CLOSED / High confidence.
 
 ## Active commitments
 
 ### IOS-M1 — first Windows boot milestone
 - status: accepted/active
-- source: project goal plus Owner direction to resume development under the persistent manager
+- source: project goal plus Owner direction
 - responsibility: `ios-research-runtime-project-manager`
 - commitment: drive the project to verified recovery `launchd` and a verified root shell on Windows.
-- reconciled execution boundary: live `main` is `669f2b989cf2ab5a0958ca517334a485062e8406`. The raw-APFS packaging correction (`d743b2e...`) and regression test (`b3befaeb...`) superseded the former APFS error-79 boundary. Exact E2E `36127395221` reaches `launchd` but does not obtain root shell because AMFI rejects `/bin/bash` with code-signature validation and launch-constraint violations.
-- current evidence: Ramdisk Tool Windows `36125764919` SUCCESS; qemu-sptm Windows Gate `36125764912` SUCCESS; Windows E2E `36127395221` FAILURE at root-shell proof; artifact `10862632528`, digest `sha256:456d1d12887572fa60570ce717c3bf32c850c46a6eebc9df93049a089601d809`.
-- continuation rule: do not return to APFS error-79 diagnostics unless live evidence regresses to an APFS mount failure. Continue from the current launchd/AMFI boundary.
-- semantic fence: avoid speculative broad signing/trust-cache/security-policy changes. Select the smallest evidence-backed change that can prove `/bin/bash` execution and the root-shell milestone.
+- current product baseline: `main@85d408075ab8a66f6d16043029eb2255956eb1b9`, whose product code is equivalent to `3b0f5648f004f58daef526082b3d2a32d132edcf` plus discovery-only metadata.
+- current conservative technical boundary: APFS root-mount error 79, based on exact E2E `35634992757` at the code-equivalent baseline, until fresh exact-current-SHA evidence supersedes it.
+- historical restoration evidence: raw-APFS output correction `d743b2e...` plus test `b3befaeb...` previously moved the project past APFS mounting to recovery `launchd`.
+- execution fence: restore only evidence-backed product changes first; do not resume broad APFS semantic experimentation unless the known correction fails to reproduce the later boundary.
+
+### IOS-PP-RM-001 — adopt PP-RM as Manager execution Runtime
+- status: accepted/active
+- source: direct Owner directive on 2026-09-28
+- responsibility: `ios-research-runtime-project-manager`
+- commitment: operate continuous A/B execution under Manager-issued bounded work packages without transferring project responsibility, priority authority, milestone authority, or high-level checkpoint authority to A/B.
+- preparation state: Manager state reconciled; PP-RM execution contract and initial launch package are being persisted in generation 4.
+- completion condition: first live A/B cycle executes under the contract, returns a valid high-level checkpoint/evidence package to the Manager, and Manager verifies it before continuing strategic control.
 
 ## Superseded operating model
 
-The rotating shift-worker/OTK production model in `ai-agent-lab` is superseded for this project by Owner direction. Historical evidence remains readable, but it does not own or orchestrate active project commitments.
+The retired `ai-agent-lab` rotating shift-worker/OTK factory remains superseded and must not be re-enabled. PP-RM is a different mechanism: it is a native Scheduled Tasks runtime transport/execution loop subordinate to this persistent Project Manager.

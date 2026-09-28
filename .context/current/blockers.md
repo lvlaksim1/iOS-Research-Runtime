@@ -1,24 +1,23 @@
 # Current blockers and open risks
 
-## Active product blocker
+## Active product boundary
 
-Current `main` reaches recovery `launchd`, but the root-shell proof fails because AMFI repeatedly rejects `/bin/bash` with code-signature validation failure and `Launch Constraint Violation (enforcing)`.
+Current product code is back on the `3b0f564...` line (live `main@85d408075ab8a66f6d16043029eb2255956eb1b9` adds discovery metadata only).
 
-Exact current evidence:
-- product SHA: `669f2b989cf2ab5a0958ca517334a485062e8406`;
-- Windows E2E: `36127395221`;
-- job: `108046547984`;
-- artifact: `10862632528`;
-- artifact digest: `sha256:456d1d12887572fa60570ce717c3bf32c850c46a6eebc9df93049a089601d809`.
+The conservative current boot boundary is APFS `mountroot failed, error: 79`, supported by exact Windows E2E `35634992757` at the code-equivalent baseline.
 
-## Superseded blocker
+This is not an unknown starting point: historical verified evidence shows that the raw-APFS packaging correction `d743b2e...` plus regression test `b3befaeb...` previously moved the project past APFS mounting to recovery `launchd`.
 
-APFS `mountroot failed, error: 79` was the earlier boundary at `1ff060bd...` and prior revisions. It is not reproduced in the current exact E2E after the raw-APFS packaging correction and must not drive new work unless it reappears in fresh exact-SHA evidence.
+## PP-RM launch blockers
 
-## Governance status
+No Manager-governance blocker remains.
 
-IOSPM-001 is CLOSED / Medium severity / High confidence. No governance blocker prevents ordinary IOS-M1 development.
+The only pre-launch requirement is external runtime instantiation of the native PP-RM Scheduled Tasks/registers. Manager-side contract, initial work package, stop conditions, and OCB handling policy are prepared in generation 4.
 
-## Current evidence gate
+## Safety / strategy gates
 
-Before changing signing/trust-cache/launch policy semantics, identify a narrow discriminator for why the intended `/bin/bash` execution is rejected by AMFI. Broad speculative security-policy changes are not justified.
+- Do not restore the whole later history blindly; recover only the evidence-backed product/test semantics first.
+- A/B must stop for Manager at a high-level checkpoint rather than choosing a new strategic direction.
+- A/B ordinary execution must not mutate `manager-state`.
+- Product releases remain Owner-gated.
+- OCB is routine unless it creates ambiguous side effects or prevents re-establishing protocol invariants.

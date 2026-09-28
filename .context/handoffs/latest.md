@@ -4,28 +4,46 @@ Persistent manager: `ios-research-runtime-project-manager`.
 Manager-state authority: `manager-state`.
 Product authority: `main`.
 
-## Governance closure
+## Recovery / readiness
 
-IOSPM-001 is CLOSED / Medium severity / High confidence by final independent retest `AUD-2026-09-24-IOSPM-001-RETEST-002`.
+The manager was recovered on 2026-09-28 from sealed generation 3 at `bba84db4666f819af9f5f69dc4facdf78b48bf1a`. Core-managed recovery files match Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29`; all coupled generation-3 blob digests matched before this write-back.
 
-The manager remains bound to Context Capsule Core `3a942bd269ec7ee164575589e702e5074da30a29` with fail-closed sealed-generation integrity.
+Generation 4 reconciles the manager to the current rolled-back product line and adopts PP-RM as the approved execution Runtime mechanism.
 
-## Durable product commitment
+## Current product authority
 
-`IOS-M1` remains active: verified recovery `launchd` plus verified root shell on Windows.
+Live `main`: `85d408075ab8a66f6d16043029eb2255956eb1b9`.
 
-Live product SHA: `669f2b989cf2ab5a0958ca517334a485062e8406`.
+Its product code is equivalent to `3b0f5648f004f58daef526082b3d2a32d132edcf`; only Context Capsule discovery files were added.
 
-Verified current boundary:
-- raw-APFS packaging correction: `d743b2e728d9cda194c7e76909f76a5f1704194f`;
-- regression test: `b3befaeb8c0f2635623d3d8a56226199d2d0753e`;
-- Ramdisk Tool Windows `36125764919`: SUCCESS;
-- qemu-sptm Windows Gate `36125764912`: SUCCESS;
-- Windows End-to-End Boot `36127395221`: FAILURE at root-shell proof;
-- artifact `10862632528`, digest `sha256:456d1d12887572fa60570ce717c3bf32c850c46a6eebc9df93049a089601d809`.
+Conservative current runtime boundary: exact E2E `35634992757` at `3b0f564...` reached `BSD root: md0` and failed APFS root mount with error 79.
 
-The current E2E reaches `BSD root: md0` and `launchd`; APFS mount error 79 is not present. Root shell is blocked by repeated AMFI code-signature validation failure and launch-constraint enforcement for `/bin/bash`.
+Historical later evidence retained for controlled recovery:
+- `d743b2e...`: raw-APFS output correction;
+- `b3befaeb...`: regression test;
+- `669f2b...`: reached recovery `launchd`, then failed root-shell proof on AMFI/launch constraints.
 
-## Continuation
+## PP-RM authority model
 
-Continue from the launchd/AMFI boundary. Inspect shell signature/CDHash/trust-cache/service evidence, define one narrow discriminator, and make no broad speculative security-policy mutation. Do not restart the obsolete APFS error-79 cycle unless fresh evidence reproduces it.
+Manager retains:
+- project responsibility;
+- priority and direction;
+- work-package definition;
+- strategy changes;
+- high-level checkpoints;
+- durable Context Capsule state.
+
+A/B runtimes:
+- execute only the current bounded work package;
+- use Runtime Mailbox + ACK, Pulse, Trace, exact read-back;
+- arm successor as the final tool operation;
+- do not mutate `manager-state` during ordinary execution;
+- stop and return evidence when a high-level checkpoint condition is reached.
+
+OCB is routine system behavior plus its handling model; safe retries are expected when a server response is missing, with read-back/idempotency before repeating side-effecting operations.
+
+## First PP-RM package
+
+`IOS-M1-R1`: restore only the known raw-APFS packaging change from `d743b2e...` and its regression test from `b3befaeb...`, validate narrowly, then run exact Windows E2E. Return to Manager at launchd/AMFI, persistent APFS error 79, unexpected regression, ambiguous side effect, or PP-RM invariant failure.
+
+PP-RM is PREPARED, NOT YET ARMED.

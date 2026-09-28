@@ -45,7 +45,8 @@
   ],
   "decisions": [
     ".context/decisions/DEC-0001-persistent-manager-migration.md",
-    ".context/decisions/DEC-0002-manager-state-coherence-adoption.md"
+    ".context/decisions/DEC-0002-manager-state-coherence-adoption.md",
+    ".context/decisions/DEC-0003-pp-rm-execution-runtime.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"
@@ -96,7 +97,7 @@
     "external_gate_reconciliation_required": true,
     "manager_state_coherence_required": true
   },
-  "updated_at": "2026-09-24",
+  "updated_at": "2026-09-28",
   "context_version": "2.0.0-dev",
   "authority": {
     "manager_state_branch": "manager-state",
