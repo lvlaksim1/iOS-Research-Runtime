@@ -17,7 +17,6 @@ import (
 
 	"github.com/deploymenttheory/go-apfs-v2/pkg/apfs"
 	"github.com/deploymenttheory/go-apfs-v2/pkg/apfswrite"
-	"github.com/deploymenttheory/go-apfs-v2/pkg/disk"
 )
 
 const symlinkXattrName = "com.apple.fs.symlink"
@@ -35,8 +34,8 @@ type options struct {
 func main() {
 	var opts options
 
-	flag.StringVar(&opts.input, "input", "", "source recovery ramdisk DMG")
-	flag.StringVar(&opts.output, "output", "", "patched recovery ramdisk DMG")
+	flag.StringVar(&opts.input, "input", "", "source recovery ramdisk image")
+	flag.StringVar(&opts.output, "output", "", "patched raw APFS recovery ramdisk image")
 	flag.StringVar(&opts.sysrootTar, "sysroot-tar", "", "iOS CLI sysroot tar.gz")
 	flag.StringVar(&opts.launchdPlist, "launchd-plist", "", "launch daemon plist")
 	flag.StringVar(&opts.rcodesign, "rcodesign", "", "path to rcodesign.exe")
@@ -205,16 +204,51 @@ func run(opts options) error {
 		return fmt.Errorf("stat patched APFS container: %w", err)
 	}
 
-	if err := disk.WrapRawImageDMGFrom(opts.output, rawFile, stat.Size(), "Apple_APFS", nil); err != nil {
-		return fmt.Errorf("wrap patched APFS container in DMG: %w", err)
+	if err := writeRawRamdisk(opts.output, rawFile, stat.Size()); err != nil {
+		return fmt.Errorf("write patched raw APFS ramdisk: %w", err)
 	}
 
 	if err := writeCDHashes(opts.hashesOut, hashes); err != nil {
 		return fmt.Errorf("write CDHashes: %w", err)
 	}
 
-	fmt.Printf("patched ramdisk: %s -> %s\n", opts.input, opts.output)
+	fmt.Printf("patched ramdisk: %s -> %s (raw APFS, %d bytes)\n", opts.input, opts.output, stat.Size())
 	fmt.Printf("trust-cache hashes: %s (%d entries)\n", opts.hashesOut, len(hashes))
+	return nil
+}
+
+func writeRawRamdisk(output string, rawFile *os.File, size int64) error {
+	if size <= 0 {
+		return fmt.Errorf("invalid raw APFS size: %d", size)
+	}
+	if _, err := rawFile.Seek(0, io.SeekStart); err != nil {
+		return fmt.Errorf("rewind raw APFS image: %w", err)
+	}
+	out, err := os.Create(output)
+	if err != nil {
+		return fmt.Errorf("create output: %w", err)
+	}
+	ok := false
+	defer func() {
+		_ = out.Close()
+		if !ok {
+			_ = os.Remove(output)
+		}
+	}()
+	written, err := io.CopyN(out, rawFile, size)
+	if err != nil {
+		return fmt.Errorf("copy raw APFS image: %w", err)
+	}
+	if written != size {
+		return fmt.Errorf("copy raw APFS image: wrote %d bytes, expected %d", written, size)
+	}
+	if err := out.Sync(); err != nil {
+		return fmt.Errorf("flush output: %w", err)
+	}
+	if err := out.Close(); err != nil {
+		return fmt.Errorf("close output: %w", err)
+	}
+	ok = true
 	return nil
 }
 

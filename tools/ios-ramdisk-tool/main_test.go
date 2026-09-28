@@ -158,3 +158,43 @@ func TestMaterializeRawDecmpfsLeavesSupportedCompressionUntouched(t *testing.T) 
 		t.Fatal("supported type 11 should be preserved as compressed xattrs")
 	}
 }
+
+
+func TestWriteRawRamdiskCopiesExactAPFSBytes(t *testing.T) {
+	dir := t.TempDir()
+	rawPath := filepath.Join(dir, "ramdisk.raw")
+	outputPath := filepath.Join(dir, "ramdisk.dmg")
+
+	payload := make([]byte, 8192)
+	copy(payload[32:36], []byte("NXSB"))
+	for i := 4096; i < len(payload); i++ {
+		payload[i] = byte(i % 251)
+	}
+	if err := os.WriteFile(rawPath, payload, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	raw, err := os.Open(rawPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer raw.Close()
+
+	if err := writeRawRamdisk(outputPath, raw, int64(len(payload))); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != len(payload) {
+		t.Fatalf("output length = %d, want %d", len(got), len(payload))
+	}
+	if string(got) != string(payload) {
+		t.Fatal("output is not the exact raw APFS byte stream")
+	}
+	if string(got[32:36]) != "NXSB" {
+		t.Fatalf("APFS magic = %q, want NXSB", got[32:36])
+	}
+}
