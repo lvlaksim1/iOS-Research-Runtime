@@ -7,7 +7,12 @@
 - Register read-back stabilization uses fresh reads only; never replay a register mutation merely due to stale visibility.
 - GitHub OCB parameters for current continuous run: explicit OSB only, up to three exact-identical attempts total, no fourth automatic request.
 - Never blindly replay an ambiguous mutation. Reconcile authoritative server state first.
+- Current preferred write-path experiment for blocked file publication is PR-based: create_blob -> create_tree -> create_commit -> create_branch -> create_pull_request -> merge_pull_request -> authoritative read-back.
+- Apply OCB3 independently to each GitHub write request in that path; do not change request parameters between exact OSB retries.
+- For merge, use expected_head_sha when available and verify actual main after the operation.
+- Direct update_file(main) is not the only allowed publication mechanism; choose the native write-path supported by evidence and current Manager policy.
+- A worker's own Scheduled Task may legitimately still report is_enabled=true when the runtime starts. SELF ENABLED IS NOT AN OWNERSHIP FAILURE.
+- Single-owner validation uses Mailbox owner/generation/message_id/seq, prior Trace SEND, and absence of a contradictory newer baton. The self enabled flag is informational only.
 - GitHub writes must be based on a freshly reconciled branch/ref. If the base changed unexpectedly, resolve from evidence before publishing.
-- Keep changes narrow and evidence-backed; ordinary tactical decisions are delegated, strategic project decisions remain with Manager.
-- A/B never mutate `manager-state`.
+- A/B never mutate manager-state.
 - Successor arm is always the final tool operation.

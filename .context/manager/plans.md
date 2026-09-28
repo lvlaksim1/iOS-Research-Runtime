@@ -3,55 +3,44 @@
 ## Continuous PP-RM package
 
 Package: `IOS-M1-CONTINUOUS-001`
+High-level objective: reach verified Windows recovery `launchd` plus verified root shell.
 
-High-level objective:
-Advance the current product from `main@cbba4060db543d4a2b800f7c15b2a700e69f6961` to verified Windows recovery `launchd` plus verified root shell, using evidence-driven bounded A/B turns.
+## Current tactical publication change
 
-## Immediate work
+Direct Contents-API `update_file(main)` for `.github/workflows/windows-e2e.yml` repeatedly exhausted OCB3 with no side effect.
 
-1. Reconcile current `main` and exact current CI.
-2. Diagnose why E2E expects `qemu-sptm-windows-gate` but cannot download it.
-3. Repair the existing gate/artifact path with the smallest evidence-backed repository change. Do not change iOS/APFS semantics merely to bypass infrastructure.
-4. Run/observe exact-SHA Windows E2E.
-5. If E2E reaches a product/boot failure, diagnose and fix the next evidence-supported defect within IOS-M1 scope.
-6. Continue A/B turns through subsequent build/CI/boot iterations without returning to Manager merely because an intermediate stage failed.
-7. Continue until IOS-M1 is achieved or a genuine stop condition is reached.
+Owner authorized a different native GitHub publication path without artificial stops:
 
-## Worker autonomy inside this package
+`create_blob -> create_tree -> create_commit -> create_branch -> create_pull_request -> merge_pull_request`
 
-Workers MAY:
-- inspect repository history, workflows, source, tests, logs, artifacts metadata, and exact run/job evidence;
-- make narrow repository changes needed to repair build, workflow, QEMU gate, ramdisk, boot integration, or other IOS-M1 execution defects;
-- add/adjust deterministic regression coverage directly related to a fix;
-- commit/publish changes to `main` when the live branch still matches the worker's reconciled base;
-- observe and classify resulting CI;
-- choose tactical implementation details when evidence supports them.
+Use the SAME evidence-backed workflow repair. Do not change its semantics merely to test another path.
 
-Workers MUST NOT:
-- publish releases;
-- mutate `manager-state`;
-- change milestone, authority topology, or persistent-agent architecture;
-- introduce broad speculative APFS/security changes without evidence;
-- perform destructive unrelated repository operations.
+## PR publication rules
 
-## OCB
+1. Fresh-read `main` and target file/tree.
+2. Build the desired file blob.
+3. Build tree from the freshly reconciled base tree.
+4. Create commit with current `main` as parent.
+5. Create a unique temporary branch from that commit.
+6. Open PR from the temporary branch to `main`.
+7. Merge using `expected_head_sha` equal to the prepared commit SHA.
+8. Fresh-read `main` and target file after merge.
+9. Continue exact-SHA CI and IOS-M1 work without returning to Manager merely because an intermediate stage fails.
 
-Operational parameters remain:
-- explicit OSB only;
-- exact request attempt 1;
-- if explicit OSB, exact-identical attempt 2;
-- if attempt 2 also explicit OSB, exact-identical attempt 3;
-- no attempt 4;
-- authoritative state reconciliation after mutation attempt sequences;
-- ambiguous mutation => no blind replay.
+For every GitHub write operation, keep the current OCB rule: up to 3 exact-identical attempts only when prior attempts are explicit OSB; no fourth attempt. Ambiguous writes require reconciliation before any replay.
 
-## Handoff behavior
+## Runtime validation correction
 
-Each runtime does one bounded meaningful unit of work. If the objective is not complete and no genuine stop condition exists:
-- publish next Mailbox generation with factual checkpoint and next bounded action;
-- verify read-back;
-- append Trace SEND;
-- arm partner as LAST TOOL OPERATION;
-- zero tool calls afterward.
+A worker MUST NOT treat its own Scheduled Task being `is_enabled=true` at runtime start as evidence of duplicate ownership. A running one-shot task may still appear enabled.
 
-CI waiting is not a Manager stop. If evidence is still running, hand off a WAIT_CI turn to the partner.
+Ownership validation is based on:
+- Mailbox owner/generation/state/message_id/seq;
+- matching prior Trace SEND;
+- partner handoff history;
+- no contradictory newer baton.
+
+The self enabled flag is informational only and is not a fail condition.
+
+## Continuation
+
+Resume from the stopped generation-27 checkpoint by issuing a fresh Manager continuation baton using the current product state and the PR-based publication tactic. Then continue normal A/B handoffs until IOS-M1 completion or a genuine stop condition.

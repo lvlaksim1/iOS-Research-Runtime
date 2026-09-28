@@ -9,28 +9,25 @@
 
 ## Product
 - live `main`: `cbba4060db543d4a2b800f7c15b2a700e69f6961`
-- raw-APFS restoration: published
-- Ramdisk Tool Windows `36483217843`: SUCCESS
-- Windows Build `36483217817`: SUCCESS
-- Windows End-to-End Boot `36483217835`: FAILURE before Darwin boot
-- exact blocker: missing artifact `qemu-sptm-windows-gate` in job `109133700969`
+- workflow `.github/workflows/windows-e2e.yml` is still blob `31e4c283bf77c1e326d3f15127131e74dccdd7be`
+- current E2E blocker remains missing `qemu-sptm-windows-gate` artifact
+- direct `update_file(main)` attempts repeatedly exhausted OCB3 with verified no side effect
 
 ## PP-RM
-Native IDs:
-- A `6abac75982308191b786450088217776`
-- B `6abac76297c8819182c048fcbc619ef0`
-- Mailbox `6abac714ddb481919ab9cb13afc4f8f8`
-- Pulse `6abac73339dc8191ba6bf26104fc2aa9`
-- Trace `6abac750fee081918af4522336615f29`
+- continuous package reached generation 27 before fail-stop
+- generation 27 fail was caused by an invalid ownership heuristic: Worker A treated self `is_enabled=true` as proof ownership was unsafe
+- both workers are currently disabled
+- Mailbox generation 27 owner=A remains a factual historical checkpoint, but Manager will issue a fresh continuation baton after this protocol correction
 
-Before launch all five are disabled. Previous Mailbox/Pulse state is stale and must be replaced by the new continuous package seed.
+## Publication tactic
+Owner authorized native PR-based publication for the same workflow repair:
+`create_blob -> create_tree -> create_commit -> create_branch -> create_pull_request -> merge_pull_request`.
 
-## OCB
-- explicit OSB classification only
-- up to 3 exact-identical attempts total
+OCB parameters are unchanged:
+- explicit OSB only
+- max 3 exact-identical attempts per same request
 - no automatic fourth attempt
-- mandatory server-state reconciliation for mutation outcomes
-- ambiguity never authorizes blind duplication
+- mandatory reconciliation after ambiguous or mutation outcomes
 
-## Stop semantics
-No artificial stage checkpoints. Continue through ordinary failures and tactical fixes. Stop only at objective completion or genuine authority/safety/strategy ambiguity.
+## Ownership correction
+Self task `is_enabled=true` at runtime start is not a validation failure. Ownership is proven by Mailbox/Trace baton evidence and absence of a contradictory newer baton.
