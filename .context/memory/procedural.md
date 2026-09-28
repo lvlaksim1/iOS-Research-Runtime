@@ -1,15 +1,13 @@
 # Procedural memory
 
-- Before product work, reconcile exact live `main` and distinguish current product state from historical evidence.
-- PP-RM A/B executes one bounded turn per runtime and uses Mailbox/Pulse/Trace for transport and evidence.
-- Handoff order: validate -> ACK -> bounded work -> finish side effects -> Pulse -> outbound Mailbox -> bounded read-back stabilization -> Trace SEND -> successor arm as LAST TOOL OPERATION -> zero post-arm tool calls.
-- Register read-back stabilization: after one register mutation, use up to three fresh read-only Scheduled Tasks reads to observe the exact intended state. Never repeat the mutation solely because the first read is stale.
-- Repeated message_id must never repeat product side effects; deduplicate before work.
-- Scheduler delay alone is not protocol failure and never authorizes timeout takeover.
-- GitHub telemetry uses one uniquely tagged Trace event per request/attempt. Authoritative totals are calculated from those events by Manager; worker aggregate summaries are advisory only.
-- OCB: explicit OSB on a GitHub request may receive one desired exact-identical retry; retry is not mandatory; no automatic third identical request.
-- Non-OSB timeout/API/network/tool failures are not automatically OCB.
-- Never blindly repeat an ambiguous GitHub mutation; reconcile server state first when possible.
-- Pilot admission evidence: attempt 2 A1 -> B2 -> A3 -> FINAL PASS; 4/4 GitHub READ first-attempt success; zero explicit OSB. OCB retry effectiveness remains untested.
-- At a high-level checkpoint, A/B stops successor chaining and returns exact repository/CI/runtime evidence to Manager.
-- A/B ordinary execution never mutates `manager-state`; Manager persists durable meaning.
+- Reconcile exact live `main` before product mutation.
+- PP-RM handoff remains validate -> ACK -> bounded work -> finish side effects -> Pulse -> Mailbox -> read-back stabilization -> Trace SEND -> successor arm last.
+- Register read-back stabilization uses up to three fresh reads and never replays a register mutation merely for visibility.
+- GitHub telemetry uses unique Trace events per request/attempt.
+- Normal OCB policy before this experiment allowed one desired exact-identical retry after explicit OSB.
+- TEMPORARY experiment authorized 2026-09-28: for targeted `update-ref(main -> cbba4060...)` only, if attempts 1 and 2 both return explicit OSB, make attempt 3 with the exact same operation and parameters.
+- No automatic fourth request.
+- After targeted attempts, always fresh-reconcile authoritative `main`.
+- This third-attempt allowance is experimental evidence collection, not a permanent rule.
+- Non-OSB failures are not automatically OCB. Ambiguous mutations are never blindly repeated.
+- A/B ordinary execution never mutates `manager-state`.
