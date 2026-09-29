@@ -1,19 +1,31 @@
 # Current blockers and open risks
 
-## Immediate publication blocker
-The product fix is already prepared as commit `869b75c509e8cba50a5a61dbd33cf3da4402e8fd`, directly based on current `main@cbba4060...`.
+## Product blocker
+The current E2E reaches recovery launchd and attempts `/bin/bash`, but AMFI rejects execution:
+- ad-hoc signed binary;
+- unsuitable CT policy for platform/device;
+- code signature validation failed;
+- Launch Constraint Violation.
 
-PR creation is no longer required. The next publication operation is a non-force fast-forward `update_ref(main -> 869b75c...)` after exact parent reconciliation.
+This is now the primary IOS-M1 product blocker.
 
-## OCB operational risk
-GitHub mutation passability remains non-deterministic. Current rule remains max three exact-identical attempts only for consecutive explicit OSB, followed by authoritative state reconciliation.
+## Test blocker
+`Ramdisk Tool Windows` fails due a regression-test nil dereference at `tools/ios-ramdisk-tool/main_test.go:81`.
+Repair narrowly before relying on that regression suite as green evidence.
 
-## Baton-integrity risk
-Generation 95 exposed a sender-side payload digest error. Canonicalization is now explicit: hash exact payload UTF-8 bytes only, no prefix/newline, and recompute before Mailbox publication.
+## Continuity blocker addressed by generation 13
+The prior PP-RM had no independent observer for a runtime that was scheduled and started but died before ACK.
+Generation 13 introduces Watchdog plus fencing tokens.
+
+## Remaining continuity limitation
+Fencing cannot revoke an already in-flight external request. Therefore:
+- workers revalidate token immediately before consequential mutation;
+- Watchdog uses a grace/progress protocol instead of instant takeover after ACK;
+- GitHub publication remains non-force and parent/reconciliation guarded.
 
 ## Genuine stop conditions
-- IOS-M1 objective achieved;
+- IOS-M1 achieved;
 - required action exceeds Manager mandate or needs Owner approval;
 - unresolved ambiguous side effect;
-- PP-RM invariant cannot be safely restored from evidence;
-- true strategic fork outside tactical IOS-M1 work.
+- Watchdog exhausts attempt 3 for one generation;
+- true strategic fork outside tactical IOS-M1 execution.

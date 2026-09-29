@@ -53,7 +53,8 @@
     ".context/decisions/DEC-0006-ocb-third-request-experiment.md",
     ".context/decisions/DEC-0007-continuous-pp-rm-production.md",
     ".context/decisions/DEC-0008-pr-publication-and-runtime-ownership.md",
-    ".context/decisions/DEC-0009-direct-fast-forward-publication.md"
+    ".context/decisions/DEC-0009-direct-fast-forward-publication.md",
+    ".context/decisions/DEC-0010-watchdog-fenced-pp-rm.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"

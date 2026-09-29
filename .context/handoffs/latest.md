@@ -1,32 +1,26 @@
 # Latest handoff
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Package: `IOS-M1-CONTINUOUS-001`.
+Manager generation: 13.
+Product authority: `main@649a2244f876db34e2032755b189df158667305f`.
 
-Current live product:
-`main@cbba4060db543d4a2b800f7c15b2a700e69f6961`
+## Product checkpoint
 
-Prepared commit:
-`869b75c509e8cba50a5a61dbd33cf3da4402e8fd`
+Windows Build is green.
+E2E run `36556048793` reached recovery launchd and attempted root-shell startup, then failed because AMFI rejected ad-hoc-signed `/bin/bash` under CT / launch constraints.
+Ramdisk Tool run `36556048692` independently exposes a regression-test nil dereference at `main_test.go:81`.
 
-Prepared parent:
-`cbba4060db543d4a2b800f7c15b2a700e69f6961`
+## Continuity checkpoint
 
-## Last run
-PP-RM advanced to generation 95. The alternate git-object path successfully created blob/tree/commit/temp branch. PR creation then repeatedly hit OCB. Generation 95 stopped on a payload SHA mismatch before product work.
+Previous package `IOS-M1-CONTINUOUS-001` stopped at generation 139 after Worker A started but wrote no durable ACK or successor handoff.
 
-## New Owner-authorized continuation
-PR is removed from the publication path.
+New package `IOS-M1-CONTINUOUS-002` uses five tasks:
+A, B, Mailbox, Trace, Watchdog.
 
-Next operation:
-1. fresh-read `main`;
-2. require exact equality with prepared parent;
-3. non-force `update_ref(main -> prepared commit)` under OCB3;
-4. authoritative read-back;
-5. continue CI and product work without artificial stop.
+Every activation is fenced with generation + attempt + activation_token + message_id.
+Watchdog may rotate a stalled baton to a new token and re-arm its owner. Old runtimes must stop when their prompt token no longer matches Mailbox.
 
-## Baton digest rule
-Hash exactly the payload value's UTF-8 bytes, without `payload=` and without newline. Sender recomputes immediately before Mailbox write. Receiver recomputes by identical rule.
+## Start
 
-## OCB
-Unchanged: explicit OSB only; max 3 exact-identical attempts; no fourth; reconcile actual GitHub state after mutations.
+Launch the new package from current main. No artificial stops.
+Initial tactical work: reconcile the completed E2E failure, fix the regression-test nil dereference narrowly, and continue evidence-backed work on the AMFI / launch-constraint blocker.

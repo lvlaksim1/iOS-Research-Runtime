@@ -1,48 +1,90 @@
 # Manager plans
 
-## Continuous PP-RM package
+## IOS-M1 production package
 
-Package: `IOS-M1-CONTINUOUS-001`
-High-level objective: reach verified Windows recovery `launchd` plus verified root shell.
+New package: `IOS-M1-CONTINUOUS-002`.
+Manager generation: 13.
+Product authority: `main`.
 
-## Current publication strategy
+Current live product:
+`main@649a2244f876db34e2032755b189df158667305f`
 
-The PR path is removed from the critical path. Current prepared product commit:
+Current exact evidence:
+- Windows Build on current main: SUCCESS.
+- Windows End-to-End Boot run `36556048793`: FAILURE after reaching recovery launchd and attempting `/bin/bash`.
+- Root-shell blocker: AMFI rejects the ad-hoc-signed `/bin/bash` with unsuitable CT policy / Launch Constraint Violation.
+- Ramdisk Tool Windows run `36556048692`: regression-test nil dereference at `main_test.go:81`.
 
-`869b75c509e8cba50a5a61dbd33cf3da4402e8fd`
+## PP-RM vNext topology
 
-Its parent is exactly current live:
+Use exactly five Scheduled Tasks:
+1. Worker A.
+2. Worker B.
+3. Runtime Mailbox.
+4. Trace.
+5. Watchdog.
 
-`main@cbba4060db543d4a2b800f7c15b2a700e69f6961`
+The former Pulse register is retired and its task slot is repurposed as Watchdog.
 
-It changes only `.github/workflows/windows-e2e.yml` with the evidence-backed QEMU gate-artifact selection repair.
+## Fenced activation identity
 
-Preferred publication path:
+Every baton MUST include:
+- package;
+- manager_generation;
+- generation;
+- owner;
+- attempt;
+- activation_token;
+- message_id;
+- payload;
+- payload_sha256 or UNAVAILABLE;
+- ack;
+- progress_seq.
 
-`fresh-read main -> require main == prepared parent -> update_ref(main -> prepared commit, force=false) -> fresh-read main/workflow -> continue CI`
+The owner worker task prompt MUST carry the exact same activation tuple:
+`generation + attempt + activation_token + message_id`.
 
-No PR is required. If `main` no longer equals the prepared parent, do not move the ref; rebuild/reconcile from the new base instead.
+A runtime whose prompt activation tuple does not match the current Mailbox is stale and performs no product mutation.
 
-## OCB
+## Runtime fencing
 
-Unchanged:
-- explicit OpenAI safety/safety-check block only;
-- maximum three exact-identical attempts for the same request;
-- no automatic fourth attempt;
-- no unrelated GitHub operation between exact OSB retries;
-- ambiguous mutation requires authoritative server-state reconciliation before replay;
-- after the attempt sequence, verify actual `main`.
+A worker MUST fresh-read the Mailbox:
+- at activation before ACK;
+- immediately before every consequential GitHub mutation;
+- immediately before publishing the outbound baton.
 
-## Baton hash canonicalization
+If generation/attempt/token/owner no longer match, the runtime terminates with no further external mutation.
 
-To prevent another false protocol stop:
-- `payload` is one exact single-line UTF-8 string;
-- `payload_sha256` is SHA-256 of exactly the bytes of the payload value, excluding the literal `payload=` prefix and excluding the trailing newline;
-- sender MUST compute then immediately recompute/verify the hash before writing Mailbox;
-- receiver recomputes with the same rule;
-- never hand-type or infer the digest;
-- if hashing capability is unavailable, set `payload_sha256=UNAVAILABLE` and receiver validates literal payload/message metadata instead of declaring a mismatch solely for missing hash.
+## ACK and progress
 
-## Continuous execution
+After validation, the worker's first durable mutation is Mailbox ACK for the same baton and `progress_seq=1`.
+During a bounded turn the worker advances `progress_seq` after material phases.
+Long CI waiting is never held in one runtime; publish a handoff.
 
-No artificial stage stops. After publication, continue through exact-SHA CI, workflow/build/QEMU/ramdisk/APFS/launchd/AMFI/boot diagnosis and evidence-backed tactical fixes until IOS-M1 is achieved or a genuine stop condition occurs.
+## Watchdog
+
+For each outbound baton, sender arms Watchdog before arming successor.
+The successor arm remains the sender's final tool operation.
+
+Watchdog checks the exact expected baton after a grace interval.
+- If Mailbox advanced or token changed: stale watchdog exits.
+- If ACK is absent: re-read once, then rotate to a new attempt/token and re-arm the owner.
+- If ACK exists: compare progress_seq. If progress advanced, re-arm Watchdog for another check. If no progress across two checks, rotate attempt/token and re-arm the owner.
+- Maximum three attempts for one generation. After attempt 3 stalls, fail-stop with Trace evidence; no blind fourth runtime.
+- Watchdog recovery writes the replacement baton before re-arming the owner. A previous runtime is fenced by the old activation token.
+
+## GitHub publication
+
+Preferred narrow change publication remains:
+`fresh-read main -> create_blob -> create_tree -> create_commit -> fresh-read main -> update_ref(force=false) -> authoritative read-back`.
+
+OCB is unchanged: explicit OSB only; maximum three exact-identical attempts for the same request; no fourth; ambiguous mutation requires reconciliation.
+
+## Continuous objective
+
+Continue without artificial stops:
+1. preserve current main evidence;
+2. repair the ramdisk regression-test nil dereference narrowly;
+3. analyze and address the AMFI / launch-constraint root-shell blocker from exact E2E evidence;
+4. rerun exact-SHA CI;
+5. continue until verified recovery launchd + verified root shell or a genuine mandate/safety/ambiguity stop.

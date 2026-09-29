@@ -2,29 +2,31 @@
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
+- manager generation: 13
 - product authority: `main`
-- Manager authority: `manager-state`
-- execution mode: continuous PP-RM production
-- package: `IOS-M1-CONTINUOUS-001`
+- execution package: `IOS-M1-CONTINUOUS-002`
+- execution mode: continuous PP-RM with fenced Watchdog recovery
 
 ## Product
-- live `main`: `cbba4060db543d4a2b800f7c15b2a700e69f6961`
-- prepared commit: `869b75c509e8cba50a5a61dbd33cf3da4402e8fd`
-- prepared parent: `cbba4060db543d4a2b800f7c15b2a700e69f6961`
-- prepared change: only `.github/workflows/windows-e2e.yml`, selecting a successful QEMU gate run whose `qemu-sptm-windows-gate` artifact is actually available
-- temporary branch still points to prepared commit, but PR creation is no longer required
+- live main: `649a2244f876db34e2032755b189df158667305f`
+- commit message: `Preserve Apple recovery bash during sysroot merge`
+- Windows Build: SUCCESS
+- Windows End-to-End Boot run `36556048793`: FAILURE
+- exact root-shell blocker: AMFI rejects ad-hoc-signed `/bin/bash` due unsuitable CT policy / Launch Constraint Violation
+- Ramdisk Tool Windows run `36556048692`: FAILURE, regression-test nil dereference at `main_test.go:81`
 
-## Last PP-RM checkpoint
-- continuous run reached generation 95
-- generation 94: `create_pull_request` exhausted OCB3 with no side effect
-- generation 95: receiver detected a payload SHA mismatch and fail-stopped before product work
-- both workers are disabled
+## Previous PP-RM
+Package `IOS-M1-CONTINUOUS-001` reached generation 139.
+Generation 138 handed a valid baton to A. Scheduler started A, but A produced no durable ACK/Trace/handoff and both workers became disabled.
+This exposed a silent-death window between runtime start and first durable checkpoint.
 
-## Corrected publication path
-`fresh-read main -> require exact prepared parent -> update_ref(force=false) -> fresh-read main/workflow -> continue CI`
+## New PP-RM construction
+The Pulse task is retired and repurposed as Watchdog.
+Topology: A + B + Mailbox + Trace + Watchdog.
 
-## Corrected payload hashing
-SHA-256 is computed over the exact UTF-8 payload value only, no `payload=` prefix and no trailing newline. Sender recomputes before Mailbox write; receiver uses the same canonical rule.
+Every activation is fenced by `generation/attempt/activation_token/message_id`.
+Workers revalidate the current token before ACK, before every consequential GitHub mutation, and before outbound handoff.
+Watchdog can rotate a stalled baton to a new attempt/token and re-arm the owner, up to three attempts per generation.
 
 ## OCB
-Unchanged: explicit OSB only, max 3 exact-identical attempts, no fourth, mutation reconciliation required.
+Unchanged: explicit OSB only; max three exact-identical requests; no automatic fourth request; mandatory authoritative reconciliation for ambiguous writes.
