@@ -1,34 +1,32 @@
 # Latest handoff
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Product authority: `main@cbba4060db543d4a2b800f7c15b2a700e69f6961`.
-Manager authority: `manager-state`.
 Package: `IOS-M1-CONTINUOUS-001`.
 
-## Current checkpoint
+Current live product:
+`main@cbba4060db543d4a2b800f7c15b2a700e69f6961`
 
-Continuous PP-RM reached generation 27. Generations 25 and 26 each retried the same narrow workflow change and received explicit OSB on all three allowed `update_file` attempts, with authoritative reconciliation proving no side effect.
+Prepared commit:
+`869b75c509e8cba50a5a61dbd33cf3da4402e8fd`
 
-Generation 27 then fail-stopped because Worker A incorrectly treated its own Scheduled Task still being enabled at runtime start as ownership ambiguity.
+Prepared parent:
+`cbba4060db543d4a2b800f7c15b2a700e69f6961`
 
-That ownership check is now corrected: self enabled is not a failure condition. Mailbox/Trace baton evidence is authoritative.
+## Last run
+PP-RM advanced to generation 95. The alternate git-object path successfully created blob/tree/commit/temp branch. PR creation then repeatedly hit OCB. Generation 95 stopped on a payload SHA mismatch before product work.
 
-## Owner-authorized publication change
+## New Owner-authorized continuation
+PR is removed from the publication path.
 
-Keep the same desired `windows-e2e.yml` repair and the same OCB policy, but publish through:
+Next operation:
+1. fresh-read `main`;
+2. require exact equality with prepared parent;
+3. non-force `update_ref(main -> prepared commit)` under OCB3;
+4. authoritative read-back;
+5. continue CI and product work without artificial stop.
 
-`create_blob -> create_tree -> create_commit -> create_branch -> create_pull_request -> merge_pull_request`
-
-Use a unique temporary branch. Merge to `main` with expected head SHA when possible. Reconcile actual `main` and file after merge.
+## Baton digest rule
+Hash exactly the payload value's UTF-8 bytes, without `payload=` and without newline. Sender recomputes immediately before Mailbox write. Receiver recomputes by identical rule.
 
 ## OCB
-
-Unchanged:
-- explicit OSB only;
-- maximum three exact-identical attempts for the same request;
-- no fourth automatic attempt;
-- ambiguous mutation requires server-state reconciliation before replay.
-
-## Continuation
-
-Manager will reseed a fresh baton to A from current live state. No artificial checkpoints. A/B continue through CI and tactical fixes until IOS-M1 completion or a genuine stop condition.
+Unchanged: explicit OSB only; max 3 exact-identical attempts; no fourth; reconcile actual GitHub state after mutations.

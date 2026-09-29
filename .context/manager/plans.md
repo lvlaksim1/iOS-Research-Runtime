@@ -5,42 +5,44 @@
 Package: `IOS-M1-CONTINUOUS-001`
 High-level objective: reach verified Windows recovery `launchd` plus verified root shell.
 
-## Current tactical publication change
+## Current publication strategy
 
-Direct Contents-API `update_file(main)` for `.github/workflows/windows-e2e.yml` repeatedly exhausted OCB3 with no side effect.
+The PR path is removed from the critical path. Current prepared product commit:
 
-Owner authorized a different native GitHub publication path without artificial stops:
+`869b75c509e8cba50a5a61dbd33cf3da4402e8fd`
 
-`create_blob -> create_tree -> create_commit -> create_branch -> create_pull_request -> merge_pull_request`
+Its parent is exactly current live:
 
-Use the SAME evidence-backed workflow repair. Do not change its semantics merely to test another path.
+`main@cbba4060db543d4a2b800f7c15b2a700e69f6961`
 
-## PR publication rules
+It changes only `.github/workflows/windows-e2e.yml` with the evidence-backed QEMU gate-artifact selection repair.
 
-1. Fresh-read `main` and target file/tree.
-2. Build the desired file blob.
-3. Build tree from the freshly reconciled base tree.
-4. Create commit with current `main` as parent.
-5. Create a unique temporary branch from that commit.
-6. Open PR from the temporary branch to `main`.
-7. Merge using `expected_head_sha` equal to the prepared commit SHA.
-8. Fresh-read `main` and target file after merge.
-9. Continue exact-SHA CI and IOS-M1 work without returning to Manager merely because an intermediate stage fails.
+Preferred publication path:
 
-For every GitHub write operation, keep the current OCB rule: up to 3 exact-identical attempts only when prior attempts are explicit OSB; no fourth attempt. Ambiguous writes require reconciliation before any replay.
+`fresh-read main -> require main == prepared parent -> update_ref(main -> prepared commit, force=false) -> fresh-read main/workflow -> continue CI`
 
-## Runtime validation correction
+No PR is required. If `main` no longer equals the prepared parent, do not move the ref; rebuild/reconcile from the new base instead.
 
-A worker MUST NOT treat its own Scheduled Task being `is_enabled=true` at runtime start as evidence of duplicate ownership. A running one-shot task may still appear enabled.
+## OCB
 
-Ownership validation is based on:
-- Mailbox owner/generation/state/message_id/seq;
-- matching prior Trace SEND;
-- partner handoff history;
-- no contradictory newer baton.
+Unchanged:
+- explicit OpenAI safety/safety-check block only;
+- maximum three exact-identical attempts for the same request;
+- no automatic fourth attempt;
+- no unrelated GitHub operation between exact OSB retries;
+- ambiguous mutation requires authoritative server-state reconciliation before replay;
+- after the attempt sequence, verify actual `main`.
 
-The self enabled flag is informational only and is not a fail condition.
+## Baton hash canonicalization
 
-## Continuation
+To prevent another false protocol stop:
+- `payload` is one exact single-line UTF-8 string;
+- `payload_sha256` is SHA-256 of exactly the bytes of the payload value, excluding the literal `payload=` prefix and excluding the trailing newline;
+- sender MUST compute then immediately recompute/verify the hash before writing Mailbox;
+- receiver recomputes with the same rule;
+- never hand-type or infer the digest;
+- if hashing capability is unavailable, set `payload_sha256=UNAVAILABLE` and receiver validates literal payload/message metadata instead of declaring a mismatch solely for missing hash.
 
-Resume from the stopped generation-27 checkpoint by issuing a fresh Manager continuation baton using the current product state and the PR-based publication tactic. Then continue normal A/B handoffs until IOS-M1 completion or a genuine stop condition.
+## Continuous execution
+
+No artificial stage stops. After publication, continue through exact-SHA CI, workflow/build/QEMU/ramdisk/APFS/launchd/AMFI/boot diagnosis and evidence-backed tactical fixes until IOS-M1 is achieved or a genuine stop condition occurs.

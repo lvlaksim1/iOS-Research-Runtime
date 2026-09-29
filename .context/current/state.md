@@ -9,25 +9,22 @@
 
 ## Product
 - live `main`: `cbba4060db543d4a2b800f7c15b2a700e69f6961`
-- workflow `.github/workflows/windows-e2e.yml` is still blob `31e4c283bf77c1e326d3f15127131e74dccdd7be`
-- current E2E blocker remains missing `qemu-sptm-windows-gate` artifact
-- direct `update_file(main)` attempts repeatedly exhausted OCB3 with verified no side effect
+- prepared commit: `869b75c509e8cba50a5a61dbd33cf3da4402e8fd`
+- prepared parent: `cbba4060db543d4a2b800f7c15b2a700e69f6961`
+- prepared change: only `.github/workflows/windows-e2e.yml`, selecting a successful QEMU gate run whose `qemu-sptm-windows-gate` artifact is actually available
+- temporary branch still points to prepared commit, but PR creation is no longer required
 
-## PP-RM
-- continuous package reached generation 27 before fail-stop
-- generation 27 fail was caused by an invalid ownership heuristic: Worker A treated self `is_enabled=true` as proof ownership was unsafe
-- both workers are currently disabled
-- Mailbox generation 27 owner=A remains a factual historical checkpoint, but Manager will issue a fresh continuation baton after this protocol correction
+## Last PP-RM checkpoint
+- continuous run reached generation 95
+- generation 94: `create_pull_request` exhausted OCB3 with no side effect
+- generation 95: receiver detected a payload SHA mismatch and fail-stopped before product work
+- both workers are disabled
 
-## Publication tactic
-Owner authorized native PR-based publication for the same workflow repair:
-`create_blob -> create_tree -> create_commit -> create_branch -> create_pull_request -> merge_pull_request`.
+## Corrected publication path
+`fresh-read main -> require exact prepared parent -> update_ref(force=false) -> fresh-read main/workflow -> continue CI`
 
-OCB parameters are unchanged:
-- explicit OSB only
-- max 3 exact-identical attempts per same request
-- no automatic fourth attempt
-- mandatory reconciliation after ambiguous or mutation outcomes
+## Corrected payload hashing
+SHA-256 is computed over the exact UTF-8 payload value only, no `payload=` prefix and no trailing newline. Sender recomputes before Mailbox write; receiver uses the same canonical rule.
 
-## Ownership correction
-Self task `is_enabled=true` at runtime start is not a validation failure. Ownership is proven by Mailbox/Trace baton evidence and absence of a contradictory newer baton.
+## OCB
+Unchanged: explicit OSB only, max 3 exact-identical attempts, no fourth, mutation reconciliation required.
