@@ -2,8 +2,8 @@
 
 ## IOS-M1 production package
 
-New package: `IOS-M1-CONTINUOUS-002`.
-Manager generation: 13.
+New package: `IOS-M1-CONTINUOUS-003`.
+Manager generation: 14.
 Product authority: `main`.
 
 Current live product:
@@ -15,7 +15,7 @@ Current exact evidence:
 - Root-shell blocker: AMFI rejects the ad-hoc-signed `/bin/bash` with unsuitable CT policy / Launch Constraint Violation.
 - Ramdisk Tool Windows run `36556048692`: regression-test nil dereference at `main_test.go:81`.
 
-## PP-RM vNext topology
+## PP-RM generation 14 topology
 
 Use exactly five Scheduled Tasks:
 1. Worker A.
@@ -24,67 +24,84 @@ Use exactly five Scheduled Tasks:
 4. Trace.
 5. Watchdog.
 
-The former Pulse register is retired and its task slot is repurposed as Watchdog.
+Worker A/B prompts are immutable base programs during a package. Activation identity exists only in Mailbox.
 
-## Fenced activation identity
+## Authoritative baton
 
 Every baton MUST include:
 - package;
 - manager_generation;
 - generation;
-- owner;
-- attempt;
+- owner_slot;
+- activation_attempt;
+- dispatch_retry;
 - activation_token;
 - message_id;
+- dispatch_baseline_last_run_time;
 - payload;
 - payload_sha256 or UNAVAILABLE;
 - ack;
-- progress_seq.
+- progress_seq;
+- progress.
 
-The owner worker task prompt MUST carry the exact same activation tuple:
-`generation + attempt + activation_token + message_id`.
+Mailbox is the sole authoritative activation state. Worker prompts MUST NOT embed the current activation tuple.
 
-A runtime whose prompt activation tuple does not match the current Mailbox is stale and performs no product mutation.
+## Dispatch versus runtime failure
 
-## Runtime fencing
+Watchdog distinguishes two failure classes using the owner's Scheduled Task `last_run_time` relative to `dispatch_baseline_last_run_time`.
 
-A worker MUST fresh-read the Mailbox:
-- at activation before ACK;
-- immediately before every consequential GitHub mutation;
-- immediately before publishing the outbound baton.
+1. `last_run_time == baseline`: the scheduled activation did not start. This is DISPATCH_FAILURE.
+   - do not consume activation_attempt;
+   - increment dispatch_retry;
+   - retry dispatch of the same owner/token;
+   - after two consecutive dispatch failures for one slot, rotate token and fail over to the partner slot on the SAME generation.
 
-If generation/attempt/token/owner no longer match, the runtime terminates with no further external mutation.
+2. `last_run_time > baseline` but no durable ACK: a runtime actually started and died before ACK. This is RUNTIME_FAILURE.
+   - increment activation_attempt;
+   - rotate activation_token and message_id;
+   - either retry the same slot or fail over to the partner;
+   - maximum three CONFIRMED runtime failures for one generation.
 
-## ACK and progress
+Scheduler delivery retries and runtime attempts are separate counters.
 
-After validation, the worker's first durable mutation is Mailbox ACK for the same baton and `progress_seq=1`.
-During a bounded turn the worker advances `progress_seq` after material phases.
-Long CI waiting is never held in one runtime; publish a handoff.
+## Fencing
 
-## Watchdog
+A worker starts by fresh-reading Mailbox. If owner_slot does not equal its slot, it exits with no mutation.
 
-For each outbound baton, sender arms Watchdog before arming successor.
-The successor arm remains the sender's final tool operation.
+After accepting the baton, it memorizes `generation + activation_attempt + activation_token + message_id` and ACKs durably.
 
-Watchdog checks the exact expected baton after a grace interval.
-- If Mailbox advanced or token changed: stale watchdog exits.
-- If ACK is absent: re-read once, then rotate to a new attempt/token and re-arm the owner.
-- If ACK exists: compare progress_seq. If progress advanced, re-arm Watchdog for another check. If no progress across two checks, rotate attempt/token and re-arm the owner.
-- Maximum three attempts for one generation. After attempt 3 stalls, fail-stop with Trace evidence; no blind fourth runtime.
-- Watchdog recovery writes the replacement baton before re-arming the owner. A previous runtime is fenced by the old activation token.
+Immediately before every consequential GitHub mutation and immediately before outbound baton publication it fresh-reads Mailbox and requires the same tuple. Token/generation/owner mismatch means STALE and the runtime stops.
 
-## GitHub publication
+## Progress and ambiguous mutation
 
-Preferred narrow change publication remains:
+Worker increments progress_seq after material phases using compact durable states such as STARTED, EVIDENCE_READ, PRE_MUTATION, MUTATION_RESOLVED and HANDOFF_READY.
+
+If Watchdog sees ACK but no progress across two checks, it may recover only after reading the current progress state.
+If progress is PRE_MUTATION or a mutation may be in flight/ambiguous, Watchdog MUST reconcile authoritative GitHub state before any replay. No blind duplicate mutation.
+
+## Handoff ordering
+
+Sender:
+1. finish and reconcile side effects;
+2. write next-generation Mailbox baton with the partner as preferred owner_slot and its current last_run_time as dispatch baseline;
+3. stabilize Mailbox;
+4. append Trace SEND;
+5. arm Watchdog for that exact baton;
+6. LAST tool operation: arm the preferred worker.
+
+If worker dispatch never starts, the already-armed Watchdog detects it independently.
+
+## GitHub publication / OCB
+
+Preferred narrow publication remains:
 `fresh-read main -> create_blob -> create_tree -> create_commit -> fresh-read main -> update_ref(force=false) -> authoritative read-back`.
 
-OCB is unchanged: explicit OSB only; maximum three exact-identical attempts for the same request; no fourth; ambiguous mutation requires reconciliation.
+OCB unchanged: explicit OSB only; maximum three exact-identical attempts for the same GitHub request; no fourth; ambiguous mutation requires authoritative reconciliation.
 
 ## Continuous objective
 
 Continue without artificial stops:
-1. preserve current main evidence;
-2. repair the ramdisk regression-test nil dereference narrowly;
-3. analyze and address the AMFI / launch-constraint root-shell blocker from exact E2E evidence;
-4. rerun exact-SHA CI;
-5. continue until verified recovery launchd + verified root shell or a genuine mandate/safety/ambiguity stop.
+1. repair the ramdisk regression-test nil dereference narrowly;
+2. continue evidence-backed diagnosis/fix for AMFI / launch constraints;
+3. rerun exact-SHA CI;
+4. continue until verified recovery launchd + verified root shell or a genuine mandate/safety/ambiguity stop.

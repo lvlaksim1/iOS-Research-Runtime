@@ -1,17 +1,20 @@
 # Procedural memory
 
-- PP-RM topology is now exactly five tasks: Worker A, Worker B, Mailbox, Trace, Watchdog. Pulse is retired.
-- Each baton carries package, manager_generation, generation, owner, attempt, activation_token, message_id, payload/hash, ack, and progress_seq.
-- The target worker task prompt carries the same activation tuple. Prompt token and Mailbox token must match.
-- First durable worker mutation after validation is Mailbox ACK with progress_seq=1.
-- A worker fresh-reads and validates its fencing token immediately before every consequential GitHub mutation and immediately before outbound baton publication.
-- Token mismatch means stale runtime: stop with no further external mutation.
-- Sender writes and verifies outbound Mailbox, writes Trace SEND, arms Watchdog, then arms successor as the final tool operation. No calls after successor arm.
-- Watchdog exits if its expected baton is stale because generation advanced or token changed.
-- If expected baton has no ACK after grace, Watchdog rechecks, then rotates attempt/token and re-arms owner.
-- If ACK exists, Watchdog tracks progress_seq. Progress causes another delayed check; no progress across two checks causes fenced recovery.
-- Maximum three activation attempts per generation. No blind fourth runtime.
-- Fencing cannot cancel an already in-flight external request; grace/progress checks and pre-mutation token validation reduce overlap risk.
+- PP-RM topology is exactly five tasks: Worker A, Worker B, Mailbox, Trace, Watchdog.
+- Worker A/B prompts are immutable during a package. They never carry the current activation tuple.
+- Mailbox is the sole authoritative activation state.
+- Each baton carries package, manager_generation, generation, owner_slot, activation_attempt, dispatch_retry, activation_token, message_id, dispatch_baseline_last_run_time, payload/hash, ack, progress_seq and progress.
+- A worker first fresh-reads Mailbox and accepts work only when owner_slot equals its slot and state=READY.
+- After acceptance it memorizes generation/attempt/token/message_id, ACKs durably, and sets progress_seq=1.
+- Before every consequential GitHub mutation and before outbound baton publication the worker fresh-reads Mailbox and requires the same generation/attempt/token/message_id/owner_slot.
+- Token mismatch means stale runtime: stop with no further mutation.
+- Watchdog distinguishes scheduler delivery failure from runtime failure by comparing live Worker.last_run_time to dispatch_baseline_last_run_time.
+- If last_run_time did not advance, increment dispatch_retry and redispatch without consuming activation_attempt.
+- After two consecutive dispatch failures for one slot, rotate token and fail over to the partner slot on the same generation.
+- If last_run_time advanced but ACK is absent, classify confirmed runtime failure, increment activation_attempt, rotate token/message_id, and recover. Maximum three confirmed runtime failures per generation.
+- ACKed runtimes advance progress_seq through material phases. Watchdog uses two observations before declaring an ACKed runtime stalled.
+- If progress indicates PRE_MUTATION or a mutation may be ambiguous/in flight, Watchdog reconciles authoritative GitHub state before replay.
+- Sender writes and verifies outbound Mailbox, appends Trace SEND, arms Watchdog, then arms preferred successor as final tool operation.
 - GitHub publication remains fresh-read main -> blob/tree/commit -> fresh-read main -> update_ref(force=false) -> authoritative read-back.
 - GitHub OCB remains explicit-OSB only, max 3 exact-identical attempts, no fourth, reconcile ambiguous mutations.
 - CI waiting must be handed off rather than holding a disposable runtime open.

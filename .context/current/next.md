@@ -1,11 +1,10 @@
 # Next actions
 
-1. Seal Manager generation 13.
-2. Repurpose the former Pulse Scheduled Task as PP-RM Watchdog.
-3. Reconfigure Worker A/B, Mailbox and Trace for package `IOS-M1-CONTINUOUS-002`.
-4. Start generation 1 with attempt 1 and an explicit activation token.
-5. Watchdog monitors the exact baton independently.
-6. First production turn reconciles current main and completed E2E run `36556048793`.
-7. Repair the ramdisk regression-test nil dereference narrowly.
-8. Continue evidence-backed diagnosis/fix for AMFI / launch constraints blocking `/bin/bash`.
-9. Run exact-SHA CI and continue A/B handoffs without artificial stops.
+1. Seal Manager generation 14.
+2. Reconfigure Worker A/B as immutable slot programs with activation read only from Mailbox.
+3. Reconfigure Mailbox schema for activation_attempt, dispatch_retry and dispatch_baseline_last_run_time.
+4. Reconfigure Watchdog to distinguish scheduler DISPATCH_FAILURE from confirmed RUNTIME_FAILURE.
+5. Enable same-generation A/B failover after repeated dispatch non-delivery.
+6. Start package `IOS-M1-CONTINUOUS-003` from current `main@649a2244f876db34e2032755b189df158667305f`.
+7. First production unit: repair the ramdisk regression-test nil dereference narrowly, then continue AMFI / launch-constraint work.
+8. Continue exact-SHA CI and bounded handoffs without artificial stops.
