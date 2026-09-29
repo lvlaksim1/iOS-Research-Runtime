@@ -1,31 +1,34 @@
 # Latest handoff
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 14.
-Product authority: `main@649a2244f876db34e2032755b189df158667305f`.
+Manager generation: 15.
+Product authority: `main@eaa98114031a37343e0d5184bd132830818a6b2f`.
 
 ## Product checkpoint
-Windows Build is green.
-E2E run `36556048793` reached recovery launchd and attempted root-shell startup, then failed because AMFI rejected ad-hoc-signed `/bin/bash` under CT / launch constraints.
-Ramdisk Tool run `36556048692` exposes a regression-test nil dereference at `main_test.go:81`.
+Ramdisk Tool Windows and Windows Build are green on current main.
+Windows End-to-End Boot `36589206204` failed.
+The active product investigation remains AMFI / CT launch constraints on recovery root-shell execution.
+
+Generation 19 established that the source APFS recovery tree is fully materialized before merge. The next justified unit is a narrow pre-merge inventory of recovery executable candidates and signature/xattr evidence, followed by exact-SHA CI.
+
+No ambiguous product mutation was left by package 003.
 
 ## Continuity checkpoint
-Package `IOS-M1-CONTINUOUS-002` fail-stopped at generation 2 after Watchdog exhausted attempts against Worker A.
-Post-run reconciliation shows Worker A last_run_time did not advance on the watchdog redispatches. Those events were scheduler dispatch failures, not three confirmed runtime deaths.
+Package `IOS-M1-CONTINUOUS-003` stranded at generation 19 because the only Watchdog runtime was invoked but produced no durable recovery/self-rearm.
 
-## New construction
-Package `IOS-M1-CONTINUOUS-003` retains A, B, Mailbox, Trace and Watchdog.
+## Generation 15 construction
+Package `IOS-M1-CONTINUOUS-004` keeps exactly A, B, Mailbox, Trace and Watchdog.
 
-Mailbox alone owns the activation tuple.
-A/B prompts are immutable.
-Each baton records dispatch_baseline_last_run_time.
-Watchdog compares live last_run_time to the baseline:
-- unchanged => dispatch failure; retry without consuming activation_attempt;
-- advanced without ACK => confirmed runtime failure; rotate attempt/token;
-- repeated dispatch failure on one slot => rotate token and fail over to the partner on the same generation.
+A/B and Watchdog prompts are immutable.
+Mailbox alone owns activation and Watchdog observation state.
 
-Workers revalidate the fencing tuple before every consequential GitHub mutation and before handoff.
+Every Watchdog invocation FIRST re-arms the same unchanged Watchdog for +5 minutes. Only then may it read Mailbox or act.
+
+The semantic was validated by `PP-RM-G15-EARLY-REARM-R2`: the predecessor stopped while RUN1_ACTIVE, and the pre-armed successor still started and recorded PASS.
+
+Workers never rewrite Watchdog prompt. They may only restore its unchanged schedule if unexpectedly disabled while the package is still RUNNING.
+
+Dispatch-vs-runtime failure classification, same-generation failover, fencing, ambiguous-mutation reconciliation and OCB3 remain unchanged.
 
 ## Start
-Launch the new package from current main with no artificial stops.
-Initial tactical work: fix the nil dereference narrowly, then continue evidence-backed AMFI / launch-constraint diagnosis.
+Launch package 004 from current main and resume the generation-19 tactical objective with no artificial stops.

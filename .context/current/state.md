@@ -2,36 +2,37 @@
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
-- manager generation: 14
+- manager generation: 15
 - product authority: `main`
-- execution package: `IOS-M1-CONTINUOUS-003`
-- execution mode: continuous PP-RM with dispatch-aware fenced Watchdog recovery
+- execution package: `IOS-M1-CONTINUOUS-004`
+- execution mode: continuous PP-RM with immutable early-rearm Watchdog
 
 ## Product
-- live main: `649a2244f876db34e2032755b189df158667305f`
-- commit message: `Preserve Apple recovery bash during sysroot merge`
-- Windows Build: SUCCESS
-- Windows End-to-End Boot run `36556048793`: FAILURE
-- exact root-shell blocker: AMFI rejects ad-hoc-signed `/bin/bash` due unsuitable CT policy / Launch Constraint Violation
-- Ramdisk Tool Windows run `36556048692`: FAILURE, regression-test nil dereference at `main_test.go:81`
+- live main: `eaa98114031a37343e0d5184bd132830818a6b2f`
+- Ramdisk Tool Windows exact-SHA regression: SUCCESS
+- Windows Build exact-SHA: SUCCESS
+- Windows End-to-End Boot run `36589206204`: FAILURE
+- primary root-shell investigation: AMFI / CT launch-constraint rejection of recovery `/bin/bash`
+- generation-19 evidence: source APFS recovery tree is available pre-merge, so a narrow source executable/signature inventory diagnostic is justified
+- no ambiguous product mutation was in flight when package 003 stopped
 
-## PP-RM generation 13 result
-Package `IOS-M1-CONTINUOUS-002` proved that Watchdog detects silent continuity loss, but its recovery classified every missing ACK as a runtime failure.
-Generation 2 Worker A did not advance last_run_time on watchdog redispatches; therefore attempts 2/3 were scheduler delivery failures, not confirmed runtime failures.
-The old policy incorrectly consumed the three-attempt runtime budget and fail-stopped.
+## PP-RM generation 14 result
+Package `IOS-M1-CONTINUOUS-003` advanced through generation 19 and proved dispatch-aware A/B recovery.
 
-## PP-RM generation 14 construction
+It also exposed a remaining liveness defect: Watchdog itself was a single mutable self-rearming task. A Watchdog runtime was invoked after generation 19 stalled, but published no recovery/self-rearm and all PP-RM actors ended disabled.
+
+## PP-RM generation 15 construction
 Topology remains A + B + Mailbox + Trace + Watchdog.
-Worker prompts no longer contain mutable activation tuples.
-Mailbox is the sole activation authority.
 
-Recovery now distinguishes:
-- DISPATCH_FAILURE: last_run_time did not advance from dispatch baseline;
-- RUNTIME_FAILURE: last_run_time advanced but no durable ACK.
+A/B prompts remain immutable.
+Watchdog prompt is now immutable.
+Mailbox is the sole activation and Watchdog-state authority.
 
-Dispatch retries do not consume activation_attempt.
-After repeated dispatch failure on one slot, Watchdog rotates token and fails over to the partner slot on the same generation.
-Maximum three activation attempts applies only to confirmed runtime failures.
+Every Watchdog invocation MUST first re-arm itself for +5 minutes before any read or recovery work.
+
+Isolated regression experiment `PP-RM-G15-EARLY-REARM-R2` passed the critical case: RUN1 stopped while still RUN1_ACTIVE, but the successor created by the early self-rearm still started and recorded PASS.
+
+Workers no longer rewrite Watchdog prompt. They may only re-arm the unchanged Watchdog if they observe it unexpectedly disabled while package state remains RUNNING.
 
 ## OCB
-Unchanged: explicit OSB only; max three exact-identical GitHub requests; no automatic fourth request; mandatory authoritative reconciliation for ambiguous writes.
+Unchanged: explicit OSB only; max three exact-identical GitHub requests; no automatic fourth request; authoritative reconciliation required for ambiguous mutation.
