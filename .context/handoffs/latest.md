@@ -1,34 +1,35 @@
 # Latest handoff
 
+Updated: 2026-09-29 22:57 MSK
+
 Persistent manager: `ios-research-runtime-project-manager`.
 Manager generation: 15.
 Product authority: `main@eaa98114031a37343e0d5184bd132830818a6b2f`.
 
+## PP-RM version
+Generation 15 is the accepted construction:
+- immutable Worker A/B prompts;
+- immutable Watchdog prompt;
+- Mailbox as sole activation/watch-state authority;
+- Watchdog FIRST operation = self-rearm same unchanged task +5 minutes;
+- fixed non-adaptive 5-minute Watchdog cadence;
+- workers never rewrite Watchdog;
+- rapid fixed A↔B cadence;
+- dispatch_retry separate from activation_attempt;
+- same-generation failover, fencing and ambiguous-mutation reconciliation preserved;
+- OCB3 unchanged.
+
+Validated semantic evidence: `PP-RM-G15-EARLY-REARM-R2` PASS.
+
+## Runtime status
+Package `IOS-M1-CONTINUOUS-004` was inadvertently activated before the Owner's capsule-only/no-launch instruction and then stopped.
+All PP-RM execution actors A/B/Watchdog are disabled.
+No product-main mutation resulted from that accidental activation.
+
+Reserve `IOS-M1-CONTINUOUS-005` as the next clean package.
+Status: DEFINED / NOT ARMED.
+Launch requires a new explicit Owner instruction.
+
 ## Product checkpoint
-Ramdisk Tool Windows and Windows Build are green on current main.
-Windows End-to-End Boot `36589206204` failed.
-The active product investigation remains AMFI / CT launch constraints on recovery root-shell execution.
-
-Generation 19 established that the source APFS recovery tree is fully materialized before merge. The next justified unit is a narrow pre-merge inventory of recovery executable candidates and signature/xattr evidence, followed by exact-SHA CI.
-
-No ambiguous product mutation was left by package 003.
-
-## Continuity checkpoint
-Package `IOS-M1-CONTINUOUS-003` stranded at generation 19 because the only Watchdog runtime was invoked but produced no durable recovery/self-rearm.
-
-## Generation 15 construction
-Package `IOS-M1-CONTINUOUS-004` keeps exactly A, B, Mailbox, Trace and Watchdog.
-
-A/B and Watchdog prompts are immutable.
-Mailbox alone owns activation and Watchdog observation state.
-
-Every Watchdog invocation FIRST re-arms the same unchanged Watchdog for +5 minutes. Only then may it read Mailbox or act.
-
-The semantic was validated by `PP-RM-G15-EARLY-REARM-R2`: the predecessor stopped while RUN1_ACTIVE, and the pre-armed successor still started and recorded PASS.
-
-Workers never rewrite Watchdog prompt. They may only restore its unchanged schedule if unexpectedly disabled while the package is still RUNNING.
-
-Dispatch-vs-runtime failure classification, same-generation failover, fencing, ambiguous-mutation reconciliation and OCB3 remain unchanged.
-
-## Start
-Launch package 004 from current main and resume the generation-19 tactical objective with no artificial stops.
+Current main remains `eaa98114031a37343e0d5184bd132830818a6b2f`.
+The next intended technical unit, when explicitly launched, is the generation-19 source-recovery executable/signature/xattr inventory diagnostic and tests, followed by exact-SHA CI and continued AMFI/CT work.

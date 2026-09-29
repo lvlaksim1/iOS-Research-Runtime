@@ -1,16 +1,18 @@
-# PP-RM Launch Package — continuous production
+# PP-RM Launch Package — generation 15
 
-Status: READY TO ARM
+Status: DEFINED — NOT ARMED
 Manager generation: 15
-Package: `IOS-M1-CONTINUOUS-004`
+Reserved package: `IOS-M1-CONTINUOUS-005`
 Product start: `main@eaa98114031a37343e0d5184bd132830818a6b2f`
 
-## Mission
-Run continuous bounded A/B development until IOS-M1 reaches verified Windows recovery `launchd` plus verified root shell, or a genuine stop condition occurs.
+## Owner gate
+Do not arm, seed or launch this package without a new explicit Owner instruction.
 
-## Immediate start
+Package `IOS-M1-CONTINUOUS-004` was inadvertently activated before the current no-launch instruction and is now stopped. It must not be resumed.
+
+## Mission after a future explicit launch
 Resume from the generation-19 factual checkpoint:
-add a narrow source-recovery executable/signature inventory diagnostic and tests, publish with fencing, then run exact-SHA CI and continue AMFI / CT launch-constraint investigation.
+add a narrow source-recovery executable/signature/xattr inventory diagnostic and tests, publish with fencing, run exact-SHA CI, then continue AMFI / CT launch-constraint investigation toward verified recovery root shell.
 
 ## Continuity
 Five tasks:
@@ -24,13 +26,14 @@ A/B and Watchdog prompts are immutable.
 
 Every Watchdog invocation FIRST re-arms itself +5 minutes before any other call.
 
-Mailbox is the only activation and Watchdog-state authority.
+Mailbox is the sole activation and Watchdog-state authority.
 
 Dispatch failures remain separate from confirmed runtime failures.
 Repeated dispatch failure on one worker causes same-generation failover to partner.
 ACKed stalls require two Watchdog observations and ambiguous-mutation reconciliation where relevant.
 
 Workers never rewrite Watchdog prompt.
+Rapid A↔B cadence remains fixed and non-adaptive.
 
 ## OCB
 - explicit OSB only;

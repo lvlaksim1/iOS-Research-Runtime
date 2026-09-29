@@ -56,7 +56,8 @@
     ".context/decisions/DEC-0009-direct-fast-forward-publication.md",
     ".context/decisions/DEC-0010-watchdog-fenced-pp-rm.md",
     ".context/decisions/DEC-0011-dispatch-aware-slot-failover.md",
-    ".context/decisions/DEC-0012-immutable-early-rearm-watchdog.md"
+    ".context/decisions/DEC-0012-immutable-early-rearm-watchdog.md",
+    ".context/decisions/DEC-0013-capsule-only-generation15-no-launch.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"
