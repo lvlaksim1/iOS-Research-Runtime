@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -86,6 +87,11 @@ func run(opts options) error {
 		UID:      0,
 		GID:      0,
 		Children: children,
+	}
+
+	fmt.Println("source recovery executable inventory (pre-merge):")
+	for _, line := range sourceRecoveryExecutableInventory(root) {
+		fmt.Println(line)
 	}
 
 	launchdBytes, err := os.ReadFile(opts.launchdPlist)
@@ -433,6 +439,34 @@ func fileModeFromInode(inode *apfs.Inode) fs.FileMode {
 	}
 
 	return mode
+}
+
+func sourceRecoveryExecutableInventory(root *apfswrite.Entry) []string {
+	var lines []string
+	var walk func(*apfswrite.Entry, string)
+	walk = func(entry *apfswrite.Entry, parent string) {
+		current := entry.Name
+		if parent != "" && current != "" {
+			current = parent + "/" + current
+		} else if current == "" {
+			current = parent
+		}
+		if entry.Mode.IsDir() || (entry.Mode == 0 && entry.Children != nil) {
+			children := append([]*apfswrite.Entry(nil), entry.Children...)
+			sort.Slice(children, func(i, j int) bool { return children[i].Name < children[j].Name })
+			for _, child := range children { walk(child, current) }
+			return
+		}
+		if !entry.Mode.IsRegular() || entry.Mode.Perm()&0o111 == 0 { return }
+		xattrNames := make([]string, 0, len(entry.Xattrs))
+		for name := range entry.Xattrs { xattrNames = append(xattrNames, name) }
+		sort.Strings(xattrNames)
+		xattrs := make([]string, 0, len(xattrNames))
+		for _, name := range xattrNames { xattrs = append(xattrs, fmt.Sprintf("%s:%d", name, len(entry.Xattrs[name]))) }
+		lines = append(lines, fmt.Sprintf("source-exec path=/%s mode=%04o macho=%t size=%d xattrs=[%s]", current, entry.Mode.Perm(), isMachO(entry.Data), len(entry.Data), strings.Join(xattrs, ",")))
+	}
+	walk(root, "")
+	return lines
 }
 
 func displayPath(value string) string {

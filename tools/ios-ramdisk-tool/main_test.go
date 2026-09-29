@@ -7,10 +7,29 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/deploymenttheory/go-apfs-v2/pkg/apfswrite"
 )
+
+func TestSourceRecoveryExecutableInventoryDeterministic(t *testing.T) {
+	root := &apfswrite.Entry{Mode: fs.ModeDir | 0o755, Children: []*apfswrite.Entry{
+		{Name: "usr", Mode: fs.ModeDir | 0o755, Children: []*apfswrite.Entry{{Name: "ztool", Mode: 0o755, Data: []byte{0xcf, 0xfa, 0xed, 0xfe}, Xattrs: map[string][]byte{"z": {1, 2}, "a": {3}}}}},
+		{Name: "bin", Mode: fs.ModeDir | 0o755, Children: []*apfswrite.Entry{
+			{Name: "data", Mode: 0o644, Data: []byte("x")},
+			{Name: "sh", Mode: 0o755, Data: []byte("#!/bin/sh\n")},
+		}},
+	}}
+	got := sourceRecoveryExecutableInventory(root)
+	want := []string{
+		"source-exec path=/bin/sh mode=0755 macho=false size=10 xattrs=[]",
+		"source-exec path=/usr/ztool mode=0755 macho=true size=4 xattrs=[a:1,z:2]",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("inventory = %#v, want %#v", got, want)
+	}
+}
 
 func TestStripFirstPathComponent(t *testing.T) {
 	got, ok := stripFirstPathComponent("./prebuilt/bin/bash")
@@ -94,7 +113,6 @@ func TestMergeSysrootTarAssignsRootOwnershipAndMode(t *testing.T) {
 	}
 }
 
-
 func TestMaterializeRawDecmpfsType9(t *testing.T) {
 	payload := []byte("hello")
 	attr := make([]byte, 17+len(payload))
@@ -159,7 +177,6 @@ func TestMaterializeRawDecmpfsLeavesSupportedCompressionUntouched(t *testing.T) 
 	}
 }
 
-
 func TestWriteRawRamdiskCopiesExactAPFSBytes(t *testing.T) {
 	dir := t.TempDir()
 	rawPath := filepath.Join(dir, "ramdisk.raw")
@@ -198,7 +215,6 @@ func TestWriteRawRamdiskCopiesExactAPFSBytes(t *testing.T) {
 		t.Fatalf("APFS magic = %q, want NXSB", got[32:36])
 	}
 }
-
 
 func TestMergeSysrootTarPreservesExistingRecoveryBash(t *testing.T) {
 	dir := t.TempDir()
