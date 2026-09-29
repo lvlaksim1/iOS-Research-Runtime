@@ -198,3 +198,32 @@ func TestWriteRawRamdiskCopiesExactAPFSBytes(t *testing.T) {
 		t.Fatalf("APFS magic = %q, want NXSB", got[32:36])
 	}
 }
+
+
+func TestMergeSysrootTarPreservesExistingRecoveryBash(t *testing.T) {
+	dir := t.TempDir()
+	archive := filepath.Join(dir, "sysroot.tar.gz")
+	file, err := os.Create(archive)
+	if err != nil { t.Fatal(err) }
+	gz := gzip.NewWriter(file)
+	tw := tar.NewWriter(gz)
+	injected := []byte("sysroot bash")
+	if err := tw.WriteHeader(&tar.Header{Name: "prebuilt/bin/bash", Mode: 0o755, Size: int64(len(injected)), Typeflag: tar.TypeReg}); err != nil { t.Fatal(err) }
+	if _, err := tw.Write(injected); err != nil { t.Fatal(err) }
+	if err := tw.Close(); err != nil { t.Fatal(err) }
+	if err := gz.Close(); err != nil { t.Fatal(err) }
+	if err := file.Close(); err != nil { t.Fatal(err) }
+
+	original := []byte("apple recovery bash")
+	root := &apfswrite.Entry{Mode: fs.ModeDir | 0o755, Children: []*apfswrite.Entry{{
+		Name: "bin", Mode: fs.ModeDir | 0o755, Children: []*apfswrite.Entry{{
+			Name: "bash", Mode: 0o755, UID: 0, GID: 0, Data: append([]byte(nil), original...),
+		}},
+	}}}
+	if err := mergeSysrootTar(root, archive); err != nil { t.Fatal(err) }
+	bash, err := findPath(root, "bin/bash")
+	if err != nil { t.Fatal(err) }
+	if string(bash.Data) != string(original) {
+		t.Fatalf("recovery bash was overwritten: got %q, want %q", bash.Data, original)
+	}
+}

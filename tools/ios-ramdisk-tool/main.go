@@ -547,6 +547,7 @@ func mergeSysrootTarWithSigner(root *apfswrite.Entry, archivePath string, signer
 		case tar.TypeDir: _, err = ensureDirectory(root, cleaned, mode)
 		case tar.TypeReg, tar.TypeRegA:
 			data, readErr := io.ReadAll(reader); if readErr != nil { return fmt.Errorf("%s: read tar file: %w", cleaned, readErr) }
+			if cleaned == "bin/bash" && findChildOrNil(findChildOrNil(root, "bin"), "bash") != nil { continue }
 			if signer != nil && isMachO(data) { if strings.HasPrefix(cleaned, "bin/") { signed, hash, signErr := signer.Sign(data); if signErr != nil { return fmt.Errorf("%s: sign: %w", cleaned, signErr) }; data = signed; if hashes != nil { hashes[hash] = struct{}{} } } else { hash, ok, hashErr := signer.CDHash(data); if hashErr != nil { return fmt.Errorf("%s: cdhash: %w", cleaned, hashErr) }; if ok && hashes != nil { hashes[hash] = struct{}{} } } }
 			err = putRegularFile(root, cleaned, mode, data, 0)
 		case tar.TypeSymlink: err = putSymlink(root, cleaned, mode, header.Linkname)
