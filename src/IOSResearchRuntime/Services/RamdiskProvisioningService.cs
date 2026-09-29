@@ -61,6 +61,16 @@ public sealed class RamdiskProvisioningService
                 _layout.DataDirectory,
                 cancellationToken);
 
+            if (!string.IsNullOrWhiteSpace(result.StandardOutput))
+            {
+                ProgressChanged?.Invoke(this, $"[ios-ramdisk-tool stdout] {result.StandardOutput.Trim()}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(result.StandardError))
+            {
+                ProgressChanged?.Invoke(this, $"[ios-ramdisk-tool stderr] {result.StandardError.Trim()}");
+            }
+
             result.EnsureSuccess("ios-ramdisk-tool");
 
             if (!File.Exists(patchedRamdisk))
