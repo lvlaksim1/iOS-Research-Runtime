@@ -1,15 +1,14 @@
 # Next actions
 
-Updated: 2026-09-30 04:05 MSK
+Updated: 2026-09-30 22:30 MSK
 
-1. Configure the existing five PP-RM Scheduled Tasks for Manager generation 16 / package `IOS-M1-CONTINUOUS-005`.
-2. Keep Worker A/B and Watchdog prompts immutable after configuration.
-3. Seed Mailbox/Trace from authoritative `main@95e871e84099f10245e912659b2d964c1b3c1037`.
-4. Start generation 1 in PREPARE mode, initial owner Worker B.
-5. Arm unchanged Watchdog before the first worker; every Watchdog invocation FIRST self-rearms +5 minutes.
-6. PREPARE the narrow post-merge `/bin/bash` CDHash/trust-membership diagnostic and test.
-7. PREPARE runtime may create immutable blob/tree/commit objects but MUST NOT update `main`.
-8. Publish frozen mutation descriptor as `MUTATION_READY` to a fresh successor runtime.
-9. MUTATION runtime uses its first Scheduled Tasks read as the native ownership fence, reconciles main against baseline/target, and publishes only the frozen target with `force=false`.
-10. Run exact-SHA CI and continue AMFI/CT diagnosis.
-11. Preserve OCB3, fixed rapid A↔B cadence, dispatch/runtime separation and same-generation recovery for failed activations.
+1. Publish Manager generation 17 capsule and DEC-0015 atomically to `manager-state`.
+2. Configure existing five PP-RM tasks for package `IOS-M1-CONTINUOUS-006` while A/B/Watchdog are disabled.
+3. Keep Worker A/B and Watchdog prompts immutable after configuration.
+4. Seed Mailbox/Trace from authoritative `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
+5. Arm Watchdog as recurring: near-term DTSTART plus `RRULE:FREQ=HOURLY`.
+6. Final launch operation: arm initial Worker B about +30 seconds.
+7. Initial Worker reconciles completed E2E run `36729602541`, extracts failure evidence and records the smallest bounded next product unit.
+8. Preserve generation-16 PREPARE/MUTATION_READY protocol, frozen-target recovery, OCB3 and dispatch/runtime separation.
+9. Watchdog fast path uses safe self-touch then +5 minute recurring slide; hourly recurrence remains the independent backstop.
+10. Do not resume package 005.

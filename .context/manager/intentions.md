@@ -6,32 +6,29 @@
 - status: active
 - responsibility: `ios-research-runtime-project-manager`
 - objective: verified recovery `launchd` plus verified root shell on Windows
-- current product: `main@95e871e84099f10245e912659b2d964c1b3c1037`
-- current blocker: AMFI / CT / recovery executable provenance and trust membership
-- next product unit: post-merge `/bin/bash` Mach-O/size/primary-CDHash/injected-trust-membership diagnostic plus formatting test, then exact-SHA CI
+- current product: `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`
+- exact-head E2E run `36729602541`: FAILURE at provisioning / Darwin root-shell proof
+- evidence collection/upload: SUCCESS
+- next product unit: inspect terminal evidence from run 36729602541, extract post-merge bash SignatureInfo and AMFI/root-shell evidence versus the pre-SHA256 baseline, then execute one bounded diagnostic/fix and exact-SHA CI
 
-### IOS-PP-RM-002 — generation 16 native two-phase mutation runtime
+### IOS-PP-RM-003 — generation 17 recurring-backstop Watchdog
 - status: Owner-authorized for launch
-- package: `IOS-M1-CONTINUOUS-005`
+- package: `IOS-M1-CONTINUOUS-006`
 - responsibility: `ios-research-runtime-project-manager`
-- architecture: immutable Worker A/B + immutable early-rearm Watchdog + Mailbox + Trace
-- normal PREPARE runtime uses one initial Scheduled Tasks read and never updates mutable product refs
-- PREPARE freezes a mutation descriptor and hands it to a fresh `MUTATION_READY` runtime
-- fresh mutation runtime uses its first Scheduled Tasks read as the native ownership fence
-- all recovery attempts preserve the exact same mutation descriptor and target SHA
-- no GitHub lock/fence ref or other extra fencing request is permitted
-- Watchdog first operation remains self-rearm +5 minutes
-- rapid A↔B cadence remains fixed and non-adaptive
+- architecture: immutable Worker A/B + immutable recurring-backstop Watchdog + Mailbox + Trace
+- generation-16 native two-phase product mutation protocol is preserved unchanged
+- Watchdog is always armed with `RRULE:FREQ=HOURLY` plus a near-term DTSTART
+- Watchdog continuity no longer depends on a successful first runtime operation
+- healthy invocation first performs a schedule-preserving self-touch, then may slide the same recurring task by +5 minutes while keeping the hourly RRULE
+- failure before/during sliding degrades to the already-persisted hourly recurrence rather than permanent stop
+- no Lifeboat, no sixth task, no new slot, no GitHub continuity fence
 
-## Superseded no-launch commitment
-The prior DEC-0013 no-launch gate has been superseded by a new direct Owner instruction:
-adopt generation 16, update durable capsule, and launch the work cycle.
-Package 004 remains terminal and must not be resumed.
-Package 005 is the authorized clean package.
+## Superseded runtime package
+Package `IOS-M1-CONTINUOUS-005` is superseded and must not be resumed. Its final observed control-plane state was generation 262, owner A, READY, ACK=NONE, while A/B/Watchdog ended disabled. Product main remained authoritative and unambiguous.
 
 ## OCB operating commitment
 - explicit OSB only
 - maximum three exact-identical attempts total
 - no automatic fourth attempt
 - reconcile authoritative server state after ambiguous mutation
-- never blindly duplicate a mutation with a different target
+- never duplicate a mutation with a different target

@@ -1,45 +1,47 @@
 # Current state
 
-Updated: 2026-09-30 04:05 MSK
+Updated: 2026-09-30 22:30 MSK
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
-- manager generation: 16
+- manager generation: 17
 - product authority: `main`
-- PP-RM version: generation 16 native two-phase mutation execution
-- execution status: OWNER-AUTHORIZED / LAUNCH IN PROGRESS
-- active package to configure and launch: `IOS-M1-CONTINUOUS-005`
+- PP-RM version: generation 17 recurring-backstop Watchdog over generation-16 native two-phase mutation
+- execution status: OWNER-AUTHORIZED / CONFIGURE AND LAUNCH
+- active package: `IOS-M1-CONTINUOUS-006`
 
 ## Product
-- live main: `95e871e84099f10245e912659b2d964c1b3c1037`
-- Windows Build on this SHA: SUCCESS
-- Windows End-to-End Boot `36640653275`: FAILURE at provisioning / Darwin root-shell proof
-- failure evidence was collected successfully
-- primary blocker remains AMFI / CT / recovery executable provenance and trust membership
-- next bounded product unit: post-merge `/bin/bash` Mach-O/size/primary-CDHash/injected-trust-membership diagnostic immediately after `mergeSysrootTarWithSigner`, plus a pure formatting test, followed by exact-SHA CI
-- no ambiguous product mutation is currently in flight
+- live main: `bcde5661eab70b6811a5f1fffe0552edaedf980a`
+- latest exact-head Windows E2E: run `36729602541`, completed FAILURE
+- failing step: 11, `Run provisioning and Darwin root-shell proof`
+- steps 1–10: SUCCESS
+- failure evidence collection: SUCCESS
+- end-to-end evidence upload: SUCCESS
+- current product blocker remains recovery executable trust/signature/AMFI-CT path to verified root shell
+- no ambiguous product ref mutation is currently known in flight
 
-## Package 004 terminal evidence
-`IOS-M1-CONTINUOUS-004` reached durable `FAIL_STOP` at generation 46 after activation_attempt=3 stalled at `EVIDENCE_READ`.
-The root runtime defect was not loss of Watchdog continuity: workers could not satisfy the generation-15 mandatory second Scheduled Tasks read immediately before GitHub mutation.
-No product mutation occurred in the terminal activation; token was revoked.
+## Package 005 stop evidence
+Package `IOS-M1-CONTINUOUS-005` progressed through runtime generation 262 and then stranded:
+- Mailbox: generation 262, owner A, READY, activation_attempt=1, ACK=NONE
+- Worker A/B disabled
+- Watchdog disabled
+- Watchdog one-shot schedule had no persisted successor
+- product main remained `bcde5661...`
 
-## PP-RM generation 16
-Generation 16 removes the second Scheduled Tasks read from the normal mutation path.
+This package is superseded and MUST NOT be resumed.
 
-Native two-phase mutation protocol:
-1. PREPARE runtime performs one initial Scheduled Tasks read, validates baton, ACKs, researches, and may create immutable Git objects only.
-2. PREPARE runtime MUST NOT mutate a mutable Git ref.
-3. When a target commit is ready it publishes an immutable mutation descriptor to Mailbox and hands off to a fresh runtime in `MUTATION_READY`.
-4. The fresh MUTATION executor's FIRST Scheduled Tasks read is the ownership fence.
-5. The executor may publish only the exact frozen `mutation_target_commit` against exact `mutation_baseline_main_sha` with `force=false`.
-6. No second Scheduled Tasks read is required before `update_ref`.
-7. All recovery runtimes for the same mutation preserve exactly the same mutation_id, baseline and target.
-8. Before replay/recovery, authoritative GitHub main is reconciled:
-   - main == target => side effect already succeeded;
-   - main == baseline => same frozen mutation may be attempted;
-   - otherwise => FAIL_STOP.
-9. Watchdog remains immutable, FIRST operation self-rearm same task +5 minutes.
-10. dispatch_retry/runtime-failure separation and OCB3 remain unchanged.
+## PP-RM generation 17
+Generation 17 retains native two-phase mutation semantics and changes only continuity.
 
-Owner explicitly approved this generation-16 mechanism and authorized launch.
+The Watchdog is always scheduled with `RRULE:FREQ=HOURLY` plus a near-term DTSTART.
+A runtime failure before self-scheduling therefore cannot remove all future Watchdog occurrences.
+
+Healthy Watchdog runtime:
+1. schedule-preserving self-touch (`is_enabled=true` only), capture returned updated_at;
+2. slide the same recurring Watchdog to updated_at+5m while retaining hourly RRULE;
+3. read Scheduled Tasks and execute normal recovery logic.
+
+If sliding is lost, hourly recurrence remains.
+No extra task, no extra active slot, no GitHub continuity request.
+
+Owner explicitly approved conversion to v17, capsule update and cycle launch.

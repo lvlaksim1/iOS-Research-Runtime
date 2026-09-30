@@ -1,22 +1,24 @@
 # Manager beliefs
 
 - Persistent Project Manager `ios-research-runtime-project-manager` remains the project commitment owner; product authority is `main`, Manager authority is `manager-state`.
-- Current live product authority is `main@95e871e84099f10245e912659b2d964c1b3c1037`.
-- Manager generation 16 is the accepted PP-RM runtime construction under direct Owner authority.
-- The topology remains exactly five Scheduled Tasks: Worker A, Worker B, Runtime Mailbox, Trace, Watchdog.
+- Current live product authority at generation-17 adoption is `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
+- Manager generation 17 is the accepted PP-RM runtime construction under direct Owner authority.
+- Package `IOS-M1-CONTINUOUS-005` is stranded/superseded at runtime generation 262 and MUST NOT be resumed.
+- Package `IOS-M1-CONTINUOUS-006` is the authorized clean package.
+- Topology remains exactly five Scheduled Tasks: Worker A, Worker B, Runtime Mailbox, Trace, Watchdog.
 - Worker A/B prompts and Watchdog prompt are immutable during a package.
-- Mailbox remains the authoritative baton/mutation/watch state.
-- Every Watchdog invocation MUST self-rearm the same unchanged Watchdog for +5 minutes as its FIRST tool operation.
-- Package 004 terminated safely at generation 46 because generation-15 product fencing required a second Scheduled Tasks read that Scheduled Runtime did not reliably provide.
-- Generation 16 MUST NOT require a second Scheduled Tasks read in the normal product-mutation path.
-- A PREPARE runtime can research and create immutable Git objects but MUST NOT update mutable product refs.
-- A mutable product publication requires a fresh successor runtime in `MUTATION_READY`.
-- The fresh mutation executor's first Scheduled Tasks read is its native ownership fence.
-- A mutation descriptor is frozen across recovery: mutation_id, mutation_baseline_main_sha, mutation_target_commit, operation and force flag cannot change.
-- All runtimes recovering the same mutation may attempt only the same frozen target.
-- Before mutation/replay, authoritative main must be reconciled: target=success, baseline=safe same-target attempt, neither=FAIL_STOP.
-- This construction adds no GitHub lock/fence ref and therefore no extra GitHub request solely for fencing.
-- Dispatch retry remains separate from activation_attempt.
+- Mailbox remains authoritative for baton, frozen mutation descriptor and Watchdog observation state.
+- Generation 16 native two-phase mutation semantics remain valid: READY/PREPARE may create immutable Git objects but MUST NOT move mutable product refs; MUTATION_READY is executed by a fresh runtime constrained to one frozen target.
+- A mutation descriptor remains frozen across recovery: mutation_id, mutation_operation, mutation_baseline_main_sha, mutation_target_commit and mutation_force cannot change.
+- Before mutation/replay, authoritative main must be reconciled: target=success, baseline=same frozen attempt remains eligible, neither=FAIL_STOP.
+- Generation 17 changes continuity only. Watchdog is always scheduled as a recurring task with an hourly backstop: `DTSTART=<near-term>; RRULE:FREQ=HOURLY`.
+- A Watchdog runtime does not own survival of its successor. If it dies before any tool call, the recurring schedule remains and supplies a later occurrence.
+- Healthy Watchdog runtimes may slide the same recurring task forward by approximately +5 minutes while retaining `RRULE:FREQ=HOURLY`.
+- Safe sliding rule: first self-touch changes only `is_enabled=true` and therefore preserves the existing recurring schedule; if the runtime survives, a second self-update may set a new DTSTART based on the first update's returned `updated_at + 5 minutes`, retaining `RRULE:FREQ=HOURLY`.
+- If the second sliding update is lost, the existing hourly recurrence remains a valid recovery backstop.
+- Runtime tests on 2026-09-30 verified: recurring task survives a runtime with no self-rearm; explicit recurring self-shift is delivered; and a runtime that completed only the safe first self-touch left recurrence enabled.
+- dispatch_retry remains separate from activation_attempt.
 - Scheduler non-delivery does not consume activation_attempt; confirmed runtime failure/stall does.
 - OCB remains explicit OpenAI safety/safety-check block only, maximum three exact-identical attempts total, no fourth attempt.
-- Current IOS-M1 next unit is the post-merge `/bin/bash` signature/CDHash/trust-membership diagnostic and exact-SHA CI.
+- Exact-head E2E run `36729602541` on `bcde5661...` completed FAILURE at step 11 `Run provisioning and Darwin root-shell proof`; failure evidence collection and upload succeeded.
+- First product work in package 006 is to reconcile and inspect that collected evidence, extract post-merge bash SignatureInfo plus AMFI/root-shell evidence versus the pre-SHA256 baseline, then choose the smallest bounded diagnostic/fix.

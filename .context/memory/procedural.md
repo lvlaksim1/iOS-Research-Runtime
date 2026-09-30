@@ -1,25 +1,25 @@
 # Procedural memory
 
-Updated: 2026-09-30 04:05 MSK
+Updated: 2026-09-30 22:30 MSK
 
-- PP-RM generation 16 supersedes generation 15 for new packages.
-- Current authorized package is `IOS-M1-CONTINUOUS-005`.
-- Topology remains exactly five tasks: Worker A, Worker B, Mailbox, Trace, Watchdog.
+- PP-RM generation 17 supersedes generation 16 for new packages while retaining generation-16 product mutation semantics.
+- Current authorized package is `IOS-M1-CONTINUOUS-006`.
+- Package `IOS-M1-CONTINUOUS-005` is stranded/superseded and must not be resumed.
+- Topology is exactly five tasks: Worker A, Worker B, Mailbox, Trace, Watchdog.
 - A/B and Watchdog prompts are immutable during a package.
-- Watchdog FIRST tool operation is always self-rearm same unchanged task +5 minutes.
 - Mailbox is authoritative for baton, frozen mutation descriptor and Watchdog observation state.
-- Worker runtime uses ONE initial Scheduled Tasks read; generation 16 does not require a second Scheduled Tasks read before mutable product publication.
-- `state=READY` means PREPARE phase. PREPARE may create immutable Git objects but MUST NOT mutate mutable product refs.
-- A prepared mutable change is handed to a fresh runtime as `state=MUTATION_READY`.
-- Frozen mutation descriptor fields: mutation_id, mutation_operation, mutation_baseline_main_sha, mutation_target_commit, mutation_force.
-- Mutation executor's FIRST Scheduled Tasks read is the native ownership fence.
-- Mutation executor cannot change/rebuild target; it may publish only frozen target.
-- Recovery of the same mutation preserves mutation descriptor exactly even when activation token/message/owner rotates.
-- Mutation reconciliation: main==target => success; main==baseline => same frozen mutation may proceed/recover; main neither => FAIL_STOP.
-- No GitHub lock/fence ref is used and no extra GitHub request exists solely for fencing.
+- Worker runtime uses one initial Scheduled Tasks read.
+- READY means PREPARE; PREPARE may create immutable Git objects but cannot move mutable refs.
+- Prepared mutable change is handed to a fresh MUTATION_READY runtime.
+- Frozen descriptor: mutation_id, mutation_operation, mutation_baseline_main_sha, mutation_target_commit, mutation_force.
+- Mutation executor cannot rebuild target and may publish only frozen target.
+- Mutation reconciliation: main==target success; main==baseline same frozen attempt eligible; neither FAIL_STOP.
+- Watchdog must always be configured as a recurring task with `RRULE:FREQ=HOURLY`.
+- Hourly recurrence is continuity backstop; +5m sliding is a fast path.
+- Watchdog runtime first self-touches with `is_enabled=true` only, preserving recurrence and obtaining a current updated_at; if alive, second update sets DTSTART=updated_at+5m while retaining hourly RRULE.
+- Failure before/after the safe self-touch but before sliding must leave the persisted recurrence intact.
+- Workers never rewrite Watchdog prompt.
 - dispatch_retry is separate from activation_attempt.
-- Scheduler non-delivery does not consume activation_attempt.
-- ACKed stall still requires two Watchdog observations.
-- OCB remains explicit-OSB only, max 3 exact-identical attempts, no fourth.
-- Package 004 is terminal FAIL_STOP and must not be resumed.
-- Product main at generation-16 adoption: `95e871e84099f10245e912659b2d964c1b3c1037`.
+- OCB is explicit OSB only, max three exact-identical attempts, no fourth.
+- Product start for package006: `bcde5661eab70b6811a5f1fffe0552edaedf980a`.
+- E2E run `36729602541` completed FAILURE at step11; failure evidence collection/upload succeeded.

@@ -1,11 +1,11 @@
 # Manager plans
 
-## PP-RM generation 16 — native two-phase mutation execution
+## PP-RM generation 17 — recurring-backstop continuity
 
-Manager generation: 16.
+Manager generation: 17.
 Product authority: `main`.
-Current product: `main@95e871e84099f10245e912659b2d964c1b3c1037`.
-Authorized package: `IOS-M1-CONTINUOUS-005`.
+Current product: `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
+Authorized package: `IOS-M1-CONTINUOUS-006`.
 
 ### Topology
 Exactly five Scheduled Tasks:
@@ -15,57 +15,67 @@ Exactly five Scheduled Tasks:
 4. Trace
 5. Watchdog
 
+No Lifeboat and no additional active slot.
 A/B and Watchdog prompts are immutable after package configuration.
-Mailbox carries baton, mutation descriptor and Watchdog observation state.
 
-### One-read worker rule
-Each Worker runtime begins with one authoritative Scheduled Tasks read.
-That initial snapshot is the runtime's native ownership fence for its permitted phase.
-Generation 16 does not require a second Scheduled Tasks read before GitHub mutation.
+### Product mutation protocol
+Generation-16 native two-phase mutation execution is retained without semantic change.
 
-### Phase 1 — PREPARE
-A worker accepting `state=READY`:
-1. validates package/generation/attempt/token/message/owner from its first read;
-2. ACKs durably;
-3. performs one bounded evidence/implementation unit;
-4. may create immutable Git blob/tree/commit objects;
-5. MUST NOT mutate `main`, releases, tags or another mutable product ref;
-6. when no mutable publication is needed, may hand off ordinary READY work;
-7. when a target commit is ready, freezes mutation_id, mutation_operation=UPDATE_MAIN, mutation_baseline_main_sha, mutation_target_commit and mutation_force=false;
-8. hands the frozen descriptor to the partner as a fresh `MUTATION_READY` generation;
-9. successor worker arm is the final tool operation.
+READY/PREPARE:
+- one initial Scheduled Tasks read;
+- validate exact package/generation/attempt/token/message/owner;
+- durable ACK;
+- one bounded evidence/implementation unit;
+- immutable Git objects allowed;
+- mutable product refs forbidden;
+- when publication is required, freeze mutation_id/operation/baseline/target/force=false and hand off fresh MUTATION_READY.
 
-### Phase 2 — MUTATION_READY
-A worker accepting `state=MUTATION_READY`:
-1. validates the exact frozen descriptor from its FIRST Scheduled Tasks read;
-2. ACKs mutation execution;
-3. MUST NOT create a different target commit;
-4. authoritatively reads GitHub main;
-5. if main==target, records mutation already resolved successfully;
-6. if main==baseline, attempts exactly `update_ref(main -> target, force=false)` under OCB3;
-7. if main is neither baseline nor target, durable FAIL_STOP;
-8. after update_ref, authoritatively read-backs main;
-9. target => success; baseline after a known failed/no-side-effect request => recoverable same frozen mutation; neither => FAIL_STOP;
-10. on success, hand off a new ordinary READY generation.
+MUTATION_READY:
+- first Scheduled Tasks read is the native ownership fence;
+- do not rebuild or choose a different target;
+- reconcile authoritative main;
+- main==target => already successful;
+- main==baseline => update main to frozen target with force=false under OCB3;
+- main neither => FAIL_STOP;
+- authoritative read-back after mutation;
+- success hands off ordinary READY with mutation fields cleared.
 
-### Idempotent stale-runtime property
-Once `MUTATION_READY` is published, every allowed executor/recovery runtime for that mutation is constrained to the same target SHA.
-A late stale executor therefore cannot legitimately publish a competing target.
-No new GitHub fence request is needed.
+### Generation-17 Watchdog schedule
+The Watchdog task itself is a persistent recovery object.
 
-### Watchdog
-FIRST operation every invocation: re-arm same unchanged Watchdog +5 minutes.
-Then read Scheduled Tasks once.
+Every armed Watchdog schedule MUST contain:
+`RRULE:FREQ=HOURLY`
+and a DTSTART chosen for the desired next near-term check.
 
-READY-state recovery retains generation-15 dispatch/runtime separation.
-MUTATION_READY recovery preserves mutation_id/baseline/target/operation/force exactly, even while activation token/message/owner may rotate.
-For an ACKed stalled mutation executor, reconcile GitHub main before recovery.
-main==target => side effect success; main==baseline => same frozen mutation remains eligible; main neither => FAIL_STOP.
-Never create/rebuild a different target inside mutation recovery.
+A Watchdog runtime follows this continuity prefix:
+1. FIRST TOOL OPERATION: update only THIS SAME Watchdog with `is_enabled=true`; do not provide schedule/prompt/title/timing_mode. Capture returned `updated_at`. This operation must leave the existing recurrence intact.
+2. Compute `updated_at + 5 minutes`.
+3. SECOND TOOL OPERATION: update THIS SAME Watchdog with `is_enabled=true`, `timing_mode=exact_schedule`, and schedule `DTSTART=<computed>; RRULE:FREQ=HOURLY`; do not rewrite prompt/title.
+4. THIRD TOOL OPERATION: read Scheduled Tasks once and execute the existing Watchdog state machine.
+
+Failure before step 1, between steps 1–2, or during step 2 MUST NOT erase the previously persisted hourly recurrence.
+The +5 minute slide is a fast-path cadence; the hourly RRULE is the independent backstop.
+
+### Watchdog state machine
+After the continuity prefix, generation-16 dispatch/runtime semantics remain:
+- resync on baton identity change;
+- ack=NONE + unchanged owner last_run_time => dispatch retry/failover without consuming activation_attempt;
+- owner runtime observed but no ACK => confirmed runtime failure and activation_attempt consumption;
+- ACKed no-progress needs two Watchdog observations before confirmed stall;
+- READY stall recovery may fail over same generation;
+- MUTATION_READY recovery preserves frozen descriptor and reconciles GitHub main first;
+- Watchdog never constructs a product target and never moves main.
+
+### Worker interaction with Watchdog
+Workers never rewrite the Watchdog prompt.
+If an initial Worker snapshot unexpectedly shows Watchdog disabled while package is RUNNING, restore the same immutable Watchdog as a recurring task with an hourly backstop before arming the successor. Do not introduce a new task.
 
 ### Terminal path
-Publish FINAL/FAIL_STOP durably before disabling workers/Watchdog.
-If Watchdog's pre-armed successor later starts and sees terminal state, it disables itself without product mutation.
+FINAL_COMPLETED or FAIL_STOP is published durably first.
+Watchdog then disables itself as terminal cleanup. If cleanup is lost, a later hourly occurrence sees terminal state and disables itself without product mutation.
+
+### Initial product unit
+Freshly reconcile E2E run `36729602541` on `bcde5661...`, inspect collected failure evidence, extract post-merge bash SignatureInfo plus AMFI/root-shell evidence versus pre-SHA256 baseline, then select one bounded diagnostic/fix and exact-SHA CI.
 
 ### OCB3
 - explicit OSB only
