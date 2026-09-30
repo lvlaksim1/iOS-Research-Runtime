@@ -473,7 +473,9 @@ func sourceRecoveryExecutableInventory(root *apfswrite.Entry) []string {
 		sort.Strings(xattrNames)
 		xattrs := make([]string, 0, len(xattrNames))
 		for _, name := range xattrNames { xattrs = append(xattrs, fmt.Sprintf("%s:%d", name, len(entry.Xattrs[name]))) }
-		lines = append(lines, fmt.Sprintf("source-exec path=/%s mode=%04o macho=%t size=%d xattrs=[%s]", current, entry.Mode.Perm(), isMachO(entry.Data), len(entry.Data), strings.Join(xattrs, ",")))
+		decmpfsType := "none"
+		if attr := entry.Xattrs["com.apple.decmpfs"]; len(attr) >= 8 && string(attr[:4]) == "fpmc" { decmpfsType = fmt.Sprintf("%d", binary.LittleEndian.Uint32(attr[4:8])) } else if len(attr) > 0 { decmpfsType = "invalid" }
+		lines = append(lines, fmt.Sprintf("source-exec path=/%s mode=%04o macho=%t size=%d decmpfs_type=%s xattrs=[%s]", current, entry.Mode.Perm(), isMachO(entry.Data), len(entry.Data), decmpfsType, strings.Join(xattrs, ",")))
 	}
 	walk(root, "")
 	return lines

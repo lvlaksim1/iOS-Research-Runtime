@@ -23,12 +23,22 @@ func TestSourceRecoveryExecutableInventoryDeterministic(t *testing.T) {
 	}}
 	got := sourceRecoveryExecutableInventory(root)
 	want := []string{
-		"source-exec path=/bin/sh mode=0755 macho=false size=10 xattrs=[]",
-		"source-exec path=/usr/ztool mode=0755 macho=true size=4 xattrs=[a:1,z:2]",
+		"source-exec path=/bin/sh mode=0755 macho=false size=10 decmpfs_type=none xattrs=[]",
+		"source-exec path=/usr/ztool mode=0755 macho=true size=4 decmpfs_type=none xattrs=[a:1,z:2]",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("inventory = %#v, want %#v", got, want)
 	}
+}
+
+func TestSourceRecoveryExecutableInventoryReportsDecmpfsType(t *testing.T) {
+	attr := make([]byte, 16)
+	copy(attr[:4], []byte("fpmc"))
+	binary.LittleEndian.PutUint32(attr[4:8], 11)
+	root := &apfswrite.Entry{Mode: fs.ModeDir | 0o755, Children: []*apfswrite.Entry{{Name: "bin", Mode: fs.ModeDir | 0o755, Children: []*apfswrite.Entry{{Name: "cat", Mode: 0o755, Xattrs: map[string][]byte{"com.apple.decmpfs": attr}}}}}}
+	got := sourceRecoveryExecutableInventory(root)
+	want := []string{"source-exec path=/bin/cat mode=0755 macho=false size=0 decmpfs_type=11 xattrs=[com.apple.decmpfs:16]"}
+	if !reflect.DeepEqual(got, want) { t.Fatalf("inventory = %#v, want %#v", got, want) }
 }
 
 func TestStripFirstPathComponent(t *testing.T) {
