@@ -34,18 +34,8 @@ jobs:
         run: |
           $path = "apple-platform-rs/apple-codesign/src/signing_settings.rs"
           $text = Get-Content $path -Raw
-          $old = @'
-            if need_sha1_sha256 {
-                // This logic is a bit wonky. We want SHA-1 to be present on all binaries
-'@
-          $new = @'
-            let digest_is_explicit = self.digest_type.contains_key(&scope_main)
-                || self.digest_type.contains_key(&scope_index)
-                || self.digest_type.contains_key(&scope_arch);
-
-            if need_sha1_sha256 && !digest_is_explicit {
-                // This logic is a bit wonky. We want SHA-1 to be present on all binaries
-'@
+          $old = "        if need_sha1_sha256 {"
+          $new = "        let digest_is_explicit = self.digest_type.contains_key(&scope_main)`n            || self.digest_type.contains_key(&scope_index)`n            || self.digest_type.contains_key(&scope_arch);`n`n        if need_sha1_sha256 && !digest_is_explicit {"
           if (!$text.Contains($old)) { throw "expected signing_settings.rs patch anchor not found" }
           $text = $text.Replace($old, $new)
           Set-Content -Path $path -Value $text -NoNewline
