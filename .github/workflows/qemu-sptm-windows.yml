@@ -1,4 +1,5 @@
 name: qemu-sptm Windows Gate
+# Provenance refresh: rebuild unchanged pinned QEMU gate artifact for current main.
 
 on:
   push:
