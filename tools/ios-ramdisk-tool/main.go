@@ -107,6 +107,16 @@ func run(opts options) error {
 		return fmt.Errorf("merge sysroot: %w", err)
 	}
 
+	bash, err := findPath(root, "bin/bash")
+	if err != nil {
+		return fmt.Errorf("post-merge /bin/bash: %w", err)
+	}
+	bashHash, bashHashOK, err := signer.CDHash(bash.Data)
+	if err != nil {
+		return fmt.Errorf("post-merge /bin/bash CDHash: %w", err)
+	}
+	fmt.Println(formatPostMergeBashDiagnostic(bash.Data, bashHash, bashHashOK, hashes))
+
 	volumeName, err := volume.UTF8Name()
 	if err != nil {
 		return fmt.Errorf("read volume name: %w", err)
