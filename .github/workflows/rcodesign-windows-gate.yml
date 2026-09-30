@@ -1,6 +1,7 @@
 name: rcodesign Windows Gate
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/rcodesign-windows-gate.yml'
