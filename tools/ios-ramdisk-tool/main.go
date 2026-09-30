@@ -524,7 +524,16 @@ func materializeRawDecmpfs(xattrs map[string][]byte) ([]byte, bool, error) {
 		}
 		return data, true, nil
 
-	case 3, 4, 7, 8, 11, 12:
+	case 4:
+		resourceFork := xattrs["com.apple.ResourceFork"]
+		if len(resourceFork) == 0 {
+			return nil, false, errors.New("decmpfs type 4 is missing com.apple.ResourceFork")
+		}
+		data, err := decodeZlibResourceFork(resourceFork, uncompressedSize)
+		if err != nil { return nil, false, err }
+		return data, true, nil
+
+	case 3, 7, 8, 11, 12:
 		return nil, false, nil
 
 	case 5:
