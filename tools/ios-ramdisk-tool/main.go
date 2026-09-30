@@ -94,6 +94,16 @@ func run(opts options) error {
 		fmt.Println(line)
 	}
 
+	xpcproxy, err := findPath(root, "usr/libexec/xpcproxy")
+	if err != nil {
+		return fmt.Errorf("pre-merge /usr/libexec/xpcproxy: %w", err)
+	}
+	xpcproxyHash, xpcproxyHashOK, err := signer.CDHash(xpcproxy.Data)
+	if err != nil {
+		return fmt.Errorf("pre-merge /usr/libexec/xpcproxy CDHash: %w", err)
+	}
+	fmt.Println(formatSourceSignedExecutableDiagnostic("/usr/libexec/xpcproxy", xpcproxy.Data, xpcproxyHash, xpcproxyHashOK))
+
 	launchdBytes, err := os.ReadFile(opts.launchdPlist)
 	if err != nil {
 		return fmt.Errorf("read launchd plist: %w", err)
@@ -479,6 +489,10 @@ func sourceRecoveryExecutableInventory(root *apfswrite.Entry) []string {
 	}
 	walk(root, "")
 	return lines
+}
+
+func formatSourceSignedExecutableDiagnostic(path string, data []byte, hash string, hashOK bool) string {
+	return fmt.Sprintf("source-signed-exec path=%s macho=%t size=%d cdhash_ok=%t primary_cdhash=%s", path, isMachO(data), len(data), hashOK, hash)
 }
 
 func displayPath(value string) string {

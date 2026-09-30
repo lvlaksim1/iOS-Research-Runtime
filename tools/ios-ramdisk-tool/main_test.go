@@ -253,3 +253,9 @@ func TestMergeSysrootTarPreservesExistingRecoveryBash(t *testing.T) {
 		t.Fatalf("recovery bash was overwritten: got %q, want %q", bash.Data, original)
 	}
 }
+
+func TestFormatSourceSignedExecutableDiagnostic(t *testing.T) {
+	got := formatSourceSignedExecutableDiagnostic("/usr/libexec/xpcproxy", []byte{0xcf, 0xfa, 0xed, 0xfe}, "0123456789abcdef0123456789abcdef01234567", true)
+	want := "source-signed-exec path=/usr/libexec/xpcproxy macho=true size=4 cdhash_ok=true primary_cdhash=0123456789abcdef0123456789abcdef01234567"
+	if got != want { t.Fatalf("diagnostic = %q, want %q", got, want) }
+}
