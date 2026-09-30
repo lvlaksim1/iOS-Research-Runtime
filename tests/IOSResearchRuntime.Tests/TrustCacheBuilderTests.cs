@@ -115,6 +115,43 @@ public sealed class TrustCacheBuilderTests
         Assert.Throws<InvalidDataException>(() => builder.Build([hash]));
     }
 
+
+    [Fact]
+    public void ClassifyMembership_ReportsBaseOnly()
+    {
+        var hash = "00112233445566778899aabbccddeeff00112233";
+        var baseModule = BuildFixture(1, new byte[16], [MakeEntry(1, hash, 2, 0, 0)]);
+        var result = new TrustCacheBuilder().ClassifyMembership(baseModule, [], hash);
+        Assert.Equal(new TrustCacheMembership(true, false, true), result);
+    }
+
+    [Fact]
+    public void ClassifyMembership_ReportsInjectedOnly()
+    {
+        var hash = "00112233445566778899aabbccddeeff00112233";
+        var baseModule = BuildFixture(1, new byte[16], []);
+        var result = new TrustCacheBuilder().ClassifyMembership(baseModule, [hash], hash);
+        Assert.Equal(new TrustCacheMembership(false, true, true), result);
+    }
+
+    [Fact]
+    public void ClassifyMembership_ReportsNeither()
+    {
+        var hash = "00112233445566778899aabbccddeeff00112233";
+        var baseModule = BuildFixture(1, new byte[16], []);
+        var result = new TrustCacheBuilder().ClassifyMembership(baseModule, [], hash);
+        Assert.Equal(new TrustCacheMembership(false, false, false), result);
+    }
+
+    [Fact]
+    public void ClassifyMembership_ReportsBaseAndInjectedWithoutChangingMergedTruth()
+    {
+        var hash = "00112233445566778899aabbccddeeff00112233";
+        var baseModule = BuildFixture(1, new byte[16], [MakeEntry(1, hash, 2, 0, 0)]);
+        var result = new TrustCacheBuilder().ClassifyMembership(baseModule, [hash, hash], hash);
+        Assert.Equal(new TrustCacheMembership(true, true, true), result);
+    }
+
     private static byte[] BuildFixture(
         uint version,
         byte[] uuid,

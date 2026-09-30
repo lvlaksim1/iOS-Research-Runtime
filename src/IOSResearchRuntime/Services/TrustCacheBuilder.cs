@@ -9,6 +9,8 @@ public sealed record TrustCacheMergeResult(
     int AddedEntries,
     int TotalEntries);
 
+public sealed record TrustCacheMembership(bool Base, bool Injected, bool Merged);
+
 public sealed class TrustCacheBuilder
 {
     private const uint Version1 = 1;
@@ -109,6 +111,35 @@ public sealed class TrustCacheBuilder
             checked((int)baseEntryCount),
             added,
             orderedEntries.Length);
+    }
+
+    public TrustCacheMembership ClassifyMembership(
+        byte[] baseTrustCache,
+        IEnumerable<string> injectedHashes,
+        string cdHash)
+    {
+        ArgumentNullException.ThrowIfNull(baseTrustCache);
+        ArgumentNullException.ThrowIfNull(injectedHashes);
+        var target = NormalizeHash(cdHash);
+        if (baseTrustCache.Length < HeaderSize)
+            throw new InvalidDataException($"Base trust cache is too short: {baseTrustCache.Length} bytes.");
+
+        var version = BinaryPrimitives.ReadUInt32LittleEndian(baseTrustCache.AsSpan(0, 4));
+        var entrySize = EntrySize(version);
+        var count = BinaryPrimitives.ReadUInt32LittleEndian(baseTrustCache.AsSpan(20, 4));
+        var expectedLength = checked(HeaderSize + checked((long)count * entrySize));
+        if (expectedLength > baseTrustCache.Length)
+            throw new InvalidDataException($"Base trust cache is truncated: expected at least {expectedLength} bytes, got {baseTrustCache.Length}.");
+
+        var inBase = false;
+        var offset = HeaderSize;
+        for (var i = 0; i < count; i++, offset += entrySize)
+        {
+            var key = Convert.ToHexString(baseTrustCache.AsSpan(offset, CdHashByteLength)).ToLowerInvariant();
+            if (key == target) inBase = true;
+        }
+        var inInjected = injectedHashes.Select(NormalizeHash).Contains(target, StringComparer.Ordinal);
+        return new TrustCacheMembership(inBase, inInjected, inBase || inInjected);
     }
 
     public TrustCacheMergeResult MergeFile(

@@ -115,6 +115,16 @@ func run(opts options) error {
 	}
 	fmt.Println(formatSourceSignedExecutableDiagnostic("/usr/libexec/xpcproxy", xpcproxy.Data, xpcproxyHash, xpcproxyHashOK))
 
+	cat, err := findPath(root, "bin/cat")
+	if err != nil {
+		return fmt.Errorf("pre-merge /bin/cat: %w", err)
+	}
+	catHash, catHashOK, err := signer.CDHash(cat.Data)
+	if err != nil {
+		return fmt.Errorf("pre-merge /bin/cat CDHash: %w", err)
+	}
+	fmt.Println(formatSourceSignedExecutableDiagnostic("/bin/cat", cat.Data, catHash, catHashOK))
+
 	launchdBytes, err := os.ReadFile(opts.launchdPlist)
 	if err != nil {
 		return fmt.Errorf("read launchd plist: %w", err)

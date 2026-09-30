@@ -73,6 +73,8 @@ public sealed class RamdiskProvisioningService
 
             result.EnsureSuccess("ios-ramdisk-tool");
 
+            var sourceSignedExecutables = ParseSourceSignedExecutableDiagnostics(result.StandardOutput);
+
             if (!File.Exists(patchedRamdisk))
             {
                 throw new InvalidDataException(
@@ -113,6 +115,30 @@ public sealed class RamdiskProvisioningService
             ProgressChanged?.Invoke(
                 this,
                 $"[trustcache] Объединение Apple recovery trustcache с {hashCount} новыми CDHash…");
+
+            var baseTrustCacheBytes = File.ReadAllBytes(baseTrustCache);
+            var injectedHashes = File.ReadLines(hashList)
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToArray();
+
+            foreach (var path in new[] { "/bin/cat", "/usr/libexec/xpcproxy" })
+            {
+                if (!sourceSignedExecutables.TryGetValue(path, out var cdHash))
+                {
+                    ProgressChanged?.Invoke(
+                        this,
+                        $"[trustcache-membership] path={path} primary_cdhash=UNAVAILABLE base=UNAVAILABLE injected=UNAVAILABLE merged=UNAVAILABLE");
+                    continue;
+                }
+
+                var membership = _trustCacheBuilder.ClassifyMembership(
+                    baseTrustCacheBytes,
+                    injectedHashes,
+                    cdHash);
+                ProgressChanged?.Invoke(
+                    this,
+                    $"[trustcache-membership] path={path} primary_cdhash={cdHash} base={membership.Base} injected={membership.Injected} merged={membership.Merged}");
+            }
 
             var merge = _trustCacheBuilder.MergeFile(
                 baseTrustCache,
@@ -197,6 +223,41 @@ public sealed class RamdiskProvisioningService
             File.Delete(firstBackup);
             File.Delete(secondBackup);
         }
+    }
+
+    private static IReadOnlyDictionary<string, string> ParseSourceSignedExecutableDiagnostics(string? standardOutput)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (string.IsNullOrWhiteSpace(standardOutput))
+        {
+            return result;
+        }
+
+        foreach (var line in standardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmed = line.Trim();
+            if (!trimmed.StartsWith("source-signed-exec ", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var fields = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Skip(1)
+                .Select(part => part.Split('=', 2))
+                .Where(parts => parts.Length == 2)
+                .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
+
+            if (fields.TryGetValue("path", out var path) &&
+                fields.TryGetValue("cdhash_ok", out var cdHashOk) &&
+                string.Equals(cdHashOk, "true", StringComparison.OrdinalIgnoreCase) &&
+                fields.TryGetValue("primary_cdhash", out var cdHash) &&
+                !string.IsNullOrWhiteSpace(cdHash))
+            {
+                result[path] = cdHash;
+            }
+        }
+
+        return result;
     }
 
     private static void RequireFile(string path, string message)
