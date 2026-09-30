@@ -1,24 +1,24 @@
 # Manager beliefs
 
 - Persistent Project Manager `ios-research-runtime-project-manager` remains the project commitment owner; product authority is `main`, Manager authority is `manager-state`.
-- Current live product authority at generation-17 adoption is `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
+- Current live product authority is `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
 - Manager generation 17 is the accepted PP-RM runtime construction under direct Owner authority.
-- Package `IOS-M1-CONTINUOUS-005` is stranded/superseded at runtime generation 262 and MUST NOT be resumed.
-- Package `IOS-M1-CONTINUOUS-006` is the authorized clean package.
+- Package `IOS-M1-CONTINUOUS-005` is stranded/superseded and MUST NOT be resumed.
+- Package `IOS-M1-CONTINUOUS-006` is active and RUNNING.
 - Topology remains exactly five Scheduled Tasks: Worker A, Worker B, Runtime Mailbox, Trace, Watchdog.
-- Worker A/B prompts and Watchdog prompt are immutable during a package.
+- Worker A/B prompts and Watchdog prompt are immutable during the package.
 - Mailbox remains authoritative for baton, frozen mutation descriptor and Watchdog observation state.
-- Generation 16 native two-phase mutation semantics remain valid: READY/PREPARE may create immutable Git objects but MUST NOT move mutable product refs; MUTATION_READY is executed by a fresh runtime constrained to one frozen target.
+- Generation16 native two-phase mutation semantics remain valid: READY/PREPARE may create immutable Git objects but MUST NOT move mutable product refs; MUTATION_READY is executed by a fresh runtime constrained to one frozen target.
 - A mutation descriptor remains frozen across recovery: mutation_id, mutation_operation, mutation_baseline_main_sha, mutation_target_commit and mutation_force cannot change.
 - Before mutation/replay, authoritative main must be reconciled: target=success, baseline=same frozen attempt remains eligible, neither=FAIL_STOP.
-- Generation 17 changes continuity only. Watchdog is always scheduled as a recurring task with an hourly backstop: `DTSTART=<near-term>; RRULE:FREQ=HOURLY`.
-- A Watchdog runtime does not own survival of its successor. If it dies before any tool call, the recurring schedule remains and supplies a later occurrence.
-- Healthy Watchdog runtimes may slide the same recurring task forward by approximately +5 minutes while retaining `RRULE:FREQ=HOURLY`.
-- Safe sliding rule: first self-touch changes only `is_enabled=true` and therefore preserves the existing recurring schedule; if the runtime survives, a second self-update may set a new DTSTART based on the first update's returned `updated_at + 5 minutes`, retaining `RRULE:FREQ=HOURLY`.
-- If the second sliding update is lost, the existing hourly recurrence remains a valid recovery backstop.
-- Runtime tests on 2026-09-30 verified: recurring task survives a runtime with no self-rearm; explicit recurring self-shift is delivered; and a runtime that completed only the safe first self-touch left recurrence enabled.
+- Generation17 changes continuity only. Watchdog is scheduled as a recurring task with an hourly backstop: `DTSTART=<near-term>; RRULE:FREQ=HOURLY`.
+- A Watchdog runtime does not own survival of its successor. If it dies before completing the +5 minute slide, the already-persisted hourly recurrence remains.
+- Healthy Watchdog runtime first self-touches with `is_enabled=true` only and then slides the same recurring task to returned `updated_at+5m`, retaining `RRULE:FREQ=HOURLY`.
 - dispatch_retry remains separate from activation_attempt.
 - Scheduler non-delivery does not consume activation_attempt; confirmed runtime failure/stall does.
-- OCB remains explicit OpenAI safety/safety-check block only, maximum three exact-identical attempts total, no fourth attempt.
-- Exact-head E2E run `36729602541` on `bcde5661...` completed FAILURE at step 11 `Run provisioning and Darwin root-shell proof`; failure evidence collection and upload succeeded.
-- First product work in package 006 is to reconcile and inspect that collected evidence, extract post-merge bash SignatureInfo plus AMFI/root-shell evidence versus the pre-SHA256 baseline, then choose the smallest bounded diagnostic/fix.
+- OCB is explicit OpenAI safety/safety-check block only, maximum three exact-identical attempts total, no fourth attempt.
+- Package006 production launch is evidenced by completed generation1 B -> generation2 A and generation2 A -> generation3 B handoffs.
+- Exact-head E2E run `36729602541` failed at step11; root shell remains unverified.
+- The intended SHA256-primary diagnostic was not actually achieved: post-merge `/bin/bash` retained SHA1 primary and SHA256 alternate.
+- Generation2 identified the cause in upstream signer flow: explicit CLI digest settings are followed by `SigningSettings::import_settings_from_macho`, which can force SHA1 primary and add SHA256 extra for absent/old target metadata.
+- Current product unit is to design the smallest bounded way to preserve explicit SHA256 primary after signing, prove that metadata result, and only then prepare a target for exact-SHA CI/E2E.

@@ -1,47 +1,48 @@
 # Current state
 
-Updated: 2026-09-30 22:30 MSK
+Updated: 2026-09-30 22:43 MSK
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
 - manager generation: 17
 - product authority: `main`
 - PP-RM version: generation 17 recurring-backstop Watchdog over generation-16 native two-phase mutation
-- execution status: OWNER-AUTHORIZED / CONFIGURE AND LAUNCH
+- execution status: RUNNING
 - active package: `IOS-M1-CONTINUOUS-006`
 
 ## Product
 - live main: `bcde5661eab70b6811a5f1fffe0552edaedf980a`
-- latest exact-head Windows E2E: run `36729602541`, completed FAILURE
-- failing step: 11, `Run provisioning and Darwin root-shell proof`
+- exact-head Windows E2E run `36729602541`: FAILURE at step 11 `Run provisioning and Darwin root-shell proof`
 - steps 1–10: SUCCESS
-- failure evidence collection: SUCCESS
-- end-to-end evidence upload: SUCCESS
-- current product blocker remains recovery executable trust/signature/AMFI-CT path to verified root shell
-- no ambiguous product ref mutation is currently known in flight
+- failure evidence collection/upload: SUCCESS
+- root shell: NOT VERIFIED
+- no ambiguous product ref mutation is known in flight
 
-## Package 005 stop evidence
-Package `IOS-M1-CONTINUOUS-005` progressed through runtime generation 262 and then stranded:
-- Mailbox: generation 262, owner A, READY, activation_attempt=1, ACK=NONE
-- Worker A/B disabled
-- Watchdog disabled
-- Watchdog one-shot schedule had no persisted successor
-- product main remained `bcde5661...`
+## Active product diagnosis
+Package006 generation1 reconciled terminal E2E evidence:
+- post-merge `/bin/bash` is Mach-O, size 1744336
+- identifier: `com.apple.bash`
+- injected trust membership: true
+- primary CodeDirectory digest remained SHA1
+- SHA256 remained alternate
+- primary CDHash: `35099b663d01fc7e0f7fbd2da53d57c16a9be029`
+- AMFI still reports adhoc/unsuitable CT policy/signature validation failure and Launch Constraint Violation
 
-This package is superseded and MUST NOT be resumed.
+Package006 generation2 identified the signer root cause:
+- repo signer invokes `rcodesign sign --binary-identifier com.apple.bash --digest sha256`
+- upstream CLI supports explicit SHA256 primary
+- later `SigningSettings::import_settings_from_macho` overrides the CLI-configured digest
+- for absent/old Mach-O target it forces SHA1 primary and adds SHA256 as extra
 
-## PP-RM generation 17
-Generation 17 retains native two-phase mutation semantics and changes only continuity.
+Therefore the prior run did not actually test SHA256-primary behavior.
 
-The Watchdog is always scheduled with `RRULE:FREQ=HOURLY` plus a near-term DTSTART.
-A runtime failure before self-scheduling therefore cannot remove all future Watchdog occurrences.
+## PP-RM generation 17 production evidence
+- package006 bootstrap generation1 Worker B ACKed and handed off normally
+- generation2 Worker A ACKed, completed bounded root-cause analysis and handed off normally
+- current observed baton: generation3, owner B, state READY, activation_attempt=1, ACK=NONE
+- Watchdog is enabled with persistent `RRULE:FREQ=HOURLY` backstop
+- Worker A/B and Watchdog prompts are immutable for this package
+- package005 remains superseded and MUST NOT be resumed
 
-Healthy Watchdog runtime:
-1. schedule-preserving self-touch (`is_enabled=true` only), capture returned updated_at;
-2. slide the same recurring Watchdog to updated_at+5m while retaining hourly RRULE;
-3. read Scheduled Tasks and execute normal recovery logic.
-
-If sliding is lost, hourly recurrence remains.
-No extra task, no extra active slot, no GitHub continuity request.
-
-Owner explicitly approved conversion to v17, capsule update and cycle launch.
+## Current next action
+Design the smallest bounded way to prevent `rcodesign import_settings_from_macho` from overriding explicit SHA256 for this bash diagnostic. Prefer an upstream-supported CLI/config mechanism; otherwise isolate a local signer/tool correction. Create a product target only after evidence shows post-sign primary becomes SHA256.

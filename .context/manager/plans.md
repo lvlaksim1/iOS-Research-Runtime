@@ -5,7 +5,8 @@
 Manager generation: 17.
 Product authority: `main`.
 Current product: `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
-Authorized package: `IOS-M1-CONTINUOUS-006`.
+Active package: `IOS-M1-CONTINUOUS-006`.
+Execution status: RUNNING.
 
 ### Topology
 Exactly five Scheduled Tasks:
@@ -19,7 +20,7 @@ No Lifeboat and no additional active slot.
 A/B and Watchdog prompts are immutable after package configuration.
 
 ### Product mutation protocol
-Generation-16 native two-phase mutation execution is retained without semantic change.
+Generation16 native two-phase mutation execution is retained without semantic change.
 
 READY/PREPARE:
 - one initial Scheduled Tasks read;
@@ -40,42 +41,40 @@ MUTATION_READY:
 - authoritative read-back after mutation;
 - success hands off ordinary READY with mutation fields cleared.
 
-### Generation-17 Watchdog schedule
-The Watchdog task itself is a persistent recovery object.
+### Generation17 Watchdog schedule
+The Watchdog task itself is the persistent recovery object.
+Every armed Watchdog schedule contains `RRULE:FREQ=HOURLY` and a near-term DTSTART.
 
-Every armed Watchdog schedule MUST contain:
-`RRULE:FREQ=HOURLY`
-and a DTSTART chosen for the desired next near-term check.
+Healthy invocation:
+1. FIRST tool operation: self-update `is_enabled=true` only and capture returned `updated_at`;
+2. compute `updated_at+5m`;
+3. SECOND tool operation: update same task to computed DTSTART while retaining `RRULE:FREQ=HOURLY`;
+4. THIRD tool operation: read Scheduled Tasks and execute ordinary Watchdog recovery logic.
 
-A Watchdog runtime follows this continuity prefix:
-1. FIRST TOOL OPERATION: update only THIS SAME Watchdog with `is_enabled=true`; do not provide schedule/prompt/title/timing_mode. Capture returned `updated_at`. This operation must leave the existing recurrence intact.
-2. Compute `updated_at + 5 minutes`.
-3. SECOND TOOL OPERATION: update THIS SAME Watchdog with `is_enabled=true`, `timing_mode=exact_schedule`, and schedule `DTSTART=<computed>; RRULE:FREQ=HOURLY`; do not rewrite prompt/title.
-4. THIRD TOOL OPERATION: read Scheduled Tasks once and execute the existing Watchdog state machine.
+Failure before/during the slide does not erase the already-persisted hourly recurrence.
+The +5 minute cadence is a fast path; hourly recurrence is the independent backstop.
 
-Failure before step 1, between steps 1–2, or during step 2 MUST NOT erase the previously persisted hourly recurrence.
-The +5 minute slide is a fast-path cadence; the hourly RRULE is the independent backstop.
+### Live launch evidence
+- generation1 Worker B ACKed bootstrap READY, reconciled E2E evidence and handed off
+- generation2 Worker A ACKed, identified signer hash-selection root cause and handed off
+- latest observed baton is generation3 Worker B READY
+- Watchdog remains enabled with recurring schedule
 
-### Watchdog state machine
-After the continuity prefix, generation-16 dispatch/runtime semantics remain:
-- resync on baton identity change;
-- ack=NONE + unchanged owner last_run_time => dispatch retry/failover without consuming activation_attempt;
-- owner runtime observed but no ACK => confirmed runtime failure and activation_attempt consumption;
-- ACKed no-progress needs two Watchdog observations before confirmed stall;
-- READY stall recovery may fail over same generation;
-- MUTATION_READY recovery preserves frozen descriptor and reconciles GitHub main first;
-- Watchdog never constructs a product target and never moves main.
+### Current product plan
+The immediate bounded unit is not another blind E2E.
 
-### Worker interaction with Watchdog
-Workers never rewrite the Watchdog prompt.
-If an initial Worker snapshot unexpectedly shows Watchdog disabled while package is RUNNING, restore the same immutable Watchdog as a recurring task with an hourly backstop before arming the successor. Do not introduce a new task.
+Generation3 must:
+1. inspect supported rcodesign/upstream mechanisms that can stop `import_settings_from_macho` from overriding explicit SHA256;
+2. prefer an upstream-supported CLI/config mechanism;
+3. otherwise isolate the smallest local signer/tool correction;
+4. prove on a bounded post-sign sample that primary CodeDirectory digest is SHA256;
+5. only then prepare an immutable product target;
+6. publish through the frozen-target MUTATION_READY protocol;
+7. run exact-SHA CI/E2E and compare AMFI/CT/root-shell behavior with the SHA1-primary baseline.
 
 ### Terminal path
 FINAL_COMPLETED or FAIL_STOP is published durably first.
 Watchdog then disables itself as terminal cleanup. If cleanup is lost, a later hourly occurrence sees terminal state and disables itself without product mutation.
-
-### Initial product unit
-Freshly reconcile E2E run `36729602541` on `bcde5661...`, inspect collected failure evidence, extract post-merge bash SignatureInfo plus AMFI/root-shell evidence versus pre-SHA256 baseline, then select one bounded diagnostic/fix and exact-SHA CI.
 
 ### OCB3
 - explicit OSB only
