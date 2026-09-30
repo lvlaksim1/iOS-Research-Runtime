@@ -20,7 +20,9 @@ import (
 	"github.com/deploymenttheory/go-apfs-v2/pkg/apfswrite"
 )
 
-const symlinkXattrName = "com.apple.fs.symlink"\n\nconst catProofPlist = `<?xml version="1.0" encoding="UTF-8"?>
+const symlinkXattrName = "com.apple.fs.symlink"
+
+const catProofPlist = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>Label</key><string>com.jprx.cat-proof</string>
