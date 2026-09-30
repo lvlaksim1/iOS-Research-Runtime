@@ -66,11 +66,26 @@ func TestReplaceLaunchDaemons(t *testing.T) {
 	}
 
 	current := findChildOrNil(library, "LaunchDaemons")
-	if current == nil || len(current.Children) != 1 {
-		t.Fatal("new LaunchDaemons not created")
+	if current == nil || len(current.Children) != 2 {
+		t.Fatal("new LaunchDaemons not created with bash and cat proof")
 	}
-	if current.Children[0].UID != 0 || current.Children[0].GID != 0 {
+	bash := findChildOrNil(current, "com.jprx.bash.plist")
+	if bash == nil || string(bash.Data) != "plist" {
+		t.Fatal("bash plist bytes changed")
+	}
+	catProof := findChildOrNil(current, "com.jprx.cat-proof.plist")
+	if catProof == nil {
+		t.Fatal("cat proof plist not created")
+	}
+	if bash.UID != 0 || bash.GID != 0 || catProof.UID != 0 || catProof.GID != 0 {
 		t.Fatal("plist ownership is not root:wheel numeric 0:0")
+	}
+	catText := string(catProof.Data)
+	for _, want := range []string{"com.jprx.cat-proof", "/bin/cat", "/dev/null", "<key>RunAtLoad</key><true/>"} {
+		if !strings.Contains(catText, want) { t.Fatalf("cat proof missing %q", want) }
+	}
+	if strings.Contains(catText, "KeepAlive") {
+		t.Fatal("cat proof must be one-shot without KeepAlive")
 	}
 }
 

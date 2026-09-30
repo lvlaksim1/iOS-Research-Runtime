@@ -20,7 +20,16 @@ import (
 	"github.com/deploymenttheory/go-apfs-v2/pkg/apfswrite"
 )
 
-const symlinkXattrName = "com.apple.fs.symlink"
+const symlinkXattrName = "com.apple.fs.symlink"\n\nconst catProofPlist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>com.jprx.cat-proof</string>
+<key>ProgramArguments</key><array><string>/bin/cat</string><string>/dev/null</string></array>
+<key>RunAtLoad</key><true/>
+<key>StandardOutPath</key><string>/dev/console</string>
+<key>StandardErrorPath</key><string>/dev/console</string>
+</dict></plist>
+`
 
 type options struct {
 	input         string
@@ -597,7 +606,7 @@ func replaceLaunchDaemons(root *apfswrite.Entry, plist []byte) error {
 	old, err := findChild(library, "LaunchDaemons"); if err != nil { return err }
 	if _, err := findChild(library, "LaunchDaemons.old"); err == nil { return errors.New("ramdisk already contains System/Library/LaunchDaemons.old") }
 	old.Name = "LaunchDaemons.old"
-	library.Children = append(library.Children, &apfswrite.Entry{Name: "LaunchDaemons", Mode: fs.ModeDir | 0o755, UID: 0, GID: 0, Children: []*apfswrite.Entry{{Name: "com.jprx.bash.plist", Mode: 0o644, UID: 0, GID: 0, Data: append([]byte(nil), plist...)}}})
+	library.Children = append(library.Children, &apfswrite.Entry{Name: "LaunchDaemons", Mode: fs.ModeDir | 0o755, UID: 0, GID: 0, Children: []*apfswrite.Entry{{Name: "com.jprx.bash.plist", Mode: 0o644, UID: 0, GID: 0, Data: append([]byte(nil), plist...)}, {Name: "com.jprx.cat-proof.plist", Mode: 0o644, UID: 0, GID: 0, Data: []byte(catProofPlist)}}})
 	return nil
 }
 
