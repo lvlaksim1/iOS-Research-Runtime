@@ -28,20 +28,28 @@ func decodeZlibResourceFork(resourceFork []byte, uncompressedSize uint64) ([]byt
     for block := uint64(0); block < blockCount; block++ {
         at := tableOffset + block*8
         relative := uint64(binary.LittleEndian.Uint32(resourceFork[at:at+4]))
-        compressedSize := uint64(binary.LittleEndian.Uint32(resourceFork[at+4:at+8]))
+        storedSize := uint64(binary.LittleEndian.Uint32(resourceFork[at+4:at+8]))
         start := blockCountOffset + relative
-        end := start + compressedSize
+        end := start + storedSize
         if start < tableEnd || end < start || end > uint64(len(resourceFork)) {
             return nil, fmt.Errorf("decmpfs type 4 block %d range [%d,%d) is invalid", block, start, end)
         }
-        zr, err := zlib.NewReader(bytes.NewReader(resourceFork[start:end]))
-        if err != nil { return nil, fmt.Errorf("decmpfs type 4 block %d zlib header: %w", block, err) }
-        chunk, readErr := io.ReadAll(io.LimitReader(zr, int64(chunkSize)+1))
-        closeErr := zr.Close()
-        if readErr != nil { return nil, fmt.Errorf("decmpfs type 4 block %d zlib read: %w", block, readErr) }
-        if closeErr != nil { return nil, fmt.Errorf("decmpfs type 4 block %d zlib close: %w", block, closeErr) }
         expected := min(chunkSize, uncompressedSize-uint64(len(out)))
-        if uint64(len(chunk)) != expected { return nil, fmt.Errorf("decmpfs type 4 block %d decoded %d bytes, expected %d", block, len(chunk), expected) }
+        stored := resourceFork[start:end]
+        var chunk []byte
+        if len(stored) > 0 && stored[0] == 0xff {
+            if uint64(len(stored)-1) != expected { return nil, fmt.Errorf("decmpfs type 4 block %d raw payload %d bytes, expected %d", block, len(stored)-1, expected) }
+            chunk = stored[1:]
+        } else {
+            zr, err := zlib.NewReader(bytes.NewReader(stored))
+            if err != nil { return nil, fmt.Errorf("decmpfs type 4 block %d zlib header: %w", block, err) }
+            decoded, readErr := io.ReadAll(io.LimitReader(zr, int64(chunkSize)+1))
+            closeErr := zr.Close()
+            if readErr != nil { return nil, fmt.Errorf("decmpfs type 4 block %d zlib read: %w", block, readErr) }
+            if closeErr != nil { return nil, fmt.Errorf("decmpfs type 4 block %d zlib close: %w", block, closeErr) }
+            if uint64(len(decoded)) != expected { return nil, fmt.Errorf("decmpfs type 4 block %d decoded %d bytes, expected %d", block, len(decoded), expected) }
+            chunk = decoded
+        }
         out = append(out, chunk...)
     }
     if uint64(len(out)) != uncompressedSize { return nil, fmt.Errorf("decmpfs type 4 decoded %d bytes, expected %d", len(out), uncompressedSize) }
