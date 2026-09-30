@@ -26,7 +26,7 @@ SuperBlob {
 }
 
 func TestNormalizeSignatureInfo(t *testing.T) {
-	const input = "  Executable: /bin/bash\\r\\n\\r\\n  Identifier: bash  \\r\\nTeam ID: none\\n"
+	const input = "  Executable: /bin/bash\r\n\r\n  Identifier: bash  \r\nTeam ID: none\n"
 	const want = "Executable: /bin/bash | Identifier: bash | Team ID: none"
 	if got := normalizeSignatureInfo(input); got != want {
 		t.Fatalf("normalizeSignatureInfo() = %q, want %q", got, want)
