@@ -13,31 +13,70 @@ permissions:
 jobs:
   verify:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download pinned rcodesign release and checksum
+      - name: Checkout pinned apple-platform-rs source
         shell: pwsh
         run: |
-          $base = "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign/0.29.0"
-          $zip = "apple-codesign-0.29.0-x86_64-pc-windows-msvc.zip"
-          Invoke-WebRequest "$base/$zip" -OutFile $zip
-          Invoke-WebRequest "$base/$zip.sha256" -OutFile "$zip.sha256"
-
-          $expected = (Get-Content "$zip.sha256").Trim().Split()[0].ToLowerInvariant()
-          $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-          Write-Host "RCODESIGN_SHA256=$actual"
-          if ($expected -ne $actual) {
-            throw "rcodesign checksum mismatch: expected $expected, got $actual"
+          git clone https://github.com/indygreg/apple-platform-rs.git apple-platform-rs
+          Set-Location apple-platform-rs
+          git checkout 0ebbd2ef3b96d5adccc30b1cad4deea38cd735c4
+          if ((git rev-parse HEAD).Trim() -ne "0ebbd2ef3b96d5adccc30b1cad4deea38cd735c4") {
+            throw "apple-platform-rs pin mismatch"
           }
 
-          Expand-Archive $zip -DestinationPath rcodesign -Force
-          $exe = Get-ChildItem rcodesign -Recurse -Filter rcodesign.exe | Select-Object -First 1
-          if (!$exe) { throw "rcodesign.exe not found" }
-          "CODESIGN_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Patch explicit digest preservation
+        shell: pwsh
+        run: |
+          $path = "apple-platform-rs/apple-codesign/src/signing_settings.rs"
+          $text = Get-Content $path -Raw
+          $old = @'
+            if need_sha1_sha256 {
+                // This logic is a bit wonky. We want SHA-1 to be present on all binaries
+'@
+          $new = @'
+            let digest_is_explicit = self.digest_type.contains_key(&scope_main)
+                || self.digest_type.contains_key(&scope_index)
+                || self.digest_type.contains_key(&scope_arch);
+
+            if need_sha1_sha256 && !digest_is_explicit {
+                // This logic is a bit wonky. We want SHA-1 to be present on all binaries
+'@
+          if (!$text.Contains($old)) { throw "expected signing_settings.rs patch anchor not found" }
+          $text = $text.Replace($old, $new)
+          Set-Content -Path $path -Value $text -NoNewline
+          git -C apple-platform-rs diff --check
+          git -C apple-platform-rs diff -- apple-codesign/src/signing_settings.rs
+
+      - name: Focused regression test
+        shell: pwsh
+        run: |
+          $path = "apple-platform-rs/apple-codesign/src/signing_settings.rs"
+          $text = Get-Content $path -Raw
+          if ($text -notmatch 'digest_is_explicit = self\.digest_type\.contains_key\(&scope_main\)') {
+            throw "explicit-digest guard missing"
+          }
+          if ($text -notmatch 'if need_sha1_sha256 && !digest_is_explicit') {
+            throw "compatibility fallback guard missing"
+          }
+          if ($text -notmatch 'self\.set_digest_type\(scope_main\.clone\(\), DigestType::Sha1\)') {
+            throw "unspecified compatibility fallback was removed"
+          }
+          if ($text -notmatch 'self\.add_extra_digest\(scope_main\.clone\(\), DigestType::Sha256\)') {
+            throw "unspecified SHA256 alternate fallback was removed"
+          }
+
+      - name: Build patched pinned rcodesign
+        shell: pwsh
+        run: |
+          Set-Location apple-platform-rs
+          cargo build --locked --release -p apple-codesign --bin rcodesign
+          $exe = Resolve-Path "target/release/rcodesign.exe"
+          "CODESIGN_EXE=$exe" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Verify rcodesign executable
         shell: pwsh
@@ -103,6 +142,6 @@ jobs:
         with:
           name: rcodesign-windows-proof
           path: |
-            apple-codesign-0.29.0-x86_64-pc-windows-msvc.zip.sha256
+            apple-platform-rs/apple-codesign/src/signing_settings.rs
           if-no-files-found: error
           retention-days: 14
