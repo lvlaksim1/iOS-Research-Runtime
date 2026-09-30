@@ -114,6 +114,9 @@ func run(opts options) error {
 		return fmt.Errorf("pre-merge /usr/libexec/xpcproxy CDHash: %w", err)
 	}
 	fmt.Println(formatSourceSignedExecutableDiagnostic("/usr/libexec/xpcproxy", xpcproxy.Data, xpcproxyHash, xpcproxyHashOK))
+	xpcproxySignatureInfo, err := signer.SignatureInfo(xpcproxy.Data)
+	if err != nil { return fmt.Errorf("pre-merge /usr/libexec/xpcproxy signature info: %w", err) }
+	fmt.Printf("source-signature-info path=/usr/libexec/xpcproxy\n%s\n", xpcproxySignatureInfo)
 
 	cat, err := findPath(root, "bin/cat")
 	if err != nil {
@@ -124,6 +127,9 @@ func run(opts options) error {
 		return fmt.Errorf("pre-merge /bin/cat CDHash: %w", err)
 	}
 	fmt.Println(formatSourceSignedExecutableDiagnostic("/bin/cat", cat.Data, catHash, catHashOK))
+	catSignatureInfo, err := signer.SignatureInfo(cat.Data)
+	if err != nil { return fmt.Errorf("pre-merge /bin/cat signature info: %w", err) }
+	fmt.Printf("source-signature-info path=/bin/cat\n%s\n", catSignatureInfo)
 
 	launchdBytes, err := os.ReadFile(opts.launchdPlist)
 	if err != nil {
@@ -147,6 +153,9 @@ func run(opts options) error {
 		return fmt.Errorf("post-merge /bin/bash CDHash: %w", err)
 	}
 	fmt.Println(formatPostMergeBashDiagnostic(bash.Data, bashHash, bashHashOK, hashes))
+	bashSignatureInfo, err := signer.SignatureInfo(bash.Data)
+	if err != nil { return fmt.Errorf("post-merge /bin/bash signature info: %w", err) }
+	fmt.Printf("postmerge-signature-info path=/bin/bash\n%s\n", bashSignatureInfo)
 
 	volumeName, err := volume.UTF8Name()
 	if err != nil {

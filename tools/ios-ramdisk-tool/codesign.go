@@ -72,6 +72,37 @@ func (s *machoSigner) Sign(data []byte) ([]byte, string, error) {
 	return signed, hash, nil
 }
 
+func (s *machoSigner) SignatureInfo(data []byte) (string, error) {
+	if !isMachO(data) {
+		return "not-macho", nil
+	}
+	temp, err := writeTempData("ios-rr-signature-info-*", data)
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(temp)
+	command := exec.Command(s.executable, "print-signature-info", "-C", "/dev/null", temp)
+	combined, err := command.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("rcodesign print-signature-info: %w: %s", err, strings.TrimSpace(string(combined)))
+	}
+	return normalizeSignatureInfo(string(combined)), nil
+}
+
+func normalizeSignatureInfo(value string) string {
+	value = strings.ReplaceAll(value, "\r\n", "\n")
+	value = strings.ReplaceAll(value, "\r", "\n")
+	lines := strings.Split(value, "\n")
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			out = append(out, line)
+		}
+	}
+	return strings.Join(out, " | ")
+}
+
 func (s *machoSigner) CDHash(data []byte) (string, bool, error) {
 	if !isMachO(data) {
 		return "", false, nil
