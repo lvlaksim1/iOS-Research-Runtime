@@ -1,82 +1,77 @@
 # Manager plans
 
-## PP-RM generation 15 — accepted design
+## PP-RM generation 16 — native two-phase mutation execution
 
-Manager generation: 15.
+Manager generation: 16.
 Product authority: `main`.
-Current product: `main@eaa98114031a37343e0d5184bd132830818a6b2f`.
+Current product: `main@95e871e84099f10245e912659b2d964c1b3c1037`.
+Authorized package: `IOS-M1-CONTINUOUS-005`.
 
 ### Topology
-Use exactly five Scheduled Tasks:
-1. Worker A.
-2. Worker B.
-3. Runtime Mailbox.
-4. Trace.
-5. Watchdog.
+Exactly five Scheduled Tasks:
+1. Worker A
+2. Worker B
+3. Runtime Mailbox
+4. Trace
+5. Watchdog
 
-Worker A/B prompts are immutable.
-Watchdog prompt is immutable.
-Mailbox is the sole activation and Watchdog-state authority.
+A/B and Watchdog prompts are immutable after package configuration.
+Mailbox carries baton, mutation descriptor and Watchdog observation state.
 
-### Watchdog liveness root
-Every Watchdog invocation MUST perform, as its FIRST tool operation:
-- re-arm the same Watchdog task for exactly +5 minutes;
-- preserve exact title and immutable prompt.
+### One-read worker rule
+Each Worker runtime begins with one authoritative Scheduled Tasks read.
+That initial snapshot is the runtime's native ownership fence for its permitted phase.
+Generation 16 does not require a second Scheduled Tasks read before GitHub mutation.
 
-No read or other operation may precede the self-rearm.
-The 5-minute Watchdog cadence is fixed and non-adaptive.
+### Phase 1 — PREPARE
+A worker accepting `state=READY`:
+1. validates package/generation/attempt/token/message/owner from its first read;
+2. ACKs durably;
+3. performs one bounded evidence/implementation unit;
+4. may create immutable Git blob/tree/commit objects;
+5. MUST NOT mutate `main`, releases, tags or another mutable product ref;
+6. when no mutable publication is needed, may hand off ordinary READY work;
+7. when a target commit is ready, freezes mutation_id, mutation_operation=UPDATE_MAIN, mutation_baseline_main_sha, mutation_target_commit and mutation_force=false;
+8. hands the frozen descriptor to the partner as a fresh `MUTATION_READY` generation;
+9. successor worker arm is the final tool operation.
 
-Mailbox carries current baton plus Watchdog state including:
-- watch_seq;
-- watch_seen_generation;
-- watch_seen_activation_attempt;
-- watch_seen_activation_token;
-- watch_seen_message_id;
-- watch_seen_owner_slot;
-- watch_seen_progress_seq;
-- watch_stall_checks;
-- watch_last_ok.
+### Phase 2 — MUTATION_READY
+A worker accepting `state=MUTATION_READY`:
+1. validates the exact frozen descriptor from its FIRST Scheduled Tasks read;
+2. ACKs mutation execution;
+3. MUST NOT create a different target commit;
+4. authoritatively reads GitHub main;
+5. if main==target, records mutation already resolved successfully;
+6. if main==baseline, attempts exactly `update_ref(main -> target, force=false)` under OCB3;
+7. if main is neither baseline nor target, durable FAIL_STOP;
+8. after update_ref, authoritatively read-backs main;
+9. target => success; baseline after a known failed/no-side-effect request => recoverable same frozen mutation; neither => FAIL_STOP;
+10. on success, hand off a new ordinary READY generation.
 
-### Worker behavior
-Workers never rewrite Watchdog prompt.
-Workers continue rapid fixed A↔B ping-pong.
-Sender finishes/reconciles side effects, writes/stabilizes next Mailbox baton, appends Trace SEND, then arms successor worker as its final tool operation.
-If Watchdog is unexpectedly disabled while a package is RUNNING, a worker may only restore the unchanged Watchdog schedule; it must never rewrite the Watchdog prompt.
+### Idempotent stale-runtime property
+Once `MUTATION_READY` is published, every allowed executor/recovery runtime for that mutation is constrained to the same target SHA.
+A late stale executor therefore cannot legitimately publish a competing target.
+No new GitHub fence request is needed.
 
-### Recovery preserved
-- dispatch_retry is separate from activation_attempt;
-- unchanged owner last_run_time from dispatch baseline => DISPATCH_FAILURE, no activation_attempt consumption;
-- repeated dispatch failure => same-generation token rotation and partner failover;
-- advanced last_run_time with no ACK => confirmed RUNTIME_FAILURE and activation_attempt consumption;
-- ACKed no-progress across two Watchdog observations => confirmed RUNTIME_STALL;
-- max three confirmed runtime failures/stalls per generation;
-- stale runtimes are fenced before mutation/handoff;
-- ambiguous ref mutation requires authoritative reconciliation before replay.
+### Watchdog
+FIRST operation every invocation: re-arm same unchanged Watchdog +5 minutes.
+Then read Scheduled Tasks once.
+
+READY-state recovery retains generation-15 dispatch/runtime separation.
+MUTATION_READY recovery preserves mutation_id/baseline/target/operation/force exactly, even while activation token/message/owner may rotate.
+For an ACKed stalled mutation executor, reconcile GitHub main before recovery.
+main==target => side effect success; main==baseline => same frozen mutation remains eligible; main neither => FAIL_STOP.
+Never create/rebuild a different target inside mutation recovery.
 
 ### Terminal path
-Watchdog self-rearms first.
-On FINAL or genuine FAIL_STOP:
-1. publish terminal Mailbox/Trace durably;
-2. final scheduler cleanup disables the already pre-armed Watchdog.
-If cleanup is lost, the next Watchdog invocation reads terminal state and disables itself without product mutation.
+Publish FINAL/FAIL_STOP durably before disabling workers/Watchdog.
+If Watchdog's pre-armed successor later starts and sees terminal state, it disables itself without product mutation.
 
-### OCB
-Unchanged:
-- explicit OSB only;
-- max three exact-identical attempts total;
-- no attempt 4;
-- no unrelated calls between exact retries;
-- ambiguous mutation requires authoritative reconciliation.
-
-## Runtime status — DO NOT LAUNCH
-Package `IOS-M1-CONTINUOUS-004` was inadvertently activated before the Owner's no-launch instruction and is now stopped with Worker A, Worker B and Watchdog disabled.
-No product-main mutation resulted; live main remains `eaa98114031a37343e0d5184bd132830818a6b2f`.
-
-Reserve next clean package:
-- package: `IOS-M1-CONTINUOUS-005`
-- status: DEFINED / NOT ARMED
-- product start: `main@eaa98114031a37343e0d5184bd132830818a6b2f`
-- start checkpoint: generation-19 factual checkpoint from package 003
-- launch authority: new explicit Owner instruction required
-
-Do not reconfigure or arm the five PP-RM tasks for package 005 until that explicit launch instruction arrives.
+### OCB3
+- explicit OSB only
+- attempt1; explicit OSB => exact-identical attempt2
+- second explicit OSB => exact-identical attempt3
+- third explicit OSB => OCB3_EXHAUSTED
+- no attempt4
+- no unrelated GitHub calls between exact retries
+- ambiguous mutable request requires authoritative reconciliation

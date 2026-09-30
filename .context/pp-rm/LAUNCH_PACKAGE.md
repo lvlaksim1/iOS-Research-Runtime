@@ -1,47 +1,43 @@
-# PP-RM Launch Package — generation 15
+# PP-RM Launch Package — generation 16
 
-Status: DEFINED — NOT ARMED
-Manager generation: 15
-Reserved package: `IOS-M1-CONTINUOUS-005`
-Product start: `main@eaa98114031a37343e0d5184bd132830818a6b2f`
+Status: OWNER-AUTHORIZED — CONFIGURE AND ARM
+Manager generation: 16
+Package: `IOS-M1-CONTINUOUS-005`
+Product start: `main@95e871e84099f10245e912659b2d964c1b3c1037`
 
-## Owner gate
-Do not arm, seed or launch this package without a new explicit Owner instruction.
+## Owner authority
+Direct Owner instruction: adopt the native two-phase mutation mechanism, update durable capsule, and launch the work cycle.
 
-Package `IOS-M1-CONTINUOUS-004` was inadvertently activated before the current no-launch instruction and is now stopped. It must not be resumed.
+## Mission
+Continue IOS-M1 from the current authoritative main.
+First bounded unit:
+implement the post-merge `/bin/bash` Mach-O/size/primary-CDHash/injected-trust-membership diagnostic immediately after `mergeSysrootTarWithSigner`, add a pure formatting test, prepare a target commit, publish through the generation-16 two-phase mutation protocol, then run exact-SHA CI.
 
-## Mission after a future explicit launch
-Resume from the generation-19 factual checkpoint:
-add a narrow source-recovery executable/signature/xattr inventory diagnostic and tests, publish with fencing, run exact-SHA CI, then continue AMFI / CT launch-constraint investigation toward verified recovery root shell.
-
-## Continuity
-Five tasks:
+## Continuity objects
 A=`6abac75982308191b786450088217776`
 B=`6abac76297c8819182c048fcbc619ef0`
 Mailbox=`6abac714ddb481919ab9cb13afc4f8f8`
 Watchdog=`6abac73339dc8191ba6bf26104fc2aa9`
 Trace=`6abac750fee081918af4522336615f29`
 
-A/B and Watchdog prompts are immutable.
+## Generation-16 mutation protocol
+PREPARE runtime: one initial Scheduled Tasks read; immutable Git objects allowed; mutable product refs forbidden; freeze descriptor; hand off MUTATION_READY.
+MUTATION_READY runtime: first Scheduled Tasks read is native ownership fence; descriptor immutable; reconcile live main; publish only frozen target with force=false; authoritative read-back.
+No second Scheduled Tasks read before update_ref.
+No GitHub lock/fence ref.
+No extra GitHub request solely for fencing.
 
-Every Watchdog invocation FIRST re-arms itself +5 minutes before any other call.
-
-Mailbox is the sole activation and Watchdog-state authority.
-
-Dispatch failures remain separate from confirmed runtime failures.
-Repeated dispatch failure on one worker causes same-generation failover to partner.
-ACKed stalls require two Watchdog observations and ambiguous-mutation reconciliation where relevant.
-
-Workers never rewrite Watchdog prompt.
-Rapid A↔B cadence remains fixed and non-adaptive.
+## Watchdog
+Immutable prompt.
+FIRST operation every invocation: self-rearm same task +5 minutes.
+Dispatch/runtime separation and same-generation recovery remain active.
+Mutation recovery MUST preserve the frozen descriptor exactly.
 
 ## OCB
-- explicit OSB only;
-- maximum 3 exact-identical attempts total for one GitHub request;
-- no attempt 4;
-- reconcile authoritative state after ambiguous mutation attempts.
+Explicit OSB only; maximum 3 exact-identical attempts; no attempt 4; reconcile ambiguous mutable side effects.
 
-## Final/genuine stop
-Stop only on IOS-M1 completion, authority/scope gate, unresolved ambiguous side effect, bounded continuity exhaustion across both slots, or true strategic fork.
-
-Watchdog terminal cleanup: durable terminal state first, then disable pre-armed Watchdog.
+## Launch ordering
+1. Configure A/B/Watchdog prompts for generation 16/package 005 while disabled.
+2. Seed Mailbox and Trace disabled.
+3. Arm Watchdog.
+4. Final launch operation: arm initial Worker B.

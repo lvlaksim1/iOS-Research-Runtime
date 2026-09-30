@@ -1,12 +1,15 @@
 # Next actions
 
-Updated: 2026-09-29 22:57 MSK
+Updated: 2026-09-30 04:05 MSK
 
-1. Do nothing operational until the Owner explicitly commands a PP-RM launch.
-2. Keep generation-15 PP-RM architecture as the durable accepted construction.
-3. Keep package `IOS-M1-CONTINUOUS-004` stopped; do not resume it.
-4. On a future explicit launch instruction, configure a clean package `IOS-M1-CONTINUOUS-005` from `main@eaa98114031a37343e0d5184bd132830818a6b2f`.
-5. Re-seed Mailbox/Trace cleanly for package 005 and configure immutable A/B and immutable Watchdog prompts.
-6. Arm Watchdog before the first worker; Watchdog then self-rearms +5 minutes as the first operation of every invocation.
-7. Resume product work from the generation-19 factual checkpoint: narrow source-recovery executable/signature/xattr inventory diagnostic and tests, then exact-SHA CI.
-8. Preserve fixed rapid A↔B cadence, fixed 5-minute Watchdog cadence, fencing, dispatch/runtime separation and OCB3.
+1. Configure the existing five PP-RM Scheduled Tasks for Manager generation 16 / package `IOS-M1-CONTINUOUS-005`.
+2. Keep Worker A/B and Watchdog prompts immutable after configuration.
+3. Seed Mailbox/Trace from authoritative `main@95e871e84099f10245e912659b2d964c1b3c1037`.
+4. Start generation 1 in PREPARE mode, initial owner Worker B.
+5. Arm unchanged Watchdog before the first worker; every Watchdog invocation FIRST self-rearms +5 minutes.
+6. PREPARE the narrow post-merge `/bin/bash` CDHash/trust-membership diagnostic and test.
+7. PREPARE runtime may create immutable blob/tree/commit objects but MUST NOT update `main`.
+8. Publish frozen mutation descriptor as `MUTATION_READY` to a fresh successor runtime.
+9. MUTATION runtime uses its first Scheduled Tasks read as the native ownership fence, reconciles main against baseline/target, and publishes only the frozen target with `force=false`.
+10. Run exact-SHA CI and continue AMFI/CT diagnosis.
+11. Preserve OCB3, fixed rapid A↔B cadence, dispatch/runtime separation and same-generation recovery for failed activations.

@@ -1,35 +1,40 @@
 # Latest handoff
 
-Updated: 2026-09-29 22:57 MSK
+Updated: 2026-09-30 04:05 MSK
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 15.
-Product authority: `main@eaa98114031a37343e0d5184bd132830818a6b2f`.
+Manager generation: 16.
+Product authority: `main@95e871e84099f10245e912659b2d964c1b3c1037`.
+Owner authority: direct instruction to adopt native two-phase mutation fencing, update durable capsule, and launch PP-RM.
 
-## PP-RM version
-Generation 15 is the accepted construction:
-- immutable Worker A/B prompts;
+## Prior package
+`IOS-M1-CONTINUOUS-004` is terminal `FAIL_STOP` at generation 46.
+Cause: generation-15 second Scheduled Tasks read requirement before GitHub mutation was not satisfiable reliably.
+Terminal activation made no product mutation and left no ambiguous ref side effect.
+
+## Generation 16 / package 005
+Package: `IOS-M1-CONTINUOUS-005`.
+
+Core change:
+- one Scheduled Tasks read per worker runtime is sufficient;
+- PREPARE runtimes never mutate mutable product refs;
+- PREPARE may create immutable Git objects;
+- frozen mutation descriptor contains mutation_id, baseline main, target commit, operation and force=false;
+- a fresh `MUTATION_READY` runtime uses its first Scheduled Tasks read as ownership fence;
+- mutation executor may publish only the frozen target;
+- recovery preserves the same mutation descriptor exactly;
+- GitHub reconciliation uses target/baseline/neither semantics;
+- no extra GitHub fence/lock request exists.
+
+Unchanged:
+- exactly five PP-RM tasks;
+- immutable A/B prompts;
 - immutable Watchdog prompt;
-- Mailbox as sole activation/watch-state authority;
-- Watchdog FIRST operation = self-rearm same unchanged task +5 minutes;
-- fixed non-adaptive 5-minute Watchdog cadence;
-- workers never rewrite Watchdog;
-- rapid fixed A↔B cadence;
+- Watchdog FIRST operation self-rearm +5 minutes;
+- fixed rapid A↔B cadence;
 - dispatch_retry separate from activation_attempt;
-- same-generation failover, fencing and ambiguous-mutation reconciliation preserved;
-- OCB3 unchanged.
-
-Validated semantic evidence: `PP-RM-G15-EARLY-REARM-R2` PASS.
-
-## Runtime status
-Package `IOS-M1-CONTINUOUS-004` was inadvertently activated before the Owner's capsule-only/no-launch instruction and then stopped.
-All PP-RM execution actors A/B/Watchdog are disabled.
-No product-main mutation resulted from that accidental activation.
-
-Reserve `IOS-M1-CONTINUOUS-005` as the next clean package.
-Status: DEFINED / NOT ARMED.
-Launch requires a new explicit Owner instruction.
+- OCB3.
 
 ## Product checkpoint
-Current main remains `eaa98114031a37343e0d5184bd132830818a6b2f`.
-The next intended technical unit, when explicitly launched, is the generation-19 source-recovery executable/signature/xattr inventory diagnostic and tests, followed by exact-SHA CI and continued AMFI/CT work.
+Current main is `95e871e84099f10245e912659b2d964c1b3c1037`.
+Next unit: implement and test the post-merge `/bin/bash` Mach-O/size/primary-CDHash/injected-trust-membership diagnostic immediately after `mergeSysrootTarWithSigner`, then exact-SHA CI.

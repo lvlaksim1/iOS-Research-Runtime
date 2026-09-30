@@ -57,7 +57,8 @@
     ".context/decisions/DEC-0010-watchdog-fenced-pp-rm.md",
     ".context/decisions/DEC-0011-dispatch-aware-slot-failover.md",
     ".context/decisions/DEC-0012-immutable-early-rearm-watchdog.md",
-    ".context/decisions/DEC-0013-capsule-only-generation15-no-launch.md"
+    ".context/decisions/DEC-0013-capsule-only-generation15-no-launch.md",
+    ".context/decisions/DEC-0014-native-two-phase-mutation-fence.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"
@@ -108,7 +109,7 @@
     "external_gate_reconciliation_required": true,
     "manager_state_coherence_required": true
   },
-  "updated_at": "2026-09-29",
+  "updated_at": "2026-09-30",
   "context_version": "2.0.0-dev",
   "authority": {
     "manager_state_branch": "manager-state",
