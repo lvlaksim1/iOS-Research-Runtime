@@ -9,6 +9,8 @@ on:
       - 'runtime/resources.json'
       - 'runtime/tools.json'
       - 'runtime/ramdisk/**'
+      - 'runtime/codesign/**'
+      - 'scripts/build-patched-rcodesign.ps1'
       - 'runtime/firmware/**'
       - 'src/IOSResearchRuntime/Core/**'
       - 'src/IOSResearchRuntime/Models/**'
@@ -168,6 +170,17 @@ jobs:
           go build -trimpath -ldflags="-s -w" -o ../ios-ramdisk-tool.exe .
           if (!(Test-Path ../ios-ramdisk-tool.exe)) {
             throw "ios-ramdisk-tool.exe was not built"
+          }
+
+      - name: Build bundled patched rcodesign
+        shell: pwsh
+        run: |
+          ./scripts/build-patched-rcodesign.ps1 -OutputDirectory (Join-Path $PWD "tools/rcodesign")
+          if (!(Test-Path "tools/rcodesign/rcodesign.exe")) {
+            throw "bundled patched rcodesign.exe was not staged"
+          }
+          if (!(Test-Path "tools/rcodesign/.version")) {
+            throw "bundled patched rcodesign version marker was not staged"
           }
 
       - name: Restore integration harness

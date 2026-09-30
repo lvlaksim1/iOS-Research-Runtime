@@ -53,6 +53,38 @@ public sealed class ToolBootstrapService : IDisposable
         var executablePath = Path.Combine(installDirectory, tool.ExecutableName);
         var versionMarker = Path.Combine(installDirectory, ".version");
 
+        var bundledDirectory = Path.Combine(
+            _layout.ApplicationDirectory,
+            "tools",
+            tool.InstallDirectory);
+        var bundledExecutable = Path.Combine(bundledDirectory, tool.ExecutableName);
+        var bundledVersionMarker = Path.Combine(bundledDirectory, ".version");
+
+        if (File.Exists(bundledExecutable) && File.Exists(bundledVersionMarker))
+        {
+            var bundledVersion = await File.ReadAllTextAsync(
+                bundledVersionMarker,
+                cancellationToken);
+
+            if (Directory.Exists(installDirectory))
+            {
+                Directory.Delete(installDirectory, recursive: true);
+            }
+
+            CopyDirectory(bundledDirectory, installDirectory);
+
+            if (!File.Exists(executablePath))
+            {
+                throw new InvalidDataException(
+                    $"После установки bundled override отсутствует {tool.ExecutableName}.");
+            }
+
+            ProgressChanged?.Invoke(
+                this,
+                $"[tools] {tool.Name} {bundledVersion}: bundled override готов.");
+            return;
+        }
+
         if (File.Exists(executablePath) &&
             File.Exists(versionMarker) &&
             string.Equals(
