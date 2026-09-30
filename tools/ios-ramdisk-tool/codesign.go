@@ -51,7 +51,7 @@ func (s *machoSigner) Sign(data []byte) ([]byte, string, error) {
 	}
 	defer os.Remove(output)
 
-	command := exec.Command(s.executable, "sign", "-C", "/dev/null", input, output)
+	command := exec.Command(s.executable, "sign", "-C", "/dev/null", "--binary-identifier", "com.apple.bash", "--digest", "sha256", input, output)
 	if combined, err := command.CombinedOutput(); err != nil {
 		return nil, "", fmt.Errorf("rcodesign sign: %w: %s", err, strings.TrimSpace(string(combined)))
 	}
