@@ -1,24 +1,23 @@
 # Manager beliefs
 
 - Persistent Project Manager `ios-research-runtime-project-manager` remains the project commitment owner; product authority is `main`, Manager authority is `manager-state`.
-- Current live product authority is `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
-- Manager generation 17 is the accepted PP-RM runtime construction under direct Owner authority.
-- Package `IOS-M1-CONTINUOUS-005` is stranded/superseded and MUST NOT be resumed.
-- Package `IOS-M1-CONTINUOUS-006` is active and RUNNING.
+- Current live product authority is `main@4821fb9a9cd72dd40af2a518962f180fb4344fe7`.
+- Manager generation18 is the accepted PP-RM control logic under direct Owner authority.
+- Package `IOS-M1-CONTINUOUS-006` is terminal `FAIL_STOP_OWNER_GATE` at runtime generation16 and MUST NOT be resumed.
+- Package `IOS-M1-CONTINUOUS-007` is the authorized clean successor.
 - Topology remains exactly five Scheduled Tasks: Worker A, Worker B, Runtime Mailbox, Trace, Watchdog.
-- Worker A/B prompts and Watchdog prompt are immutable during the package.
-- Mailbox remains authoritative for baton, frozen mutation descriptor and Watchdog observation state.
-- Generation16 native two-phase mutation semantics remain valid: READY/PREPARE may create immutable Git objects but MUST NOT move mutable product refs; MUTATION_READY is executed by a fresh runtime constrained to one frozen target.
-- A mutation descriptor remains frozen across recovery: mutation_id, mutation_operation, mutation_baseline_main_sha, mutation_target_commit and mutation_force cannot change.
-- Before mutation/replay, authoritative main must be reconciled: target=success, baseline=same frozen attempt remains eligible, neither=FAIL_STOP.
-- Generation17 changes continuity only. Watchdog is scheduled as a recurring task with an hourly backstop: `DTSTART=<near-term>; RRULE:FREQ=HOURLY`.
-- A Watchdog runtime does not own survival of its successor. If it dies before completing the +5 minute slide, the already-persisted hourly recurrence remains.
-- Healthy Watchdog runtime first self-touches with `is_enabled=true` only and then slides the same recurring task to returned `updated_at+5m`, retaining `RRULE:FREQ=HOURLY`.
+- Worker A/B prompts and Watchdog prompt are immutable during each active package.
+- Generation16 native two-phase mutation remains authoritative: READY/PREPARE may create immutable Git objects but MUST NOT move mutable refs; MUTATION_READY is executed by a fresh runtime constrained to one frozen target.
+- Generation17 recurring Watchdog remains authoritative: every armed Watchdog retains an hourly RRULE; healthy runtimes slide the same task to approximately +5m while keeping the hourly backstop.
+- Workflow evidence is result-first and trigger-agnostic unless a test explicitly depends on trigger semantics.
+- Before attempting a new workflow dispatch, PP-RM MUST search existing runs for the required workflow on the exact required SHA.
+- A qualifying exact-SHA SUCCESS run satisfies the workflow gate regardless of whether its event is `push`, `workflow_dispatch`, rerun, or another authorized event.
+- A qualifying queued/in-progress run is observed rather than duplicated.
+- A failed/cancelled run may use authorized rerun-existing capability when appropriate.
+- Missing start-new-workflow capability is not an OWNER_GATE while a usable exact-SHA run already exists.
+- OWNER_GATE for missing dispatch capability is allowed only when a new run is actually required and no authorized path can produce it.
+- Exact-main `rcodesign Windows Gate` run `36771957949` on `4821fb9a...` completed SUCCESS, including signed-proof upload.
+- Exact-main Windows Build run `36771957738` completed SUCCESS.
+- The next product unit is to extract strict primary-SHA256 evidence from the successful gate and then continue toward exact-SHA E2E/root-shell verification.
 - dispatch_retry remains separate from activation_attempt.
-- Scheduler non-delivery does not consume activation_attempt; confirmed runtime failure/stall does.
-- OCB is explicit OpenAI safety/safety-check block only, maximum three exact-identical attempts total, no fourth attempt.
-- Package006 production launch is evidenced by completed generation1 B -> generation2 A and generation2 A -> generation3 B handoffs.
-- Exact-head E2E run `36729602541` failed at step11; root shell remains unverified.
-- The intended SHA256-primary diagnostic was not actually achieved: post-merge `/bin/bash` retained SHA1 primary and SHA256 alternate.
-- Generation2 identified the cause in upstream signer flow: explicit CLI digest settings are followed by `SigningSettings::import_settings_from_macho`, which can force SHA1 primary and add SHA256 extra for absent/old target metadata.
-- Current product unit is to design the smallest bounded way to preserve explicit SHA256 primary after signing, prove that metadata result, and only then prepare a target for exact-SHA CI/E2E.
+- OCB remains explicit OpenAI safety/safety-check block only, maximum three exact-identical attempts total, no fourth attempt.

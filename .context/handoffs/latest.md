@@ -1,40 +1,48 @@
 # Latest handoff
 
-Updated: 2026-09-30 22:43 MSK
+Updated: 2026-09-30 23:39 MSK
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 17.
-Product authority: `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
-Active PP-RM package: `IOS-M1-CONTINUOUS-006`.
-Execution status: RUNNING.
+Manager generation: 18.
+Product authority: `main@4821fb9a9cd72dd40af2a518962f180fb4344fe7`.
+Next active PP-RM package: `IOS-M1-CONTINUOUS-007`.
 
-## Superseded package
-`IOS-M1-CONTINUOUS-005` is stranded/superseded at runtime generation262 and MUST NOT be resumed.
-No ambiguous product-ref side effect is indicated by the stop; authoritative main remains unambiguous.
+## Superseded package006
+Package006 reached durable `FAIL_STOP_OWNER_GATE` at runtime generation16 because the connected GitHub capability surface did not expose start-new-workflow/workflow_dispatch.
 
-## Generation17 continuity
-The existing five-task topology is retained.
-Watchdog is persistent recurring state with `RRULE:FREQ=HOURLY`.
-Healthy Watchdog runtime uses a safe self-touch followed by a +5 minute recurring slide.
-The hourly recurrence is the independent survival backstop.
-No Lifeboat, no sixth task, no extra slot and no GitHub continuity fence.
+That terminal decision is superseded for future operation by a direct Owner correction: workflow gates are result-first, not trigger-first.
 
-## Live production evidence
-Package006 launch is proven by successful bounded handoffs:
-- generation1 Worker B ACKed bootstrap READY, reconciled E2E run `36729602541`, extracted signature/AMFI evidence and handed off to A
-- generation2 Worker A ACKed, identified the signer root cause and handed off to B
-- latest observed baton: generation3, owner B, READY, activation_attempt=1, ACK=NONE
-- Watchdog remains enabled with recurring hourly schedule
-- product main has not moved during these evidence-only generations
+A qualifying exact-main result already existed:
+- workflow: `rcodesign Windows Gate`
+- run: `36771957949`
+- head SHA: `4821fb9a9cd72dd40af2a518962f180fb4344fe7`
+- event: `push`
+- conclusion: SUCCESS
+- job `verify`: SUCCESS
+- signed proof upload step: SUCCESS
 
-## Current product finding
-Observed post-merge bash still has SHA1 primary CodeDirectory and SHA256 alternate despite the repository invoking `rcodesign` with `--digest sha256`.
+Therefore no Owner action or workflow_dispatch was actually required.
 
-Generation2 reconciled upstream behavior:
-- explicit CLI digest selection can request SHA256 primary
-- later `SigningSettings::import_settings_from_macho` runs after CLI configuration
-- for missing/old target metadata it forces SHA1 primary and adds SHA256 extra
-- this explains the observed SHA1-primary result
+## Generation18 rule
+For any required workflow evidence:
+1. search existing runs for the required workflow and exact product SHA;
+2. qualifying SUCCESS satisfies the gate regardless of trigger;
+3. queued/in-progress qualifying run is observed, not duplicated;
+4. failed/cancelled run may use authorized rerun-existing capability where appropriate;
+5. new dispatch is attempted only when no usable exact-SHA run exists;
+6. missing dispatch capability causes OWNER_GATE only if a new run is actually required.
 
-## Current next action
-Generation3 must design the smallest bounded override/correction that demonstrably preserves SHA256 as the primary post-sign digest before another E2E. Prefer an upstream-supported mechanism; otherwise isolate a local signer/tool correction. Any mutable publication still requires the frozen-target MUTATION_READY protocol.
+## Preserved PP-RM mechanics
+- exactly five tasks
+- immutable Worker A/B prompts within a package
+- immutable Watchdog prompt within a package
+- generation17 recurring-hourly Watchdog with +5m fast-path slide
+- generation16 READY/PREPARE -> fresh MUTATION_READY frozen-target publication
+- force=false product publication
+- dispatch_retry separate from activation_attempt
+- OCB3
+- no Lifeboat, no extra slot, no GitHub continuity fence
+
+## Resume point
+Package007 starts clean from current main `4821fb9a...`.
+Initial Worker B must consume run `36771957949` as already-satisfied exact-main gate, extract primary-SHA256 proof from logs/artifacts, and continue the bounded product path toward exact-SHA E2E/root-shell verification.

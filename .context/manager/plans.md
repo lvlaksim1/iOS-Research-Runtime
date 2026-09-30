@@ -1,12 +1,11 @@
 # Manager plans
 
-## PP-RM generation 17 — recurring-backstop continuity
+## PP-RM generation18 — result-first workflow evidence
 
-Manager generation: 17.
+Manager generation: 18.
 Product authority: `main`.
-Current product: `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`.
-Active package: `IOS-M1-CONTINUOUS-006`.
-Execution status: RUNNING.
+Current product: `main@4821fb9a9cd72dd40af2a518962f180fb4344fe7`.
+Authorized package: `IOS-M1-CONTINUOUS-007`.
 
 ### Topology
 Exactly five Scheduled Tasks:
@@ -16,11 +15,11 @@ Exactly five Scheduled Tasks:
 4. Trace
 5. Watchdog
 
-No Lifeboat and no additional active slot.
+No Lifeboat and no additional PP-RM active slot.
 A/B and Watchdog prompts are immutable after package configuration.
 
 ### Product mutation protocol
-Generation16 native two-phase mutation execution is retained without semantic change.
+Generation16 native two-phase mutation execution is retained.
 
 READY/PREPARE:
 - one initial Scheduled Tasks read;
@@ -41,40 +40,49 @@ MUTATION_READY:
 - authoritative read-back after mutation;
 - success hands off ordinary READY with mutation fields cleared.
 
-### Generation17 Watchdog schedule
-The Watchdog task itself is the persistent recovery object.
-Every armed Watchdog schedule contains `RRULE:FREQ=HOURLY` and a near-term DTSTART.
-
+### Watchdog
+Generation17 recurring-backstop semantics are retained exactly.
+Every armed Watchdog schedule contains `RRULE:FREQ=HOURLY` plus a near-term DTSTART.
 Healthy invocation:
-1. FIRST tool operation: self-update `is_enabled=true` only and capture returned `updated_at`;
-2. compute `updated_at+5m`;
-3. SECOND tool operation: update same task to computed DTSTART while retaining `RRULE:FREQ=HOURLY`;
-4. THIRD tool operation: read Scheduled Tasks and execute ordinary Watchdog recovery logic.
+1. self-update `is_enabled=true` only and capture returned updated_at;
+2. set same Watchdog DTSTART=updated_at+5m while retaining hourly RRULE;
+3. read Scheduled Tasks and execute normal recovery state machine.
 
-Failure before/during the slide does not erase the already-persisted hourly recurrence.
-The +5 minute cadence is a fast path; hourly recurrence is the independent backstop.
+### Result-first workflow gate protocol
+When a bounded unit requires a GitHub Actions workflow result, define the acceptance condition by:
+- workflow identity/name/path;
+- exact required product SHA;
+- required terminal conclusion/evidence;
+- any test-specific semantic constraints.
 
-### Live launch evidence
-- generation1 Worker B ACKed bootstrap READY, reconciled E2E evidence and handed off
-- generation2 Worker A ACKed, identified signer hash-selection root cause and handed off
-- latest observed baton is generation3 Worker B READY
-- Watchdog remains enabled with recurring schedule
+Then execute in this order:
+1. search existing workflow runs on the exact required SHA;
+2. if a qualifying SUCCESS run exists, consume it immediately regardless of trigger event;
+3. if a qualifying run is queued/in_progress, observe it and do not start a duplicate;
+4. if a qualifying run failed/cancelled, use an authorized rerun-existing capability when appropriate, or diagnose the failure;
+5. only if no usable exact-SHA run exists may a new start/dispatch be attempted;
+6. if start-new-workflow capability is unavailable, OWNER_GATE is allowed only when a new run is actually required.
 
-### Current product plan
-The immediate bounded unit is not another blind E2E.
+A preferred mechanism such as `workflow_dispatch` is never itself the gate unless trigger semantics are the subject of the test.
 
-Generation3 must:
-1. inspect supported rcodesign/upstream mechanisms that can stop `import_settings_from_macho` from overriding explicit SHA256;
-2. prefer an upstream-supported CLI/config mechanism;
-3. otherwise isolate the smallest local signer/tool correction;
-4. prove on a bounded post-sign sample that primary CodeDirectory digest is SHA256;
-5. only then prepare an immutable product target;
-6. publish through the frozen-target MUTATION_READY protocol;
-7. run exact-SHA CI/E2E and compare AMFI/CT/root-shell behavior with the SHA1-primary baseline.
+### Package007 bootstrap
+Authoritative starting facts:
+- main `4821fb9a9cd72dd40af2a518962f180fb4344fe7`
+- `rcodesign Windows Gate` run `36771957949`: SUCCESS, event `push`
+- job `verify`: SUCCESS
+- signed proof upload: SUCCESS
+- Windows Build `36771957738`: SUCCESS
+
+Initial Worker B:
+1. ACK package007 bootstrap;
+2. reconcile run `36771957949` as already-satisfied exact-main gate;
+3. inspect logs/artifacts and extract strict primary-SHA256 proof;
+4. decide one smallest bounded next product unit toward exact-SHA E2E/root-shell;
+5. use ordinary READY handoff unless a mutable product target is actually prepared.
 
 ### Terminal path
 FINAL_COMPLETED or FAIL_STOP is published durably first.
-Watchdog then disables itself as terminal cleanup. If cleanup is lost, a later hourly occurrence sees terminal state and disables itself without product mutation.
+Watchdog then disables itself as terminal cleanup.
 
 ### OCB3
 - explicit OSB only

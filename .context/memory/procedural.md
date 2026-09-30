@@ -1,29 +1,26 @@
 # Procedural memory
 
-Updated: 2026-09-30 22:43 MSK
+Updated: 2026-09-30 23:39 MSK
 
-- PP-RM generation17 is active and RUNNING in package `IOS-M1-CONTINUOUS-006`.
-- Generation17 supersedes generation16 continuity mechanics while retaining generation16 product mutation semantics.
-- Package `IOS-M1-CONTINUOUS-005` is stranded/superseded and must not be resumed.
+- PP-RM generation18 supersedes generation17 for new packages while retaining generation17 Watchdog continuity and generation16 product mutation semantics.
+- Current authorized package is `IOS-M1-CONTINUOUS-007`.
+- Package005 is stranded/superseded and must not resume.
+- Package006 is terminal `FAIL_STOP_OWNER_GATE` and must not resume.
 - Topology is exactly five tasks: Worker A, Worker B, Mailbox, Trace, Watchdog.
-- A/B and Watchdog prompts are immutable during a package.
+- A/B and Watchdog prompts are immutable during an active package.
 - Mailbox is authoritative for baton, frozen mutation descriptor and Watchdog observation state.
-- Worker runtime uses one initial Scheduled Tasks read.
 - READY means PREPARE; PREPARE may create immutable Git objects but cannot move mutable refs.
 - Prepared mutable change is handed to a fresh MUTATION_READY runtime.
-- Frozen descriptor: mutation_id, mutation_operation, mutation_baseline_main_sha, mutation_target_commit, mutation_force.
-- Mutation executor cannot rebuild target and may publish only frozen target.
 - Mutation reconciliation: main==target success; main==baseline same frozen attempt eligible; neither FAIL_STOP.
-- Watchdog must remain configured as recurring with `RRULE:FREQ=HOURLY`.
-- Hourly recurrence is continuity backstop; +5m sliding is the fast path.
-- Healthy Watchdog first self-touches `is_enabled=true` only, captures updated_at, then slides DTSTART to updated_at+5m while retaining hourly RRULE.
-- Failure before/during sliding must leave the persisted recurrence intact.
-- Workers never rewrite the Watchdog prompt.
+- Watchdog remains recurring with `RRULE:FREQ=HOURLY`; +5m sliding is the fast path.
+- Workflow gates are result-first.
+- Always search existing exact-SHA workflow runs before considering dispatch.
+- A qualifying exact-SHA SUCCESS satisfies the gate regardless of trigger event unless trigger semantics are explicitly part of the test.
+- Observe queued/in-progress qualifying runs instead of duplicating them.
+- Use authorized rerun-existing capability where appropriate before requiring start-new-workflow.
+- Missing dispatch capability is an OWNER_GATE only when no usable exact-SHA run exists and a new run is truly required.
+- Exact-main `rcodesign Windows Gate` run `36771957949` on `4821fb9a...` is SUCCESS.
+- Exact-main Windows Build `36771957738` is SUCCESS.
+- Package007 first work is to extract strict primary-SHA256 evidence from the successful gate, then continue exact-SHA E2E/root-shell work.
 - dispatch_retry is separate from activation_attempt.
 - OCB is explicit OSB only, max three exact-identical attempts, no fourth.
-- Product start/main at package006 launch: `bcde5661eab70b6811a5f1fffe0552edaedf980a`.
-- Production launch proof includes generation1 B -> generation2 A -> generation3 B handoffs.
-- E2E run `36729602541` completed FAILURE at step11; root shell remains unverified.
-- Post-merge bash evidence showed SHA1 primary plus SHA256 alternate despite explicit `--digest sha256`.
-- Reconciled upstream cause: later `SigningSettings::import_settings_from_macho` can override CLI digest selection and force SHA1 primary for absent/old target metadata.
-- Before another E2E, prove SHA256 is actually primary after signing.

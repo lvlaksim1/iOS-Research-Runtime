@@ -1,31 +1,29 @@
 # Current blockers and open risks
 
-Updated: 2026-09-30 22:43 MSK
+Updated: 2026-09-30 23:39 MSK
 
 ## Product blocker
-The current blocker is no longer merely “SHA256 diagnostic pending”. Package006 generation2 identified why the intended SHA256-primary diagnostic did not materialize.
+Verified recovery root shell is still not proven.
 
-Observed behavior:
-- repo signer requests `--digest sha256`
-- `rcodesign` later calls `SigningSettings::import_settings_from_macho`
-- that import step can force SHA1 primary and add SHA256 as an alternate for absent/old target metadata
-- the resulting post-merge `/bin/bash` therefore still has SHA1 primary
-- AMFI/CT rejection persists and root shell is not verified
+The strict rcodesign Windows gate on exact current main `4821fb9a9cd72dd40af2a518962f180fb4344fe7` completed SUCCESS as run `36771957949`. The immediate product task is to extract the actual primary-SHA256 evidence from that successful run/log/artifact and then continue the smallest exact-SHA E2E path.
 
-Next blocker-resolution unit: determine the smallest supported override/correction that preserves explicit SHA256 as primary after signing, prove it on post-sign metadata, then run exact-SHA CI/E2E.
+## Runtime logic defect corrected by generation18
+Package006 terminalized on missing `workflow_dispatch` capability even though the required exact-main workflow result already existed.
 
-## Runtime blocker addressed by generation 17
-Package005 stranded when its one-shot Watchdog had no persisted successor. Generation17 stores an hourly recurrence in the Watchdog task itself, so a runtime failure before successful sliding no longer deletes all future Watchdog opportunities.
+Generation18 corrects this by making workflow gates result-first and trigger-agnostic:
+- existing qualifying exact-SHA SUCCESS satisfies the gate regardless of trigger event;
+- existing queued/in-progress run is observed rather than duplicated;
+- rerun-existing-run may be used when appropriate and authorized;
+- new dispatch is attempted only when no usable exact-SHA run exists;
+- OWNER_GATE for unavailable dispatch is valid only when a new run is actually necessary.
 
-## Generation-17 residual risks
-- Scheduled Task execution can be delayed; DTSTART is not an SLA.
-- Hourly recurrence is a recovery backstop, not a guarantee of five-minute recovery after a pre-slide Watchdog failure.
-- Scheduled Tasks provide no compare-and-swap primitive; stale already-running control-plane work remains a residual risk.
-- Fencing cannot cancel an external request already in flight.
-- Mutation recovery is safe only while the frozen descriptor remains unchanged.
-- If authoritative main is neither frozen baseline nor frozen target, FAIL_STOP.
-- Workers restoring an unexpectedly disabled Watchdog must preserve the immutable prompt and recurring-backstop semantics.
+## Continuity residual risks
+- Scheduled Task delivery can be delayed; DTSTART is not an SLA.
+- Hourly recurrence is a recovery floor, not a five-minute guarantee.
+- Scheduled Tasks expose no compare-and-swap primitive; already-running stale control-plane work cannot be cancelled.
+- Frozen mutation descriptor must remain unchanged across recovery.
+- If authoritative main is neither frozen baseline nor target, FAIL_STOP.
 
 ## OCB
-OCB remains explicit OSB only, maximum three exact-identical attempts, no fourth request.
-No GitHub lock/fence is added by generation17.
+Explicit OSB only; maximum three exact-identical attempts total; no fourth attempt.
+Ambiguous mutable request requires authoritative reconciliation before replay.

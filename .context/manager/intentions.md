@@ -6,25 +6,25 @@
 - status: active
 - responsibility: `ios-research-runtime-project-manager`
 - objective: verified recovery `launchd` plus verified root shell on Windows
-- current product: `main@bcde5661eab70b6811a5f1fffe0552edaedf980a`
-- exact-head E2E run `36729602541`: FAILURE at provisioning / Darwin root-shell proof
-- failure evidence collection/upload: SUCCESS
-- current diagnosis: intended SHA256-primary signing was not achieved because later `rcodesign` Mach-O settings import overrides the CLI digest selection and restores SHA1 primary
-- next product unit: generation3 bounded override design; prove post-sign SHA256 primary before preparing a target and rerunning exact-SHA CI/E2E
+- current product: `main@4821fb9a9cd72dd40af2a518962f180fb4344fe7`
+- exact-main rcodesign Windows Gate `36771957949`: SUCCESS
+- exact-main Windows Build `36771957738`: SUCCESS
+- next product unit: extract strict primary-SHA256 proof from the successful gate, then continue the smallest exact-SHA E2E/root-shell path
 
-### IOS-PP-RM-003 — generation 17 recurring-backstop Watchdog
-- status: active / running in production
-- package: `IOS-M1-CONTINUOUS-006`
+### IOS-PP-RM-004 — generation18 result-first workflow evidence
+- status: Owner-authorized for launch
+- package: `IOS-M1-CONTINUOUS-007`
 - responsibility: `ios-research-runtime-project-manager`
 - architecture: immutable Worker A/B + immutable recurring-backstop Watchdog + Mailbox + Trace
-- generation-16 native two-phase product mutation protocol remains authoritative
-- Watchdog remains enabled with `RRULE:FREQ=HOURLY` plus near-term sliding when healthy
-- hourly recurrence is the survival backstop; +5 minute sliding is the fast path
-- no Lifeboat, no sixth task, no new slot, no GitHub continuity fence
-- live launch evidence: generation1 B handoff to generation2 A; generation2 A handoff to generation3 B
+- generation16 native two-phase product mutation is preserved
+- generation17 recurring-hourly Watchdog is preserved
+- workflow gates are result-first: existing qualifying exact-SHA evidence is consumed before any dispatch attempt
+- trigger event is irrelevant unless the specific test contract requires trigger semantics
+- no Lifeboat, sixth task, extra PP-RM slot or GitHub continuity fence
 
-## Superseded runtime package
-Package `IOS-M1-CONTINUOUS-005` is superseded and MUST NOT be resumed.
+## Superseded runtime packages
+- package005 is stranded/superseded and must not resume
+- package006 is terminal `FAIL_STOP_OWNER_GATE` and must not resume
 
 ## OCB operating commitment
 - explicit OSB only

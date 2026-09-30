@@ -1,14 +1,15 @@
 # Next actions
 
-Updated: 2026-09-30 22:43 MSK
+Updated: 2026-09-30 23:39 MSK
 
-1. Continue package `IOS-M1-CONTINUOUS-006` from the live generation3 READY baton; do not resume package005.
-2. Generation3 Worker B: design the smallest bounded method that prevents `rcodesign import_settings_from_macho` from overriding the explicitly requested SHA256 primary digest.
-3. Prefer an upstream-supported CLI/configuration mechanism if one exists; otherwise isolate the smallest local signer/tool correction.
-4. Before preparing any product target, obtain direct post-sign evidence that the primary CodeDirectory digest is SHA256 rather than SHA1.
-5. In READY/PREPARE, immutable Git objects are allowed but mutable product refs remain forbidden.
-6. If a target is prepared, freeze the descriptor and hand off a fresh `MUTATION_READY` runtime under the generation-16 native two-phase protocol.
-7. Mutation executor reconciles authoritative main and may publish only the exact frozen target with `force=false`.
-8. After successful publication, run exact-SHA CI and E2E and compare AMFI/CT/root-shell evidence with the SHA1-primary baseline.
-9. Keep the generation17 Watchdog enabled with persistent hourly recurrence; +5 minute sliding is the fast path, not the survival dependency.
-10. Preserve OCB3, dispatch_retry/activation_attempt separation, immutable Worker/Watchdog prompts and same-generation recovery semantics.
+1. Publish Manager generation18 capsule and DEC-0016 atomically to `manager-state`.
+2. Configure existing five PP-RM tasks for package `IOS-M1-CONTINUOUS-007` while A/B/Watchdog are disabled.
+3. Keep Worker A/B and Watchdog prompts immutable after package configuration.
+4. Seed Mailbox/Trace from authoritative `main@4821fb9a9cd72dd40af2a518962f180fb4344fe7`.
+5. Arm Watchdog with generation17 recurring-backstop semantics.
+6. Final launch operation: arm initial Worker B about +30 seconds.
+7. Initial Worker first reconciles existing exact-main `rcodesign Windows Gate` run `36771957949` and extracts strict primary-SHA256 evidence from available logs/artifacts.
+8. For every future workflow gate, search existing exact-SHA runs before attempting dispatch; trigger event is not part of the acceptance condition unless the product test itself requires a specific trigger.
+9. Only if no usable run exists may dispatch/rerun/start capability be considered; OWNER_GATE for missing dispatch is last resort.
+10. Preserve generation16 frozen-target MUTATION_READY publication, generation17 recurring Watchdog, OCB3, dispatch_retry/activation_attempt separation and same-generation recovery.
+11. Never resume package006 or package005.
