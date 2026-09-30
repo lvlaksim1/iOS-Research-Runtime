@@ -1,26 +1,17 @@
 # Procedural memory
 
-Updated: 2026-09-30 23:39 MSK
+Updated: 2026-09-30 23:51 MSK
 
-- PP-RM generation18 supersedes generation17 for new packages while retaining generation17 Watchdog continuity and generation16 product mutation semantics.
-- Current authorized package is `IOS-M1-CONTINUOUS-007`.
-- Package005 is stranded/superseded and must not resume.
-- Package006 is terminal `FAIL_STOP_OWNER_GATE` and must not resume.
-- Topology is exactly five tasks: Worker A, Worker B, Mailbox, Trace, Watchdog.
-- A/B and Watchdog prompts are immutable during an active package.
-- Mailbox is authoritative for baton, frozen mutation descriptor and Watchdog observation state.
-- READY means PREPARE; PREPARE may create immutable Git objects but cannot move mutable refs.
-- Prepared mutable change is handed to a fresh MUTATION_READY runtime.
-- Mutation reconciliation: main==target success; main==baseline same frozen attempt eligible; neither FAIL_STOP.
-- Watchdog remains recurring with `RRULE:FREQ=HOURLY`; +5m sliding is the fast path.
-- Workflow gates are result-first.
-- Always search existing exact-SHA workflow runs before considering dispatch.
-- A qualifying exact-SHA SUCCESS satisfies the gate regardless of trigger event unless trigger semantics are explicitly part of the test.
-- Observe queued/in-progress qualifying runs instead of duplicating them.
-- Use authorized rerun-existing capability where appropriate before requiring start-new-workflow.
-- Missing dispatch capability is an OWNER_GATE only when no usable exact-SHA run exists and a new run is truly required.
-- Exact-main `rcodesign Windows Gate` run `36771957949` on `4821fb9a...` is SUCCESS.
-- Exact-main Windows Build `36771957738` is SUCCESS.
-- Package007 first work is to extract strict primary-SHA256 evidence from the successful gate, then continue exact-SHA E2E/root-shell work.
-- dispatch_retry is separate from activation_attempt.
-- OCB is explicit OSB only, max three exact-identical attempts, no fourth.
+- PP-RM generation18/package007 is RUNNING.
+- Result-first workflow evidence is mandatory: search existing exact-SHA runs before any dispatch attempt.
+- A workflow SUCCESS is accepted only if its actual evidence satisfies the gate; a defective assertion can yield a false-positive SUCCESS and must be detected by log/artifact reconciliation.
+- Package007 generation1 consumed existing run `36771957949` and found SHA1-primary + SHA256-alternate despite SUCCESS.
+- First parser correction was published as `main@a0d0dd1a9f95543dca25bfb647e1f67e3d4e1e18`.
+- That publication used frozen MUTATION_READY and OCB3: attempts1-2 explicit OSB, attempt3 SUCCESS.
+- Exact-SHA run `36775221102` on `a0d0dd1...` also completed SUCCESS but raw log still showed SHA1-primary + SHA256-alternate.
+- Second parser defect: rcodesign emits `slot: 'CodeDirectory Alternate #0 (4096)'`; parser did not allow the quote immediately after `slot:`.
+- Current frozen target `79393c0d0797fc88d02445e9afb58484dd50c6f1` changes alternate-slot detection only.
+- Current baton: generation4 Worker A MUTATION_READY, baseline `a0d0dd1...`, target `79393c0d...`, force=false.
+- Do not mutate signer until the gate itself truthfully detects SHA1-primary versus SHA256-primary.
+- Generation16 two-phase mutation, generation17 recurring Watchdog and OCB3 remain unchanged.
+- Packages005 and006 must not resume.

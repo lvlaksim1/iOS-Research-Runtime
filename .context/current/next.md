@@ -1,15 +1,13 @@
 # Next actions
 
-Updated: 2026-09-30 23:39 MSK
+Updated: 2026-09-30 23:51 MSK
 
-1. Publish Manager generation18 capsule and DEC-0016 atomically to `manager-state`.
-2. Configure existing five PP-RM tasks for package `IOS-M1-CONTINUOUS-007` while A/B/Watchdog are disabled.
-3. Keep Worker A/B and Watchdog prompts immutable after package configuration.
-4. Seed Mailbox/Trace from authoritative `main@4821fb9a9cd72dd40af2a518962f180fb4344fe7`.
-5. Arm Watchdog with generation17 recurring-backstop semantics.
-6. Final launch operation: arm initial Worker B about +30 seconds.
-7. Initial Worker first reconciles existing exact-main `rcodesign Windows Gate` run `36771957949` and extracts strict primary-SHA256 evidence from available logs/artifacts.
-8. For every future workflow gate, search existing exact-SHA runs before attempting dispatch; trigger event is not part of the acceptance condition unless the product test itself requires a specific trigger.
-9. Only if no usable run exists may dispatch/rerun/start capability be considered; OWNER_GATE for missing dispatch is last resort.
-10. Preserve generation16 frozen-target MUTATION_READY publication, generation17 recurring Watchdog, OCB3, dispatch_retry/activation_attempt separation and same-generation recovery.
-11. Never resume package006 or package005.
+1. Continue package `IOS-M1-CONTINUOUS-007` from generation4 Worker A MUTATION_READY.
+2. Reconcile authoritative main against frozen baseline `a0d0dd1a...` and target `79393c0d...`.
+3. If main==baseline, publish exactly the frozen target with `force=false` under OCB3; if main==target, treat mutation as already successful; if neither, FAIL_STOP.
+4. After successful publication, use result-first workflow logic: consume the automatically created exact-SHA rcodesign Windows Gate run before considering any dispatch.
+5. Verify from raw log/artifact that the corrected gate now fails when actual signature is SHA1-primary + SHA256-alternate.
+6. Only after the gate itself is trustworthy, design or apply the smallest signer correction that can produce true SHA256-primary.
+7. Require direct post-sign evidence of `digest_type: sha256` in the primary CodeDirectory and absence/acceptable treatment of alternate CodeDirectory according to the test contract.
+8. Preserve generation16 frozen-target publication, generation17 recurring Watchdog, generation18 result-first workflow evidence, OCB3 and dispatch/runtime separation.
+9. Never resume package005 or package006.

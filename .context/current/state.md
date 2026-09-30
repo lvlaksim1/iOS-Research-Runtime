@@ -1,49 +1,48 @@
 # Current state
 
-Updated: 2026-09-30 23:39 MSK
+Updated: 2026-09-30 23:51 MSK
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
 - manager generation: 18
 - product authority: `main`
-- PP-RM version: generation 18 result-first workflow evidence over generation-17 recurring-backstop continuity and generation-16 native two-phase mutation
-- execution status: OWNER-AUTHORIZED / RESTARTING
-- active package to launch: `IOS-M1-CONTINUOUS-007`
+- PP-RM version: generation18 result-first workflow evidence + generation17 recurring-backstop Watchdog + generation16 native two-phase mutation
+- execution status: RUNNING
+- active package: `IOS-M1-CONTINUOUS-007`
 
 ## Product
-- live main: `4821fb9a9cd72dd40af2a518962f180fb4344fe7`
-- parent chain includes:
-  - `247cbf832333f8064a4dc448e25e336660e70337` — `ci: assert rcodesign primary SHA-256 on bash fixture`
-  - `bcde5661eab70b6811a5f1fffe0552edaedf980a`
-- exact-main `rcodesign Windows Gate` run `36771957949`: completed SUCCESS
-- run event: `push`
-- job `verify`: SUCCESS
-- gate steps including pinned rcodesign download/checksum, executable verification, Mach-O fixture download, Windows ad-hoc signing and signed-proof upload: SUCCESS
-- exact-main Windows Build run `36771957738`: SUCCESS
+- live main: `a0d0dd1a9f95543dca25bfb647e1f67e3d4e1e18`
+- package007 generation2 published the first gate-parser correction from baseline `4821fb9a...`
+- publication used frozen MUTATION_READY; update_ref attempts1-2 explicit OSB, exact-identical attempt3 SUCCESS; authoritative readback confirmed target
+- exact-main `rcodesign Windows Gate` run `36775221102`: completed SUCCESS
+- exact-main Windows Build run `36775221081`: observed in progress at the latest GitHub checkpoint
 
-## Package006 terminal evidence
-Package `IOS-M1-CONTINUOUS-006` reached durable `FAIL_STOP_OWNER_GATE` at runtime generation16 after correctly determining that the connected GitHub capability surface did not expose a start-new-workflow/workflow_dispatch action.
+## Result-first findings
+Generation1 consumed existing run `36771957949` instead of dispatching a new workflow and proved that the previous gate was false-positive:
+- actual primary CodeDirectory digest_type = SHA1
+- alternate CodeDirectory digest_type = SHA256
+- original parser failed to delimit the primary block because it expected the wrong alternate-slot name
 
-The stop was logically unnecessary because a qualifying exact-main `rcodesign Windows Gate` run already existed and had succeeded on the same product SHA before the terminal checkpoint.
+Generation3 then reconciled run `36775221102` on `a0d0dd1...` and found a second parser defect:
+- rcodesign emits `slot: 'CodeDirectory Alternate #0 (4096)'`
+- the parser allowed `CodeDirectory Alternate` but did not allow the quote immediately after `slot:`
+- the gate therefore still falsely passed while the actual signature remained SHA1-primary + SHA256-alternate
 
-Package006 is terminal/superseded and MUST NOT be resumed.
+## Current PP-RM baton
+- generation: 4
+- owner: Worker A
+- state: MUTATION_READY
+- activation_attempt: 1
+- mutation_id: `iosm1c7-mut-0003-fix-quoted-alternate-slot`
+- baseline: `a0d0dd1a9f95543dca25bfb647e1f67e3d4e1e18`
+- frozen target: `79393c0d0797fc88d02445e9afb58484dd50c6f1`
+- force: false
+- target change: allow the optional quote before alternate CodeDirectory slot detection only
+- no mutable side effect from generation3
 
-## Generation18 correction — result-first workflow evidence
-A workflow gate is defined by the required evidence, not by a preferred trigger mechanism.
-
-Before attempting any new workflow dispatch:
-1. enumerate existing runs for the required workflow on the exact required product SHA;
-2. if a qualifying SUCCESS run exists, consume it regardless of trigger event (`push`, `workflow_dispatch`, rerun, or another authorized event);
-3. if a qualifying run is queued/in_progress, observe that run; do not create a duplicate;
-4. if a qualifying run failed/cancelled and rerun-existing-run is authorized/available, rerun may be used;
-5. only if no usable exact-SHA run exists may a new dispatch be attempted;
-6. OWNER_GATE for missing dispatch capability is allowed only when a new run is actually required and cannot otherwise be produced.
-
-## Continuity and mutation
-Generation17 recurring-hourly Watchdog semantics remain unchanged.
-Generation16 READY/PREPARE -> fresh MUTATION_READY frozen-target product publication remains unchanged.
-No Lifeboat, sixth task, extra PP-RM slot or GitHub continuity fence is introduced.
+## Continuity
+Watchdog remains enabled with persistent hourly RRULE backstop.
+Packages005 and006 are terminal/superseded and MUST NOT resume.
 
 ## Current next action
-Launch package007 from authoritative `main@4821fb9a...`.
-Initial Worker must first reconcile existing successful exact-main run `36771957949`, extract strict primary-SHA256 proof from logs/artifacts, then continue the smallest bounded path toward exact-SHA E2E and verified recovery root shell.
+Fresh generation4 mutation executor must reconcile authoritative main and, only if main still equals frozen baseline, publish exactly `79393c0d...` with force=false under OCB3. After publication, consume the exact-SHA gate result using the result-first rule before any signer mutation.
