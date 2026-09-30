@@ -59,7 +59,7 @@ jobs:
         shell: pwsh
         run: |
           $signed = Join-Path $env:RUNNER_TEMP "bash.signed"
-          & $env:CODESIGN_EXE sign -C /dev/null $env:MACHO_FIXTURE $signed
+          & $env:CODESIGN_EXE sign -C /dev/null --binary-identifier com.apple.bash --digest sha256 $env:MACHO_FIXTURE $signed
           if ($LASTEXITCODE -ne 0) { throw "rcodesign sign failed" }
           if (!(Test-Path $signed)) { throw "signed Mach-O not created" }
 
@@ -75,6 +75,14 @@ jobs:
             }
           }
           if ($slot -lt 0) { throw "primary CodeDirectory not found" }
+
+          $primaryEnd = $lines.Count
+          for ($i = $slot + 1; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match 'slot:\s+AlternateCodeDirectory') { $primaryEnd = $i; break }
+          }
+          $primaryBlock = ($lines[$slot..($primaryEnd - 1)] -join "`n")
+          if ($primaryBlock -notmatch 'digest_type:\s+sha256') { throw "primary CodeDirectory digest_type is not sha256" }
+          if (($lines -join "`n") -match 'slot:\s+AlternateCodeDirectory') { throw "alternate CodeDirectory present" }
 
           $sha256 = $null
           for ($i = $slot + 1; $i -lt [Math]::Min($slot + 10, $lines.Count); $i++) {
