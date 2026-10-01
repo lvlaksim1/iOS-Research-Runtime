@@ -14,11 +14,7 @@ enumeration. DeviceTree discovery remains a separate evidence-driven step.
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -224,10 +224,31 @@ static void darwin_init(MachineState *ms) {
-     dt_root = info->dtree_f.buf;
- 
-     check_dtree(dt_root);
- 
+@@ -227,5 +227,26 @@ static void darwin_init(MachineState *ms) {
      DeviceState *pcie = qdev_new("gpex-pcihost");
      object_property_set_int(OBJECT(pcie), "num-irqs", 0, &error_fatal);
      sysbus_realize_and_unref(SYS_BUS_DEVICE(pcie), &error_fatal);
