@@ -1,17 +1,16 @@
 # Procedural memory
 
-Updated: 2026-10-01 11:04 MSK
+Updated: 2026-10-01 14:14 MSK
 
-- Manager generation19/package008 is Owner-authorized.
-- Packages005,006,007 are terminal/superseded and must not resume.
-- Product main at package008 bootstrap is `a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`.
-- Exact-main E2E run `36798385755` exists and completed FAILURE; Windows Build `36798385752` SUCCESS.
-- E2E steps 1-11 succeeded, including bundled patched rcodesign build; provisioning/root-shell proof failed; failure evidence upload succeeded.
-- AppleSEPManager endpoint timeout repetition is current product evidence.
-- Generation19 adds nonterminal `WAIT_EXTERNAL_EVIDENCE`.
-- A single negative exact-SHA run search never produces OWNER_GATE.
-- Workers enter WAIT when required run is absent or queued/in_progress and do not arm another Worker.
-- Recurring Watchdog owns later external-evidence observation.
-- Terminal external evidence creates a fresh READY generation and wakes wait_resume_owner_slot.
-- OWNER_GATE for unavailable start-new-workflow requires >=3 independent negative Watchdog observations AND >=15 minutes elapsed AND no exact-SHA run AND a genuinely required new run.
-- Generation16 frozen mutation, generation17 recurring Watchdog, generation18 result-first evidence and OCB3 remain unchanged.
+- IOS-M1 is COMPLETED on `main@95caa93fc8fd0db827491e679628efa40612b55c`.
+- Package008 reached runtime generation8 `FINAL_COMPLETED`; activation token revoked; Worker A/B and Watchdog disabled.
+- Exact-SHA Windows End-to-End Boot run `36844422600`, job `110311023233`, is the authoritative proof.
+- Workflow conclusion is FAILURE because of post-proof QEMU/harness nontermination, but semantic IOS-M1 proof completed beforehand.
+- Proof includes: launchd active; bash spawned; interactive `bash-5.3#`; Darwin `uname -v`; `whoami=root`; `ls /`; `__IOS_RESEARCH_PROOF_END__`.
+- Patched bundled rcodesign produced SHA256-primary CodeDirectory evidence for injected binaries including `/bin/bash`.
+- Repeated AppleSEPManager endpoint timeouts remain a known technical issue.
+- Full GUI/SpringBoard/user-device completeness is not proven by IOS-M1.
+- No product implementation commitment is active after IOS-M1 completion.
+- Owner should choose the next milestone directly with Project Manager before any new PP-RM launch.
+- Packages005,006,007,008 must not resume.
+- Future PP-RM packages retain generation16 frozen mutation, generation17 recurring Watchdog, generation18 result-first evidence, generation19 WAIT_EXTERNAL_EVIDENCE and OCB3.

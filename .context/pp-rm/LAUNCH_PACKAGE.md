@@ -1,53 +1,43 @@
 # PP-RM Launch Package — generation 19
 
-Status: OWNER-AUTHORIZED — CONFIGURE AND ARM
+Status: FINAL_COMPLETED
 Manager generation: 19
 Package: `IOS-M1-CONTINUOUS-008`
 Product start: `main@a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`
+Final product: `main@95caa93fc8fd0db827491e679628efa40612b55c`
+Terminal runtime generation: 8
 
-## Owner authority
-Direct Owner instruction: adopt persistent external-evidence waiting and launch PP-RM.
+## Mission result
+IOS-M1 semantic mission: SUCCESS.
 
-## Continuity objects
-A=`6abac75982308191b786450088217776`
-B=`6abac76297c8819182c048fcbc619ef0`
-Mailbox=`6abac714ddb481919ab9cb13afc4f8f8`
-Trace=`6abac750fee081918af4522336615f29`
-Watchdog=`6abac73339dc8191ba6bf26104fc2aa9`
+Exact-SHA Windows End-to-End Boot run `36844422600`, job `110311023233` proves:
+- launchd running;
+- bash successfully spawned;
+- interactive root shell;
+- Darwin Kernel Version 27.0.0 RELEASE_ARM64_T8140;
+- `whoami=root`;
+- root filesystem listing;
+- proof-end marker.
 
-## Preserved protocols
-Generation16 native two-phase product mutation.
+The workflow conclusion is FAILURE because QEMU/integration harness did not terminate after successful proof. This is a post-proof harness problem, not a failed IOS-M1 acceptance.
+
+## Terminal cleanup
+- Mailbox: FINAL_COMPLETED
+- activation token: REVOKED
+- Worker A: disabled
+- Worker B: disabled
+- Watchdog: disabled
+- no final-generation product mutation
+
+## Runtime architecture retained for future packages
+Generation16 native two-phase mutation.
 Generation17 recurring-backstop Watchdog.
 Generation18 result-first workflow evidence.
+Generation19 WAIT_EXTERNAL_EVIDENCE.
 OCB3.
 
-## Generation19 external evidence wait
-State `WAIT_EXTERNAL_EVIDENCE` is nonterminal.
-One negative workflow observation is insufficient for OWNER_GATE.
-Workers stop and arm no successor while WAIT.
-Recurring Watchdog independently searches the expected workflow on exact expected SHA.
-Terminal evidence wakes a fresh Worker.
-OWNER_GATE requires >=3 independent negative Watchdog observations, >=15 minutes elapsed, no exact-SHA run, and a truly required new workflow start that cannot be produced through an authorized capability.
-
-## Bootstrap evidence
-- main `a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`
-- Windows Build `36798385752`: SUCCESS
-- Windows End-to-End Boot `36798385755`: FAILURE
-- job `110166966978`
-- bundled patched rcodesign build: SUCCESS
-- provisioning/root-shell proof: FAILURE
-- failure evidence upload: SUCCESS
-- repeated AppleSEPManager endpoint timeouts observed
-
-## Initial mission
-Worker B consumes existing run `36798385755`, analyzes failure evidence, and executes one smallest bounded diagnostic/fix toward verified recovery root shell.
-
 ## Supersession
-Packages005,006,007 MUST NOT resume.
+Packages005,006,007 and this completed package008 MUST NOT resume.
 
-## Launch ordering
-1. Publish generation19 capsule.
-2. Configure A/B/Watchdog prompts while disabled.
-3. Seed Mailbox/Trace disabled.
-4. Arm recurring Watchdog.
-5. Final launch operation: arm Worker B about +30 seconds.
+## Next
+No successor package is authorized until Owner and Project Manager define the next milestone.

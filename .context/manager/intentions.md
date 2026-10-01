@@ -1,27 +1,30 @@
 # Manager intentions and commitments
 
-## Active
+## Completed
 
 ### IOS-M1 — first Windows boot milestone
-- status: active
+- status: COMPLETED
 - objective: verified recovery `launchd` plus verified root shell on Windows
-- current product: `main@a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`
-- exact-main Windows Build `36798385752`: SUCCESS
-- exact-main E2E `36798385755`: FAILURE at provisioning/root-shell proof
-- next product unit: analyze failure evidence/AppleSEPManager timeout path and execute one smallest bounded diagnostic/fix
+- authoritative product: `main@95caa93fc8fd0db827491e679628efa40612b55c`
+- evidence: Windows End-to-End Boot run `36844422600`, job `110311023233`
+- semantic result: SUCCESS
+- verified: launchd, spawned bash, interactive root shell, Darwin uname, `whoami=root`, root filesystem listing, proof-end marker
+- workflow conclusion: FAILURE only because of post-proof QEMU/harness nontermination
+- completion accepted by PP-RM generation8 `FINAL_COMPLETED`
 
 ### IOS-PP-RM-005 — generation19 persistent external-evidence wait
-- status: Owner-authorized for launch
-- package: `IOS-M1-CONTINUOUS-008`
-- architecture: immutable Worker A/B + recurring-backstop Watchdog + Mailbox + Trace
-- generation16 native two-phase mutation preserved
-- generation17 recurring Watchdog preserved
-- generation18 result-first evidence preserved
-- generation19 WAIT_EXTERNAL_EVIDENCE added
-- no Lifeboat, sixth task, extra slot or GitHub continuity fence
+- status: IMPLEMENTED / VALIDATED IN PRODUCTION
+- package008 completed successfully under generation19 semantics
+- generation16 two-phase mutation, generation17 recurring Watchdog, generation18 result-first evidence and generation19 WAIT_EXTERNAL_EVIDENCE remain available for future packages
+
+## Active
+No active product implementation commitment.
+
+## Pending Owner/Manager decision
+Select the next product milestone. Do not infer or auto-select whether it should be harness stabilization, AppleSEPManager, additional services, SpringBoard/GUI, packaging, or another direction.
 
 ## Superseded runtime packages
-Packages005,006 and007 must not resume.
+Packages005,006,007 and completed package008 must not resume.
 
 ## OCB
 Explicit OSB only; max three exact-identical attempts; no automatic fourth; reconcile ambiguous mutable side effects before replay.

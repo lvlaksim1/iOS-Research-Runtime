@@ -1,64 +1,41 @@
 # Manager plans
 
-## PP-RM generation19 — persistent external-evidence wait
+## Current planning state
 
 Manager generation: 19.
-Product authority: `main`.
-Current product: `main@a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`.
-Authorized package: `IOS-M1-CONTINUOUS-008`.
+Product authority: `main@95caa93fc8fd0db827491e679628efa40612b55c`.
+IOS-M1 status: COMPLETED.
+PP-RM status: IDLE; package008 FINAL_COMPLETED.
 
-### Topology
-Exactly five Scheduled Tasks: Worker A, Worker B, Runtime Mailbox, Trace, Watchdog.
-No Lifeboat or additional PP-RM slot.
-Worker A/B and Watchdog prompts are immutable after package configuration.
+### Completed proof
+Exact-SHA E2E run `36844422600` / job `110311023233` proves the IOS-M1 semantic acceptance condition:
+- Darwin recovery environment reaches running state;
+- launchd runs;
+- bash is spawned;
+- interactive root shell is available;
+- `uname -v` returns Darwin Kernel Version 27.0.0 RELEASE_ARM64_T8140;
+- `whoami` returns root;
+- `ls /` returns root filesystem entries;
+- proof-end marker is echoed.
 
-### Preserved protocols
-Generation16 READY/PREPARE -> fresh MUTATION_READY frozen-target publication is unchanged.
-Generation17 recurring-hourly Watchdog with +5m fast-path slide is unchanged.
-Generation18 result-first workflow evidence is unchanged.
+The run later fails because QEMU/harness does not terminate cleanly after the proof. That issue is not part of IOS-M1 acceptance.
 
-### New state: WAIT_EXTERNAL_EVIDENCE
-Purpose: represent a healthy pause while required external GitHub Actions evidence is not yet terminal/visible.
+### No implicit next milestone
+Do not continue autonomous implementation merely because known issues remain.
+The Owner and Project Manager must first agree the next product commitment and acceptance condition.
 
-Mailbox wait fields:
-- `expected_workflow`
-- `expected_head_sha`
-- `wait_started_at`
-- `wait_last_observation_at`
-- `wait_observation_count`
-- `wait_negative_observation_count`
-- `wait_resume_owner_slot`
-- `wait_last_run_id`
-- `wait_last_run_status`
-- `wait_last_run_conclusion`
+Potential future topics such as post-proof harness termination, AppleSEPManager, broader service startup, SpringBoard/GUI, packaging, or usability are observations only, not authorized priorities.
 
-Worker behavior:
-1. search existing exact-SHA runs before any dispatch.
-2. terminal run => consume/analyze result.
-3. queued/in_progress => publish WAIT_EXTERNAL_EVIDENCE, arm no Worker.
-4. no observable exact-SHA run => publish WAIT_EXTERNAL_EVIDENCE with negative_observation_count=1, arm no Worker.
-5. ensure recurring Watchdog remains enabled.
-6. one negative observation MUST NOT produce OWNER_GATE.
+### Future PP-RM bootstrap
+When a new milestone is agreed:
+1. persist the new intention and acceptance evidence contract;
+2. reconcile current `main` and relevant CI;
+3. create a clean successor package; never resume package008;
+4. preserve generation16 two-phase mutation;
+5. preserve generation17 recurring Watchdog;
+6. preserve generation18 result-first evidence;
+7. preserve generation19 WAIT_EXTERNAL_EVIDENCE;
+8. preserve OCB3 and dispatch/runtime separation.
 
-Watchdog WAIT behavior:
-1. perform normal recurring self-preservation prefix.
-2. read Scheduled Tasks once.
-3. when state=WAIT_EXTERNAL_EVIDENCE, perform read-only exact-SHA workflow search.
-4. terminal run found => increment generation, create fresh READY baton for wait_resume_owner_slot, clear wait fields, Trace EVIDENCE_READY; FINAL operation arm that Worker.
-5. queued/in_progress => keep WAIT, update observation metadata, do not arm Worker.
-6. no run => increment independent negative observations.
-7. if negative count <3 OR elapsed <15 minutes => keep WAIT.
-8. only when negative count>=3 AND elapsed>=15m AND no exact-SHA run exists may start-new-workflow necessity be evaluated.
-9. OWNER_GATE for missing start capability only if a new run is truly required and no authorized alternative exists.
-
-Any terminal workflow conclusion is evidence. Success/failure/cancelled/timed_out/action_required does not itself decide product success; a fresh Worker analyzes the evidence.
-
-### Package008 bootstrap
-Initial Worker B consumes existing E2E run `36798385755` on exact main.
-It must analyze failure evidence around provisioning/root-shell and AppleSEPManager endpoint timeouts, then perform one bounded diagnostic/fix unit.
-
-### Terminal path
-FINAL_COMPLETED, FAIL_STOP, or genuine OWNER_GATE is published durably first; Watchdog then disables itself.
-
-### OCB3
-Explicit OSB only; three exact-identical attempts maximum; no attempt4; reconcile ambiguous mutable results.
+### Current action
+Wait for direct Owner/Project Manager product-direction discussion.

@@ -1,30 +1,29 @@
 # Current blockers and open risks
 
-Updated: 2026-10-01 11:04 MSK
+Updated: 2026-10-01 14:14 MSK
 
-## Product blocker
-Verified recovery root shell remains unproven.
+## IOS-M1
+No blocker remains for IOS-M1. The milestone is complete with exact-SHA evidence on `main@95caa93fc8fd0db827491e679628efa40612b55c`.
 
-Current exact-main E2E run `36798385755` completed FAILURE at `Run provisioning and Darwin root-shell proof` after successful build/setup and bundled patched rcodesign construction. Failure evidence repeatedly reports AppleSEPManager endpoint timeouts. The next bounded unit is evidence-driven diagnosis of that failure, not another blind rerun.
+## Known residual technical issues
+These are real technical issues, but they are not blockers to the completed IOS-M1 acceptance:
+- post-proof QEMU/integration harness nontermination causes the E2E workflow to conclude FAILURE even after verified root-shell proof;
+- repeated `AppleSEPManager` endpoint timeouts remain;
+- broader iOS service completeness, GUI/SpringBoard and ordinary user-device behavior remain outside the proven milestone.
 
-## Runtime defect corrected by generation19
-Package007 falsely terminalized because a single exact-SHA run search returned no observable run shortly before the automatic push-triggered E2E became visible.
+## Product-direction gate
+The next blocker is strategic, not technical: the next product milestone has not yet been selected by Owner with the Project Manager. No autonomous continuation should infer that goal.
 
-Generation19 makes external evidence absence nonterminal:
-- `WAIT_EXTERNAL_EVIDENCE` is Watchdog-owned;
-- one negative observation never yields OWNER_GATE;
-- queued/in-progress runs are observed, not duplicated;
-- terminal success/failure/cancelled/timed-out/action-required conclusions are all usable evidence for a fresh Worker to analyze;
-- OWNER_GATE for unavailable start-new-workflow requires >=3 independent negative Watchdog observations AND >=15 minutes elapsed AND no exact-SHA run of any observable state.
+## Runtime
+PP-RM package008 is terminal `FINAL_COMPLETED`.
+Worker A, Worker B and Watchdog are disabled.
+No continuity recovery is required.
 
-## Residual risks
+## Residual PP-RM risks for future packages
 - GitHub/run visibility can lag.
 - Scheduled Task delivery can be delayed; DTSTART is not an SLA.
 - hourly Watchdog recurrence is a recovery floor, not a five-minute guarantee.
 - Scheduled Tasks have no CAS; stale already-running control-plane work remains possible.
 - frozen mutation descriptor must remain unchanged across recovery.
-- main neither frozen baseline nor target => FAIL_STOP.
-
-## OCB
-Explicit OSB only; maximum three exact-identical attempts total; no fourth.
-Ambiguous mutable result requires authoritative reconciliation.
+- authoritative main neither frozen baseline nor target => FAIL_STOP.
+- OCB: explicit OSB only, maximum three exact-identical attempts, no fourth.
