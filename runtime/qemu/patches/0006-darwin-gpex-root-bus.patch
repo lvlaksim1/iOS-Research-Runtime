@@ -4,11 +4,11 @@ Date: Thu, 1 Oct 2026 15:22:00 +0000
 Subject: [PATCH] darwin: instantiate a minimal GPEX PCIe root bus
 
 The darwin machine currently has no PCI bus, so generic PCI devices fail
-before guest boot with "No PCI bus found for device nvme".  Realize QEMU's
+before guest boot with "No PCI bus found for device nvme". Realize QEMU's
 generic GPEX host bridge so -device nvme can attach to a PCIe root bus.
 
 This intentionally does not yet map ECAM/MMIO or describe PCIe to the Apple
-DeviceTree.  Those are guest-visibility plumbing and should be added only
+DeviceTree. Those are guest-visibility plumbing and should be added only
 after the transport probe proves that the NVMe device can be instantiated
 without regressing Darwin boot.
 ---
@@ -16,17 +16,13 @@ without regressing Darwin boot.
  1 file changed, 5 insertions(+)
 
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
-index 7bde000000..7bde000001 100644
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -22,6 +22,7 @@
+@@ -22,1 +22,2 @@
  #include "xnu/macho.h"
- #include "hw/intc/apple_aic.h"
 +#include "hw/pci-host/gpex.h"
- 
- // See device tree specification section 2.3.8: ranges
- #define IO_RANGE_BASE_OFFSET     1
-@@ -202,6 +203,10 @@ static void darwin_init(MachineState *ms) {
+@@ -222,4 +223,8 @@ static void darwin_init(MachineState *ms) {
+     dt_root = info->dtree_f.buf;
  
      check_dtree(dt_root);
  
@@ -35,7 +31,5 @@ index 7bde000000..7bde000001 100644
 +    sysbus_realize_and_unref(SYS_BUS_DEVICE(pcie), &error_fatal);
 +
      info->has_mte = kc_uses_mte(info->bootkc_f.buf);
- 
-     Object *cpuobj = object_new(ms->cpu_type);
 -- 
 2.51.0
