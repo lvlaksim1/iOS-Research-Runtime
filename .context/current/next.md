@@ -1,12 +1,12 @@
 # Next actions
 
-Updated: 2026-10-01 15:13 MSK
+Updated: 2026-10-01 15:18 MSK
 
-1. Preserve IOS-M2 as the active commitment from baseline `main@95caa93fc8fd0db827491e679628efa40612b55c`.
-2. Add a bounded post-root boot-boundary probe to the existing Windows E2E integration harness while preserving the IOS-M1 proof.
-3. Push that diagnostic mutation to `main`; the normal push path should trigger Windows E2E.
-4. Capture exact-SHA evidence for mounts/volumes, system/preboot paths, device/disk exposure and launchd/service state.
-5. Classify the first evidenced blocker before changing QEMU hardware, provisioning semantics or trust/security logic.
-6. Implement the smallest bounded mutation against that blocker and repeat exact-SHA E2E.
-7. If the live carrier reaches an external-evidence wait or continuity boundary, activate clean PP-RM package `IOS-M2-CONTINUOUS-009` using generation16–19 semantics.
+1. Preserve active product `main@24730a74051378d228efd370f3baee5a4f46bdfa`; do not duplicate the post-root probe.
+2. Await/locate Windows End-to-End Boot evidence on that exact SHA through package009 `WAIT_EXTERNAL_EVIDENCE`.
+3. When terminal evidence exists, resume Worker A through PP-RM Watchdog.
+4. Consume the probe markers for mounts, system volumes, preboot, disk/device exposure and launchd/service state.
+5. Classify the first evidenced boot boundary before changing QEMU hardware, provisioning semantics or trust/security logic.
+6. Implement only the smallest bounded mutation against that blocker and repeat exact-SHA E2E.
+7. Complete IOS-M2 when full-system progression is demonstrated or the first concrete blocker is reproducibly isolated for the next milestone.
 8. Do not resume packages005,006,007 or008.
