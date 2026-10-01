@@ -1,18 +1,19 @@
 # Current blockers and open risks
 
-Updated: 2026-10-01 15:13 MSK
+Updated: 2026-10-01 15:18 MSK
 
 ## IOS-M1
-No blocker remains. IOS-M1 is complete on `main@95caa93fc8fd0db827491e679628efa40612b55c`.
+No blocker remains. IOS-M1 is complete.
 
 ## IOS-M2
-The immediate blocker is technical rather than strategic: the actual post-recovery boot boundary has not yet been measured.
+The immediate blocker is evidence availability/classification, not project direction.
+A post-root diagnostic probe is now committed on `main@24730a74051378d228efd370f3baee5a4f46bdfa`; the next required fact is exact-SHA Windows E2E output.
 
-Unknowns for the first probe:
-- whether full-system/preboot volumes or required material are present in the current runtime;
+Unknowns to classify from that output:
+- whether full-system/preboot volumes or required material are present;
 - what storage/device nodes the current QEMU Darwin machine exposes;
 - whether current launchd can see/start the service graph needed for transition;
-- whether the first hard dependency is provisioning, mount topology, launchd/bootstrap, trust/security/SEP, or missing QEMU hardware behavior.
+- whether the first hard dependency is provisioning, mount topology, launchd/bootstrap, trust/security/SEP, QEMU hardware behavior, or another class.
 
 No one possibility is yet promoted to root cause.
 
@@ -22,8 +23,9 @@ No one possibility is yet promoted to root cause.
 - graphical/user iOS and SpringBoard remain unproved.
 
 ## Runtime
-Fresh successor package is reserved as `IOS-M2-CONTINUOUS-009`.
-The current direct live carrier owns the first probe. PP-RM Workers and Watchdog remain unarmed until scheduler handoff is needed.
+Package `IOS-M2-CONTINUOUS-009` is initialized in `WAIT_EXTERNAL_EVIDENCE`.
+Mailbox/Trace and Worker programs are prepared for package009.
+Watchdog is the designated read-only evidence-wait carrier; Workers stay disabled until terminal exact-SHA evidence is available.
 
 ## Residual PP-RM risks
 GitHub visibility lag, Scheduled Task delivery delay, hourly Watchdog floor, lack of CAS, stale already-running work, frozen mutation descriptor requirements, and OCB3 remain applicable.
