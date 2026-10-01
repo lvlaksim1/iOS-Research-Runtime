@@ -8,13 +8,13 @@ the guest has no /dev/disk nodes. Map bounded ECAM and PCI MMIO aliases into
 the Darwin physical address space as the next prerequisite for guest PCI
 enumeration. DeviceTree discovery remains a separate evidence-driven step.
 ---
- hw/arm/darwin.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ hw/arm/darwin.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -224,10 +224,30 @@ static void darwin_init(MachineState *ms) {
+@@ -224,10 +224,31 @@ static void darwin_init(MachineState *ms) {
      dt_root = info->dtree_f.buf;
  
      check_dtree(dt_root);
