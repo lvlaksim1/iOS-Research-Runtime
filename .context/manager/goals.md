@@ -1,9 +1,9 @@
 # Manager goals
 
-1. Advance from the verified recovery/root-shell boundary to guest-visible full-system storage and APFS volumes under the working Windows `-M darwin` path.
-2. Determine storage transport from exact evidence before implementing a large or speculative QEMU device model.
-3. Reduce technical uncertainty through evidence-driven engineering rather than speculative diagnostic churn.
-4. Preserve one persistent accountable Project Manager across runtime replacement, with project state and durable memory owned by this repository.
-5. Keep strategic project control with the Project Manager while using PP-RM A/B as a continuous bounded execution mechanism when autonomous continuation is useful.
-6. Preserve exact product/CI provenance so claims about boot progress, regressions, or milestone completion can be independently checked.
-7. Progress in staged milestones toward system userland, core services, graphics/input, SpringBoard, interactive iOS, Apple-service feasibility, Windows productization, and reliability without collapsing those stages into one unverifiable objective.
+1. Complete LARGE STAGE 1 by advancing from verified recovery/root shell to reproducible real full-iOS system userland with full-system volumes and system service bootstrap.
+2. Establish guest-visible storage through evidence-driven PCIe/NVMe or another directly evidenced transport before staging SystemOS.
+3. Continue autonomously across internal IOS-M* checkpoints without routine Owner participation.
+4. Preserve one persistent accountable Project Manager across disposable runtime replacement, with durable project state owned by this repository.
+5. Keep PP-RM continuously recoverable across workflow latency, runtime failure and transient OCB without converting ordinary operational failures into Owner gates.
+6. Preserve exact product/CI provenance so claims about boot progress, regressions or milestone completion can be independently checked.
+7. Never bypass substantive safety restrictions; distinguish transient tool-level OCB from a genuine safety/governance boundary.
