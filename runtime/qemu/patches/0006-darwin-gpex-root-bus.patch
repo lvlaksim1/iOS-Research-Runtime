@@ -7,24 +7,22 @@ The darwin machine has no PCI bus, so generic PCI devices fail before guest
 boot with "No PCI bus found for device nvme". Realize QEMU's generic GPEX
 host bridge so -device nvme can attach to a PCIe root bus.
 
-This intentionally does not yet map ECAM/MMIO or describe PCIe to the Apple
-DeviceTree. Those are guest-visibility plumbing for the next evidence step.
+Use the QOM type name directly so this bounded probe does not depend on an
+additional header-context hunk. This intentionally does not yet map ECAM/MMIO
+or describe PCIe to the Apple DeviceTree.
 ---
- hw/arm/darwin.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ hw/arm/darwin.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -22,1 +22,2 @@
- #include "xnu/macho.h"
-+#include "hw/pci-host/gpex.h"
-@@ -224,6 +225,10 @@ static void darwin_init(MachineState *ms) {
+@@ -224,6 +224,10 @@ static void darwin_init(MachineState *ms) {
      dt_root = info->dtree_f.buf;
  
      check_dtree(dt_root);
 +
-+    DeviceState *pcie = qdev_new(TYPE_GPEX_HOST);
++    DeviceState *pcie = qdev_new("gpex-host");
 +    qdev_prop_set_uint32(pcie, "num-irqs", 0);
 +    sysbus_realize_and_unref(SYS_BUS_DEVICE(pcie), &error_fatal);
  
