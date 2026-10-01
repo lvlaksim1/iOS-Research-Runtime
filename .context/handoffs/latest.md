@@ -1,32 +1,25 @@
 # Latest handoff
 
-Updated: 2026-10-01 17:09 MSK
+Updated: 2026-10-01 17:13 MSK
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 22.
-Product authority: `main@4542112c90bb0f84a9a904726c54a3480ba07947`.
-Execution status: ACTIVE / IOS-M3.
-Successor package: `IOS-M3-CONTINUOUS-010`.
+Manager generation: 23.
+Product authority: `main@951575209542d70d9f370049b3d17cde83ee64cf`.
+Execution status: ACTIVE / IOS-M3 / WAIT_EXTERNAL_EVIDENCE.
+Active package: `IOS-M3-CONTINUOUS-010`.
 
-## Completed milestone
-IOS-M2 is FINAL_COMPLETED.
-Exact-SHA Windows E2E run `36870111560`, job `110395408194`, conclusion SUCCESS, proved:
-- recovery root shell still works;
-- IOS-M2 boundary probe completes;
-- only recovery md0/devfs are visible;
-- System/Volumes, private/preboot and disk nodes are absent.
+## Completed
+IOS-M2 is FINAL_COMPLETED on `main@4542112c90bb0f84a9a904726c54a3480ba07947`, Windows E2E run `36870111560`, job `110395408194`, SUCCESS.
 
-## Active responsibility
-IOS-M3 must establish a full-system storage path.
+## Current product action
+Commit `951575209542d70d9f370049b3d17cde83ee64cf` adds bounded BootKC storage-capability diagnostics without adding storage hardware or downloading SystemOS.
 
-Immediate bounded action:
-1. instrument the existing BootKC kext validation to emit storage-driver capability evidence;
-2. publish to `main`;
-3. consume exact-SHA Windows E2E;
-4. choose native storage emulation versus any evidenced VirtIO path;
-5. do not download SystemOS until a guest-visible transport is proven.
+## External evidence contract
+Workflow: `.github/workflows/windows-e2e.yml`.
+Exact head: `951575209542d70d9f370049b3d17cde83ee64cf`.
+Consume ANS/NVMe/VirtIO/embedded-storage/APFS candidate lines.
 
-## Architecture evidence
-The pinned qemu-sptm working machine is `darwin`. The upstream Apple VirtIO block device belongs to the separate `vmapple` machine and cannot be assumed usable on the iPhone path.
+## Next responsibility
+Use exact evidence to choose the storage transport, then build one host-backed block-device proof. SystemOS comes only after guest-visible disk evidence.
 
 Packages005–009 must not resume.
