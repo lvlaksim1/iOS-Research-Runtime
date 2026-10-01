@@ -109,12 +109,10 @@ public sealed class QemuRuntime : IDisposable
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        // -serial mon:stdio uses QEMU's stdio multiplexer. A literal '_' byte is
-        // the mux escape, so shell commands containing underscores are consumed
-        // as monitor commands instead of reaching the guest. Quote the escape
-        // by doubling it for guest-bound serial input.
-        var escapedLine = line.Replace("_", "__", StringComparison.Ordinal);
-        await process.StandardInput.WriteLineAsync(escapedLine);
+        // QEMU's mon:stdio multiplexer uses Ctrl-A (0x01) as its escape byte.
+        // Ordinary guest serial input, including underscores, must be forwarded
+        // unchanged. Mux commands are sent explicitly by StopAsync.
+        await process.StandardInput.WriteLineAsync(line);
         await process.StandardInput.FlushAsync(cancellationToken);
     }
 
