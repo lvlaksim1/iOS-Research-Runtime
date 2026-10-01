@@ -1,29 +1,32 @@
 # Latest handoff
 
-Updated: 2026-10-01 15:18 MSK
+Updated: 2026-10-01 17:09 MSK
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 21.
-Product authority: `main@24730a74051378d228efd370f3baee5a4f46bdfa`.
-Execution status: ACTIVE / IOS-M2 / WAIT_EXTERNAL_EVIDENCE.
-Active package: `IOS-M2-CONTINUOUS-009`.
+Manager generation: 22.
+Product authority: `main@4542112c90bb0f84a9a904726c54a3480ba07947`.
+Execution status: ACTIVE / IOS-M3.
+Successor package: `IOS-M3-CONTINUOUS-010`.
 
-## Owner authorization
-On 2026-10-01 the Owner accepted the post-IOS-M1 roadmap and directed the Project Manager to execute it.
+## Completed milestone
+IOS-M2 is FINAL_COMPLETED.
+Exact-SHA Windows E2E run `36870111560`, job `110395408194`, conclusion SUCCESS, proved:
+- recovery root shell still works;
+- IOS-M2 boundary probe completes;
+- only recovery md0/devfs are visible;
+- System/Volumes, private/preboot and disk nodes are absent.
 
-## Product action completed
-The Manager published commit `24730a74051378d228efd370f3baee5a4f46bdfa` to `main`.
-It preserves the verified IOS-M1 root-shell path and adds a bounded post-root diagnostic probe for mounts, `/System/Volumes`, `/private/preboot`, `/dev/disk*` and `launchctl list`.
+## Active responsibility
+IOS-M3 must establish a full-system storage path.
 
-## Runtime handoff
-Package009 Scheduled Task programs, Mailbox and Trace are initialized for this milestone.
-Mailbox state: `WAIT_EXTERNAL_EVIDENCE`.
-Expected workflow: `.github/workflows/windows-e2e.yml`.
-Expected head: `24730a74051378d228efd370f3baee5a4f46bdfa`.
-Resume owner after terminal evidence: Worker A.
-Watchdog is the read-only evidence-wait carrier. Workers must remain disabled until the Watchdog converts terminal exact-SHA evidence to READY.
+Immediate bounded action:
+1. instrument the existing BootKC kext validation to emit storage-driver capability evidence;
+2. publish to `main`;
+3. consume exact-SHA Windows E2E;
+4. choose native storage emulation versus any evidenced VirtIO path;
+5. do not download SystemOS until a guest-visible transport is proven.
 
-## Next responsibility
-Consume the exact-SHA probe evidence and identify the first concrete boundary between recovery/root shell and full iOS system userland before selecting any QEMU, provisioning or security mutation.
+## Architecture evidence
+The pinned qemu-sptm working machine is `darwin`. The upstream Apple VirtIO block device belongs to the separate `vmapple` machine and cannot be assumed usable on the iPhone path.
 
-Packages005–008 must not resume.
+Packages005–009 must not resume.
