@@ -22,7 +22,10 @@ public sealed class QemuCommandBuilder
             "-ramdisk", Path.Combine(firmware, "ramdisk.dmg"),
             "-args", "rd=md0 serial=3 -v -noprogress wdt=-1 wlan-olyhal-abort",
             "-nographic",
-            "-serial", "mon:stdio",
+            // Keep guest serial on raw stdio. The QEMU monitor is disabled so
+            // root-proof commands cannot be consumed by the stdio multiplexer.
+            "-monitor", "none",
+            "-serial", "stdio",
             "-m", "8G",
             // The exact b1295ce E2E trace still first sees 0x12ed0000 at
             // the load from boot-state slot 0x...090b80 at 0x...0b3978.
