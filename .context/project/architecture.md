@@ -3,41 +3,36 @@
 ## DECISION — Product architecture
 
 The product has four main layers:
-
 1. Windows WPF GUI in `src/IOSResearchRuntime`;
-2. provisioning services that acquire pinned tools/resources, extract IPSW material, patch firmware metadata, rebuild the recovery ramdisk, and construct trust-cache inputs;
-3. a Windows-packaged `qemu-sptm` runtime with the Darwin machine and project portability patches;
-4. evidence-producing integration automation, especially `.github/workflows/qemu-sptm-windows.yml` and `.github/workflows/windows-e2e.yml`.
+2. provisioning services for pinned tools/resources and IPSW-derived material;
+3. a Windows-packaged patched `qemu-sptm` runtime;
+4. exact-SHA evidence automation through the Windows build/E2E workflows.
 
-The GUI delegates product work to services such as the runtime coordinator, tool/resource bootstrap, raw firmware provisioning, ramdisk provisioning, and QEMU runtime management.
-
-## Authority topology
-
-- product authority branch: `main`;
-- durable Project Manager state branch: `manager-state`;
-- discovery branch: `main`.
-
-Manager-state commits are not product releases and must not substitute for live product evidence on `main`.
+Product authority is `main`; durable Manager authority is `manager-state`.
 
 ## Execution architecture — PP-RM
 
-PP-RM is the approved continuous execution Runtime for ordinary manager-directed development.
+PP-RM remains the bounded continuous-execution runtime. Manager decides direction and acceptance; A/B execute bounded units; Watchdog owns continuity and external-evidence wait.
 
-- persistent Agent / commitment owner: `ios-research-runtime-project-manager`;
-- disposable execution carriers: alternating Worker A and Worker B Scheduled Task runtimes;
-- operational transport: Runtime Mailbox;
-- progress evidence: Pulse Register;
-- delivery/audit evidence: Trace / Result Register with SEND / ACK / FINAL / FAIL;
-- predecessor publishes and verifies handoff, then arms one successor as its final tool operation;
-- GitHub remains product/evidence infrastructure and is not the PP-RM ownership, heartbeat, mailbox, or baton control plane.
+## Verified boot/storage boundary
 
-Manager and PP-RM responsibilities are asymmetric: Manager decides direction, priority, package, and strategic checkpoints; A/B execute within that package.
+IOS-M1 proved recovery launchd + root shell.
+IOS-M2 completed on `main@4542112c90bb0f84a9a904726c54a3480ba07947`, Windows E2E run `36870111560` / job `110395408194` SUCCESS.
 
-## Verified current boot boundary
+The recovery guest exposes:
+- `/dev/md0` mounted as read-only APFS root;
+- devfs;
+- no `/System/Volumes`;
+- no `/private/preboot`;
+- no `/dev/disk*`.
 
-IOS-M1 is complete on `main@95caa93fc8fd0db827491e679628efa40612b55c`.
-Exact-SHA Windows E2E run `36844422600` / job `110311023233` proves recovery Darwin, recovery `launchd`, an interactive root shell, Darwin kernel identity, `whoami=root`, root filesystem listing and the proof-end marker.
+Therefore the current guest has no full-system block storage path.
 
-The same run later fails at workflow level because QEMU/integration harness does not terminate cleanly after proof. Repeated `AppleSEPManager` endpoint timeout messages are also present. Neither observation invalidates IOS-M1.
+## IOS-M3 architecture question
 
-The active architecture question is IOS-M2: identify the exact boundary between this recovery/root-shell environment and full iOS system userland. The first method is a post-root diagnostic probe; speculative QEMU hardware changes are deferred until runtime evidence classifies the blocker.
+The application currently supplies to `-M darwin` only BootKC, DeviceTree, trustcache and recovery ramdisk.
+The pinned qemu-sptm darwin machine itself creates CPU/AIC/UART/SEP placeholder/Apple registers but no PCI/virtio storage bus.
+
+The same upstream tree contains Apple-compatible `vmapple-virtio-blk`, but that belongs to the separate `-M vmapple` machine and is not evidence of iPhone-kernel compatibility.
+
+IOS-M3 must first classify the iPhone17,3 BootKC storage drivers, then implement the smallest compatible host-backed storage device. SystemOS staging follows only after guest-visible disk proof.
