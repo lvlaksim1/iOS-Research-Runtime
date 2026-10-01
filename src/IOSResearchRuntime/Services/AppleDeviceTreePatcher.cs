@@ -227,7 +227,7 @@ public sealed class AppleDeviceTreePatcher
             ctrr.Properties["write-disable-reg-value"] = 1u;
         }
 
-        AddPcieDiscoveryNode(root);
+        AddPcieDiscoveryNode(armIo);
         DeleteUnsupportedCompatible(root);
         FixupAic(armIo.Child("aic"));
         FixupSptm(root);
@@ -235,7 +235,7 @@ public sealed class AppleDeviceTreePatcher
         root.Properties.Remove("secure-root-prefix");
     }
 
-    private static void AddPcieDiscoveryNode(AdtNode root)
+    private static void AddPcieDiscoveryNode(AdtNode armIo)
     {
         // Mirror the bounded GPEX windows exposed by the Darwin machine.
         // This is intentionally only a discovery node: no SystemOS payload is staged.
@@ -245,7 +245,7 @@ public sealed class AppleDeviceTreePatcher
         pcie.Properties["reg"] = EncodeRegRanges(
             (0x3f000000UL, 0x01000000UL),
             (0x10000000UL, 0x10000000UL));
-        root.Children.Add(pcie);
+        armIo.Children.Add(pcie);
     }
 
     private static byte[] EncodeRegRanges(params (ulong Address, ulong Size)[] ranges)
