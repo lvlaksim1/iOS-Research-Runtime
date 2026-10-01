@@ -10,7 +10,8 @@ public sealed class AppleDeviceTreePatcher
         Encoding.ASCII.GetBytes("AppleARM"),
         Encoding.ASCII.GetBytes("aic"),
         Encoding.ASCII.GetBytes("arm-io"),
-        Encoding.ASCII.GetBytes("uart-1,samsung")
+        Encoding.ASCII.GetBytes("uart-1,samsung"),
+        Encoding.ASCII.GetBytes("pciec-bridge")
     ];
 
     private const uint Frequency = 0x100000;
@@ -226,11 +227,37 @@ public sealed class AppleDeviceTreePatcher
             ctrr.Properties["write-disable-reg-value"] = 1u;
         }
 
+        AddPcieDiscoveryNode(root);
         DeleteUnsupportedCompatible(root);
         FixupAic(armIo.Child("aic"));
         FixupSptm(root);
 
         root.Properties.Remove("secure-root-prefix");
+    }
+
+    private static void AddPcieDiscoveryNode(AdtNode root)
+    {
+        // Mirror the bounded GPEX windows exposed by the Darwin machine.
+        // This is intentionally only a discovery node: no SystemOS payload is staged.
+        var pcie = new AdtNode();
+        pcie.Properties["name"] = "pcie";
+        pcie.Properties["compatible"] = "pciec-bridge";
+        pcie.Properties["reg"] = EncodeRegRanges(
+            (0x3f000000UL, 0x01000000UL),
+            (0x10000000UL, 0x10000000UL));
+        root.Children.Add(pcie);
+    }
+
+    private static byte[] EncodeRegRanges(params (ulong Address, ulong Size)[] ranges)
+    {
+        var bytes = new byte[checked(ranges.Length * 16)];
+        for (var i = 0; i < ranges.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(i * 16, 8), ranges[i].Address);
+            BinaryPrimitives.WriteUInt64LittleEndian(bytes.AsSpan(i * 16 + 8, 8), ranges[i].Size);
+        }
+
+        return bytes;
     }
 
     private static void DeleteUnsupportedCompatible(AdtNode node)
