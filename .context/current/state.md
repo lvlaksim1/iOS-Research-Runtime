@@ -1,38 +1,37 @@
 # Current state
 
-Updated: 2026-10-01 15:12 MSK
+Updated: 2026-10-01 15:18 MSK
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
-- manager generation: 20
-- product authority: `main`
-- product baseline at IOS-M2 start: `95caa93fc8fd0db827491e679628efa40612b55c`
+- manager generation: 21
+- product authority: `main@24730a74051378d228efd370f3baee5a4f46bdfa`
 - PP-RM architecture: generation19 persistent external-evidence wait + generation18 result-first evidence + generation17 recurring Watchdog + generation16 native two-phase mutation
-- execution status: ACTIVE / IOS-M2
-- active milestone: `IOS-M2 — Full iOS Boot Boundary`
-- reserved successor package: `IOS-M2-CONTINUOUS-009`
-- current carrier: direct Owner-facing live runtime
+- execution status: ACTIVE / IOS-M2 / WAIT_EXTERNAL_EVIDENCE
+- active package: `IOS-M2-CONTINUOUS-009`
+- scheduler handoff: Mailbox/Trace/Worker programs prepared; Watchdog is the designated external-evidence carrier
 
 ## Completed foundation
-IOS-M1 remains COMPLETE on `main@95caa93fc8fd0db827491e679628efa40612b55c`.
-Exact-SHA E2E run `36844422600`, job `110311023233`, proved recovery Darwin, launchd, interactive root shell, Darwin uname, `whoami=root`, root filesystem listing and `__IOS_RESEARCH_PROOF_END__`.
+IOS-M1 remains COMPLETE. Exact-SHA E2E run `36844422600`, job `110311023233`, proved recovery Darwin, launchd, interactive root shell, Darwin uname, `whoami=root`, root filesystem listing and `__IOS_RESEARCH_PROOF_END__`.
 
-## Active IOS-M2
-Owner approved the roadmap and authorized execution on 2026-10-01.
+## IOS-M2 product progress
+Commit `24730a74051378d228efd370f3baee5a4f46bdfa` was published to `main`.
+It adds a bounded post-root boundary probe to the existing integration harness after the verified IOS-M1 proof.
+Probe evidence requested:
+- mounts/filesystem topology;
+- `/System/Volumes`;
+- `/private/preboot`;
+- `/dev/disk*`;
+- `launchctl list`.
 
-Objective: establish the first verified boundary after the recovery root shell on the path toward full iOS system userland.
+The normal `windows-e2e.yml` push path includes the integration harness and is expected to produce exact-SHA evidence for this commit.
 
-Immediate action:
-- extend the E2E integration harness with a bounded post-root diagnostic probe;
-- collect mounts/volumes, system/preboot paths, disk/device exposure and launchd/service state;
-- trigger exact-SHA Windows E2E through the normal `main` push path;
-- classify the first concrete blocker before changing QEMU or firmware semantics.
+## Current execution state
+Package009 Mailbox is `WAIT_EXTERNAL_EVIDENCE` for `.github/workflows/windows-e2e.yml` on exact head `24730a74051378d228efd370f3baee5a4f46bdfa`.
+Worker A/B remain disabled until Watchdog observes terminal evidence.
+The Watchdog may only perform read-only GitHub reconciliation while waiting.
 
 ## Known residual issues
-- QEMU/integration harness may not terminate cleanly after semantic proof.
-- repeated `AppleSEPManager` endpoint timeouts occur.
-These remain observations until IOS-M2 evidence establishes whether either is the first blocking dependency.
+Post-proof QEMU/harness nontermination and repeated `AppleSEPManager` endpoint timeouts remain observations, not yet promoted to the IOS-M2 root blocker.
 
-## Superseded PP-RM state
-Package008 is terminal `FINAL_COMPLETED`.
-Packages005,006,007 are terminal/superseded and must not resume.
+Packages005–008 must not resume.
