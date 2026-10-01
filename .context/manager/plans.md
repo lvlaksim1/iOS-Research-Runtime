@@ -1,33 +1,30 @@
 # Manager plans
 
 ## Current planning state
-Manager generation: 23.
-IOS-M1: COMPLETED.
-IOS-M2: COMPLETED.
-IOS-M3: ACTIVE / WAIT_EXTERNAL_EVIDENCE.
-Product authority: `main@951575209542d70d9f370049b3d17cde83ee64cf`.
+Manager generation: 24.
+Macro stage: LARGE STAGE 1 — Full iOS System Boot.
+Execution: ACTIVE / WAIT_EXTERNAL_EVIDENCE.
+Product authority: `main@32dd17014113543862e756c7daa52822e2eec073`.
 PP-RM package: `IOS-M3-CONTINUOUS-010`.
+PP-RM runtime schema: 10.
 
-## IOS-M3 phase 1 — storage driver capability
-Commit `951575209542d70d9f370049b3d17cde83ee64cf` uses the existing BootKC kext listing to emit bounded storage-capability diagnostics for:
-- AppleANS;
-- NVMe;
-- VirtIO;
-- embedded storage / NAND;
-- APFS.
+## Current bounded experiment
+Prior exact-SHA E2E `36908440572` proved:
+- recovery XNU/launchd/root shell remain reproducible;
+- IONVMeFamily and APFS support are present;
+- `/dev/disk*` remains absent with the PCIe discovery node at DeviceTree root.
 
-No QEMU device model or system image was added.
+Current commit `32dd17014113543862e756c7daa52822e2eec073` moves that discovery node under `arm-io` while preserving bounded ECAM/MMIO ranges.
 
-## Current action
-Await exact-SHA Windows E2E for `951575209542d70d9f370049b3d17cde83ee64cf`.
-When terminal evidence exists, classify which guest storage driver family is actually present.
+Await exact-SHA Windows E2E run `36915159246`.
 
 ## After evidence
-1. If native ANS/NVMe drivers are present and VirtIO is absent, target a minimal native-compatible device model/DeviceTree path.
-2. If a usable VirtIO block driver is present, evaluate the smallest way to expose an Apple-compatible virtio block transport to the darwin machine.
-3. Build one host-backed block-device proof.
-4. Require guest-visible disk-node evidence before SystemOS download.
-5. Only then extract/stage SystemOS outside Git and proceed to APFS System/Preboot discovery.
+1. If a guest disk appears, add explicit disk-node proof and proceed to SystemOS/APFS staging outside Git.
+2. If no disk appears, use serial/DeviceTree/driver-binding evidence to isolate the next smallest PCIe/NVMe dependency (properties, hierarchy, interrupts or device model behavior).
+3. Keep all IOS-M* subdivisions internal; continue until Large Stage 1 acceptance or a genuine strategic boundary.
 
-## PP-RM
-Package010 owns the external-evidence wait and bounded continuation. Never resume package009.
+## PP-RM continuity
+DEC-0018 is authoritative.
+Transient OCB must not terminalize the package.
+Use fresh-runtime failover first, equivalent compliant operation next, then Watchdog-owned OCB_BACKOFF/replan if repeated.
+A substantive no-compliant-path safety restriction remains a valid terminal governance boundary.
