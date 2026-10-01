@@ -16,9 +16,7 @@ DeviceTree. Those are guest-visibility plumbing for the next evidence step.
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -19,3 +19,4 @@
- #include "hw/arm/apple_amcc.h"
- #include "xnu/patch.h"
+@@ -22,1 +22,2 @@
  #include "xnu/macho.h"
 +#include "hw/pci-host/gpex.h"
 @@ -224,6 +225,10 @@ static void darwin_init(MachineState *ms) {
