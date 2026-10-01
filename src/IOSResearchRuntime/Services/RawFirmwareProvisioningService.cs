@@ -199,6 +199,8 @@ public sealed class RawFirmwareProvisioningService
                 "Такой kernelcache несовместим с текущим qemu-sptm boot path.");
         }
 
+        ReportBootKernelStorageCapabilities(listing);
+
         var version = await _processRunner.RunAsync(
             _layout.IpswExecutable,
             [
@@ -221,6 +223,53 @@ public sealed class RawFirmwareProvisioningService
         {
             ProgressChanged?.Invoke(this, $"[ipsw] BootKC: {versionLine}");
         }
+    }
+
+    private void ReportBootKernelStorageCapabilities(string listing)
+    {
+        var lines = listing
+            .Split(
+                ['\r', '\n'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        var probes = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["ans"] = new[] { "AppleANS" },
+            ["nvme"] = new[] { "NVMe" },
+            ["virtio"] = new[] { "VirtIO" },
+            ["embedded-storage"] = new[] { "EmbeddedStorage", "NAND" },
+            ["apfs"] = new[] { "APFS" }
+        };
+
+        var summary = new List<string>();
+
+        foreach (var probe in probes)
+        {
+            var matches = lines
+                .Where(line => probe.Value.Any(marker =>
+                    line.Contains(marker, StringComparison.OrdinalIgnoreCase)))
+                .ToArray();
+
+            var state = matches.Length > 0 ? "present" : "absent";
+            summary.Add($"{probe.Key}={state}");
+
+            ProgressChanged?.Invoke(
+                this,
+                $"[storage-capability] class={probe.Key} state={state} match_count={matches.Length}");
+
+            foreach (var match in matches.Take(20))
+            {
+                ProgressChanged?.Invoke(
+                    this,
+                    $"[storage-capability] candidate class={probe.Key} line={match}");
+            }
+        }
+
+        ProgressChanged?.Invoke(
+            this,
+            $"[storage-capability] summary {string.Join(" ", summary)}");
     }
 
     private async Task ExtractAndUnwrapPatternAsync(
