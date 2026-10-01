@@ -1,36 +1,41 @@
-# PP-RM Launch Package — generation 19
+# PP-RM Launch Package — runtime schema 10
 
 Status: RUNNING / WAIT_EXTERNAL_EVIDENCE
-Manager generation: 23
+Manager generation: 24
 Package: `IOS-M3-CONTINUOUS-010`
-Product start: `main@4542112c90bb0f84a9a904726c54a3480ba07947`
-Current product: `main@951575209542d70d9f370049b3d17cde83ee64cf`
+Macro stage: LARGE STAGE 1 — Full iOS System Boot
+Current product: `main@32dd17014113543862e756c7daa52822e2eec073`
 Previous package: `IOS-M2-CONTINUOUS-009` — FINAL_COMPLETED / MUST NOT RESUME
 
 ## Mission
-IOS-M3 — Full System Storage / APFS Bring-up.
+Continue autonomously from verified recovery/root-shell execution to real full-iOS system userland:
+storage transport → guest-visible disk → SystemOS/Preboot/Data staging → APFS discovery/mounting → system launchd → core full-system userland.
 
-Establish a guest-visible full-system storage path under the proven Windows `-M darwin` boot flow, then progress toward System/Preboot APFS discovery.
+IOS-M3 and later IOS-M* labels are internal engineering checkpoints only. They do not stop PP-RM or require Owner participation.
 
-## Current bounded step — published
-Commit `951575209542d70d9f370049b3d17cde83ee64cf` adds bounded storage-driver capability diagnostics from the existing BootKC kext listing:
-- AppleANS;
-- NVMe;
-- VirtIO;
-- embedded storage / NAND;
-- APFS.
+## Current bounded step
+BootKC evidence established:
+- IONVMeFamily present;
+- VirtIO storage absent;
+- APFS present.
 
-No SystemOS download or QEMU device-model mutation is included.
+The darwin QEMU machine now has bounded GPEX/PCIe plumbing and ECAM/MMIO windows. Recovery/root shell remains reproducible.
+
+Exact-SHA E2E `36908440572` on `82c710bd243a57f89964a8c381879e14f1a0b4fc` succeeded but `/dev/disk*` remained absent.
+
+Generation45 identified the next smallest correction: attach the PCIe discovery node under Apple `arm-io` instead of the DeviceTree root. Legacy OCB3 interrupted that Worker runtime. Manager recovery published:
+`32dd17014113543862e756c7daa52822e2eec073` — `Attach PCIe discovery node under arm-io`.
 
 ## Current wait
-Expected workflow: `.github/workflows/windows-e2e.yml`.
-Expected exact head: `951575209542d70d9f370049b3d17cde83ee64cf`.
-Mailbox state: `WAIT_EXTERNAL_EVIDENCE`.
-Resume owner after terminal evidence: Worker A.
-Watchdog is read-only while waiting.
+Expected workflow: Windows End-to-End Boot.
+Expected exact head: `32dd17014113543862e756c7daa52822e2eec073`.
+Run: `36915159246`.
+State: WAIT_EXTERNAL_EVIDENCE.
+Resume owner after terminal evidence: Worker B.
+Do not duplicate the run.
 
-## After evidence
-Choose the smallest guest-compatible storage transport; then prove one host-backed image appears as a guest disk before staging SystemOS.
-
-## Supersession
-Packages005–009 MUST NOT resume.
+## OCB resilience
+DEC-0018 is authoritative.
+OCB3 exhausts only the current Worker runtime.
+Fresh-runtime failover, alternate compliant path and Watchdog-owned OCB_BACKOFF are nonterminal recovery states.
+A transient OCB must not become OWNER_GATE.
