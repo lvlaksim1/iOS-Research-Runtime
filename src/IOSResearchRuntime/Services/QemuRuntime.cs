@@ -34,6 +34,21 @@ public sealed class QemuRuntime : IDisposable
         }
 
         _layout.EnsureDirectories();
+
+        // IOS-M3 transport probe: QEMU opens the host-backed raw image at startup.
+        // Materialize a small sparse image before constructing/launching the command;
+        // otherwise Windows QEMU exits immediately because -drive file= must exist.
+        var nvmeProbePath = Path.Combine(_layout.DataDirectory, "ios-m3-nvme-probe.img");
+        if (!File.Exists(nvmeProbePath))
+        {
+            using var probe = new FileStream(
+                nvmeProbePath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.Read);
+            probe.SetLength(64L * 1024 * 1024);
+        }
+
         lock (_logSync)
         {
             _logWriter?.Dispose();
