@@ -1,12 +1,13 @@
 # Next actions
 
-Updated: 2026-10-01 15:18 MSK
+Updated: 2026-10-01 17:09 MSK
 
-1. Preserve active product `main@24730a74051378d228efd370f3baee5a4f46bdfa`; do not duplicate the post-root probe.
-2. Await/locate Windows End-to-End Boot evidence on that exact SHA through package009 `WAIT_EXTERNAL_EVIDENCE`.
-3. When terminal evidence exists, resume Worker A through PP-RM Watchdog.
-4. Consume the probe markers for mounts, system volumes, preboot, disk/device exposure and launchd/service state.
-5. Classify the first evidenced boot boundary before changing QEMU hardware, provisioning semantics or trust/security logic.
-6. Implement only the smallest bounded mutation against that blocker and repeat exact-SHA E2E.
-7. Complete IOS-M2 when full-system progression is demonstrated or the first concrete blocker is reproducibly isolated for the next milestone.
-8. Do not resume packages005,006,007 or008.
+1. Treat IOS-M2 as CLOSED / FINAL_COMPLETED on `main@4542112c90bb0f84a9a904726c54a3480ba07947`.
+2. Add storage-driver capability diagnostics to `RawFirmwareProvisioningService` using the existing BootKC kext listing.
+3. Publish the smallest diagnostic mutation to `main` without changing QEMU or downloading SystemOS.
+4. Run/consume exact-SHA Windows E2E and record storage candidates: ANS/NVMe/embedded storage, VirtIO block, APFS.
+5. Choose the guest storage transport from that evidence.
+6. Implement a minimal host-backed block-device proof and require guest-visible disk-node evidence.
+7. Only after transport proof, extract/stage SystemOS with `ipsw --dmg sys --device iPhone17,3` outside Git.
+8. Proceed to APFS System/Preboot discovery.
+9. Do not resume packages005–009.
