@@ -1,26 +1,27 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: iOS Research Runtime <noreply@example.invalid>
-Date: Thu, 1 Oct 2026 17:35:00 +0000
-Subject: [PATCH] darwin: expose GPEX ECAM and MMIO windows
+Date: Thu, 1 Oct 2026 17:43:00 +0000
+Subject: [PATCH] darwin: expose GPEX root bus and PCI windows
 
-The GPEX root bus now realizes and lets QEMU instantiate the NVMe device, but
-the guest has no /dev/disk nodes. Map bounded ECAM and PCI MMIO aliases into
-the Darwin physical address space as the next prerequisite for guest PCI
-enumeration. DeviceTree discovery remains a separate evidence-driven step.
+Create the registered GPEX PCI host and map bounded ECAM/MMIO windows into
+Darwin physical memory. Keep DeviceTree advertisement as the next
+evidence-driven dependency if XNU still cannot enumerate NVMe.
 ---
- hw/arm/darwin.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ hw/arm/darwin.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -227,5 +227,26 @@ static void darwin_init(MachineState *ms) {
-     DeviceState *pcie = qdev_new("gpex-pcihost");
-     object_property_set_int(OBJECT(pcie), "num-irqs", 0, &error_fatal);
-     sysbus_realize_and_unref(SYS_BUS_DEVICE(pcie), &error_fatal);
+@@ -227,3 +227,28 @@ static void darwin_init(MachineState *ms) {
+     check_dtree(dt_root);
+ 
++    DeviceState *pcie = qdev_new("gpex-pcihost");
++    object_property_set_int(OBJECT(pcie), "num-irqs", 0, &error_fatal);
++    sysbus_realize_and_unref(SYS_BUS_DEVICE(pcie), &error_fatal);
 +
 +    /*
-+     * Bounded storage bring-up window.  Keep these low and outside Apple
++     * Bounded storage bring-up window. Keep these low and outside Apple
 +     * arm-io/DRAM; a later DeviceTree mutation will advertise them to XNU.
 +     */
 +    const hwaddr pcie_mmio_base = 0x10000000;
@@ -39,7 +40,7 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 +    memory_region_init_alias(pcie_mmio, OBJECT(pcie), "darwin-pcie-mmio",
 +                             mmio_region, pcie_mmio_base, pcie_mmio_size);
 +    memory_region_add_subregion(get_system_memory(), pcie_mmio_base, pcie_mmio);
- 
++
      info->has_mte = kc_uses_mte(info->bootkc_f.buf);
  
 -- 
