@@ -1,48 +1,33 @@
 # Manager plans
 
 ## Current planning state
+Manager generation: 23.
+IOS-M1: COMPLETED.
+IOS-M2: COMPLETED.
+IOS-M3: ACTIVE / WAIT_EXTERNAL_EVIDENCE.
+Product authority: `main@951575209542d70d9f370049b3d17cde83ee64cf`.
+PP-RM package: `IOS-M3-CONTINUOUS-010`.
 
-Manager generation: 22.
-IOS-M1 status: COMPLETED.
-IOS-M2 status: COMPLETED.
-IOS-M3 status: ACTIVE.
-Product authority: `main@4542112c90bb0f84a9a904726c54a3480ba07947`.
-PP-RM successor: `IOS-M3-CONTINUOUS-010`.
+## IOS-M3 phase 1 — storage driver capability
+Commit `951575209542d70d9f370049b3d17cde83ee64cf` uses the existing BootKC kext listing to emit bounded storage-capability diagnostics for:
+- AppleANS;
+- NVMe;
+- VirtIO;
+- embedded storage / NAND;
+- APFS.
 
-## IOS-M2 result
+No QEMU device model or system image was added.
 
-Exact-SHA Windows E2E run `36870111560` / job `110395408194` succeeded and completed the boundary probe.
-The guest sees recovery `/dev/md0` and devfs only. Full-system disk nodes and System/Preboot paths are absent.
+## Current action
+Await exact-SHA Windows E2E for `951575209542d70d9f370049b3d17cde83ee64cf`.
+When terminal evidence exists, classify which guest storage driver family is actually present.
 
-## IOS-M3 strategy — Full System Storage / APFS Bring-up
-
-### Phase 1 — storage driver capability evidence
-Use the BootKC kext listing already generated during provisioning.
-Persist bounded diagnostic lines for storage-related kernel components, including ANS/NVMe/embedded-storage, VirtIO block, APFS and related candidates.
-This requires no extra IPSW payload download.
-
-### Phase 2 — choose transport
-Reconcile the BootKC evidence with the pinned `qemu-sptm` machine model.
-Known architecture fact: `-M darwin` currently creates no PCI/virtio storage bus, while upstream `vmapple-virtio-blk` belongs to the separate `-M vmapple` machine.
-Choose the smallest transport compatible with drivers actually present in the iPhone kernel.
-
-### Phase 3 — storage-device proof
-Implement the minimum qemu-sptm/local DeviceTree changes needed for one host-backed raw image to appear as a guest block device.
-Acceptance: `/dev/disk*` or the native equivalent is reproducibly visible from the recovery root shell.
-
-### Phase 4 — system image material
-Only after transport proof, extract the iPhone17,3 SystemOS DMG with pinned `ipsw` using remote `--dmg sys --device iPhone17,3` semantics and stage it outside the repository.
-Do not store Apple firmware in Git.
-
-### Phase 5 — APFS bring-up
-Attach the staged image through the proven transport and obtain reproducible APFS container/volume discovery for System/Preboot.
-Then address required boot arguments, trust/security, or volume-group semantics from evidence.
-
-## Immediate action
-Publish the storage-capability logging mutation to `main`; consume exact-SHA Windows E2E; then decide the transport.
+## After evidence
+1. If native ANS/NVMe drivers are present and VirtIO is absent, target a minimal native-compatible device model/DeviceTree path.
+2. If a usable VirtIO block driver is present, evaluate the smallest way to expose an Apple-compatible virtio block transport to the darwin machine.
+3. Build one host-backed block-device proof.
+4. Require guest-visible disk-node evidence before SystemOS download.
+5. Only then extract/stage SystemOS outside Git and proceed to APFS System/Preboot discovery.
 
 ## PP-RM
-Package010 is clean successor state. It may be activated when the current live carrier enters external-evidence wait. Never resume package009.
-
-## OCB
-Explicit safety/safety-check block only; maximum three exact-identical attempts; no fourth.
+Package010 owns the external-evidence wait and bounded continuation. Never resume package009.
