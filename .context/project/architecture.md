@@ -2,7 +2,7 @@
 
 ## DECISION — Product architecture
 
-The first-milestone product has four main layers:
+The product has four main layers:
 
 1. Windows WPF GUI in `src/IOSResearchRuntime`;
 2. provisioning services that acquire pinned tools/resources, extract IPSW material, patch firmware metadata, rebuild the recovery ramdisk, and construct trust-cache inputs;
@@ -17,7 +17,7 @@ The GUI delegates product work to services such as the runtime coordinator, tool
 - durable Project Manager state branch: `manager-state`;
 - discovery branch: `main`.
 
-Manager-state commits are not product releases and must not be used as substitutes for live product evidence on `main`.
+Manager-state commits are not product releases and must not substitute for live product evidence on `main`.
 
 ## Execution architecture — PP-RM
 
@@ -31,8 +31,13 @@ PP-RM is the approved continuous execution Runtime for ordinary manager-directed
 - predecessor publishes and verifies handoff, then arms one successor as its final tool operation;
 - GitHub remains product/evidence infrastructure and is not the PP-RM ownership, heartbeat, mailbox, or baton control plane.
 
-Manager and PP-RM responsibilities are intentionally asymmetric: Manager decides direction, priority, work package, and high-level checkpoints; A/B continuously execute within that package and return evidence when strategic review is required.
+Manager and PP-RM responsibilities are asymmetric: Manager decides direction, priority, package, and strategic checkpoints; A/B execute within that package.
 
-## Current boot boundary
+## Verified current boot boundary
 
-Current product code is equivalent to baseline `3b0f564...`; exact historical E2E on that code reached `BSD root: md0` and failed APFS root mount with error 79. Later historical commits proved a raw-APFS packaging correction can move this path to recovery `launchd`, but that later product state is not currently on `main`.
+IOS-M1 is complete on `main@95caa93fc8fd0db827491e679628efa40612b55c`.
+Exact-SHA Windows E2E run `36844422600` / job `110311023233` proves recovery Darwin, recovery `launchd`, an interactive root shell, Darwin kernel identity, `whoami=root`, root filesystem listing and the proof-end marker.
+
+The same run later fails at workflow level because QEMU/integration harness does not terminate cleanly after proof. Repeated `AppleSEPManager` endpoint timeout messages are also present. Neither observation invalidates IOS-M1.
+
+The active architecture question is IOS-M2: identify the exact boundary between this recovery/root-shell environment and full iOS system userland. The first method is a post-root diagnostic probe; speculative QEMU hardware changes are deferred until runtime evidence classifies the blocker.
