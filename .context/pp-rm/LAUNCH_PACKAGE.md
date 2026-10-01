@@ -1,43 +1,37 @@
 # PP-RM Launch Package — generation 19
 
-Status: FINAL_COMPLETED
-Manager generation: 19
-Package: `IOS-M1-CONTINUOUS-008`
-Product start: `main@a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`
-Final product: `main@95caa93fc8fd0db827491e679628efa40612b55c`
-Terminal runtime generation: 8
+Status: PREPARED / LIVE-FIRST
+Manager generation: 20
+Package: `IOS-M2-CONTINUOUS-009`
+Product baseline: `main@95caa93fc8fd0db827491e679628efa40612b55c`
+Previous package: `IOS-M1-CONTINUOUS-008` — FINAL_COMPLETED / MUST NOT RESUME
 
-## Mission result
-IOS-M1 semantic mission: SUCCESS.
+## Mission
+IOS-M2 — Full iOS Boot Boundary.
 
-Exact-SHA Windows End-to-End Boot run `36844422600`, job `110311023233` proves:
-- launchd running;
-- bash successfully spawned;
-- interactive root shell;
-- Darwin Kernel Version 27.0.0 RELEASE_ARM64_T8140;
-- `whoami=root`;
-- root filesystem listing;
-- proof-end marker.
+Determine the first verified technical boundary between the working recovery/root-shell environment and full iOS system userland.
 
-The workflow conclusion is FAILURE because QEMU/integration harness did not terminate after successful proof. This is a post-proof harness problem, not a failed IOS-M1 acceptance.
+## Acceptance
+Complete IOS-M2 when exact runtime evidence establishes either:
+- progression into full system userland/system-launchd territory; or
+- the first concrete blocking dependency with enough reproducible evidence to define the next bounded mutation without speculation.
 
-## Terminal cleanup
-- Mailbox: FINAL_COMPLETED
-- activation token: REVOKED
-- Worker A: disabled
-- Worker B: disabled
-- Watchdog: disabled
-- no final-generation product mutation
+## First bounded step
+Preserve the proven IOS-M1 root-shell path and add a post-root diagnostic probe for mounts/filesystem topology, system/preboot paths, visible disk/device nodes and launchd/service state.
 
-## Runtime architecture retained for future packages
-Generation16 native two-phase mutation.
-Generation17 recurring-backstop Watchdog.
-Generation18 result-first workflow evidence.
-Generation19 WAIT_EXTERNAL_EVIDENCE.
-OCB3.
+Push the smallest diagnostic change to `main`, consume exact-SHA Windows E2E evidence, then classify the boundary before changing QEMU, provisioning or security semantics.
+
+## Execution ownership
+The direct Owner-facing live runtime owns the first bounded step.
+Workers A/B and Watchdog remain unarmed while this live carrier performs the same work.
+If execution reaches an external-evidence wait or continuity boundary, the Manager may activate this clean package using the retained generation16–19 protocol and a fresh activation tuple.
+
+## Runtime architecture retained
+- generation16 native two-phase mutation;
+- generation17 recurring-backstop Watchdog;
+- generation18 result-first workflow evidence;
+- generation19 WAIT_EXTERNAL_EVIDENCE;
+- OCB3.
 
 ## Supersession
-Packages005,006,007 and this completed package008 MUST NOT resume.
-
-## Next
-No successor package is authorized until Owner and Project Manager define the next milestone.
+Packages005,006,007 and completed package008 MUST NOT resume.
