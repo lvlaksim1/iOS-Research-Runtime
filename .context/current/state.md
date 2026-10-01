@@ -1,48 +1,53 @@
 # Current state
 
-Updated: 2026-09-30 23:51 MSK
+Updated: 2026-10-01 11:04 MSK
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
-- manager generation: 18
+- manager generation: 19
 - product authority: `main`
-- PP-RM version: generation18 result-first workflow evidence + generation17 recurring-backstop Watchdog + generation16 native two-phase mutation
-- execution status: RUNNING
-- active package: `IOS-M1-CONTINUOUS-007`
+- PP-RM: generation19 persistent external-evidence wait + generation18 result-first evidence + generation17 recurring Watchdog + generation16 native two-phase mutation
+- execution status: OWNER-AUTHORIZED / RESTARTING
+- package to launch: `IOS-M1-CONTINUOUS-008`
 
 ## Product
-- live main: `a0d0dd1a9f95543dca25bfb647e1f67e3d4e1e18`
-- package007 generation2 published the first gate-parser correction from baseline `4821fb9a...`
-- publication used frozen MUTATION_READY; update_ref attempts1-2 explicit OSB, exact-identical attempt3 SUCCESS; authoritative readback confirmed target
-- exact-main `rcodesign Windows Gate` run `36775221102`: completed SUCCESS
-- exact-main Windows Build run `36775221081`: observed in progress at the latest GitHub checkpoint
+- live main: `a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`
+- exact-main Windows Build run `36798385752`: SUCCESS
+- exact-main Windows End-to-End Boot run `36798385755`: completed FAILURE
+- E2E job `110166966978`: steps 1-11 SUCCESS, including bundled patched rcodesign build; step 12 `Run provisioning and Darwin root-shell proof`: FAILURE
+- failure evidence collection/upload: SUCCESS
+- observed failure evidence includes repeated `waitForSEPEndpoint: timed out waiting for AppleSEPManager`
+- verified root shell remains unproven
 
-## Result-first findings
-Generation1 consumed existing run `36771957949` instead of dispatching a new workflow and proved that the previous gate was false-positive:
-- actual primary CodeDirectory digest_type = SHA1
-- alternate CodeDirectory digest_type = SHA256
-- original parser failed to delimit the primary block because it expected the wrong alternate-slot name
+## Package007 terminal
+Package `IOS-M1-CONTINUOUS-007` reached `OWNER_GATE` at runtime generation78 after one result-first search did not yet observe an exact-SHA E2E run and the connector lacked start-new-workflow capability.
 
-Generation3 then reconciled run `36775221102` on `a0d0dd1...` and found a second parser defect:
-- rcodesign emits `slot: 'CodeDirectory Alternate #0 (4096)'`
-- the parser allowed `CodeDirectory Alternate` but did not allow the quote immediately after `slot:`
-- the gate therefore still falsely passed while the actual signature remained SHA1-primary + SHA256-alternate
+The exact-SHA E2E run later appeared automatically through `push`. Therefore the Owner gate was a false terminalization caused by treating temporary external-evidence absence as a terminal condition.
 
-## Current PP-RM baton
-- generation: 4
-- owner: Worker A
-- state: MUTATION_READY
-- activation_attempt: 1
-- mutation_id: `iosm1c7-mut-0003-fix-quoted-alternate-slot`
-- baseline: `a0d0dd1a9f95543dca25bfb647e1f67e3d4e1e18`
-- frozen target: `79393c0d0797fc88d02445e9afb58484dd50c6f1`
-- force: false
-- target change: allow the optional quote before alternate CodeDirectory slot detection only
-- no mutable side effect from generation3
+Package007 is superseded and MUST NOT resume.
 
-## Continuity
-Watchdog remains enabled with persistent hourly RRULE backstop.
-Packages005 and006 are terminal/superseded and MUST NOT resume.
+## Generation19 correction
+Introduce nonterminal `WAIT_EXTERNAL_EVIDENCE`.
+
+A single negative workflow search can never directly produce OWNER_GATE.
+When required exact-SHA evidence is absent or still queued/in_progress:
+- Workers stop product work and publish WAIT_EXTERNAL_EVIDENCE;
+- Workers remain disabled;
+- recurring Watchdog stays enabled and owns observation;
+- Watchdog performs independent later exact-SHA observations;
+- any terminal run conclusion is evidence and resumes a fresh Worker for analysis;
+- no duplicate workflow is started while a qualifying run is queued/in_progress.
+
+OWNER_GATE for missing workflow-start capability is permitted only after at least 3 independent negative Watchdog observations, at least 15 minutes since wait_started_at, no qualifying queued/in-progress/terminal exact-SHA run, and a new run is actually required.
+
+## Preserved invariants
+- exactly five PP-RM tasks
+- generation16 frozen-target MUTATION_READY publication
+- generation17 recurring-hourly Watchdog
+- generation18 result-first workflow search
+- OCB3
+- no Lifeboat, sixth task, extra slot or GitHub continuity fence
 
 ## Current next action
-Fresh generation4 mutation executor must reconcile authoritative main and, only if main still equals frozen baseline, publish exactly `79393c0d...` with force=false under OCB3. After publication, consume the exact-SHA gate result using the result-first rule before any signer mutation.
+Launch package008 from `main@a380f783...`.
+Initial Worker B must consume existing E2E run `36798385755`, inspect failure evidence around provisioning/root-shell and AppleSEPManager timeout behavior, then execute one smallest bounded diagnostic/fix unit.

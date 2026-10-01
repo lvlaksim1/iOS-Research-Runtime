@@ -1,42 +1,37 @@
 # Latest handoff
 
-Updated: 2026-09-30 23:51 MSK
+Updated: 2026-10-01 11:04 MSK
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 18.
-Product authority: `main@a0d0dd1a9f95543dca25bfb647e1f67e3d4e1e18`.
-Active package: `IOS-M1-CONTINUOUS-007`.
-Execution status: RUNNING.
+Manager generation: 19.
+Product authority: `main@a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`.
+Next active package: `IOS-M1-CONTINUOUS-008`.
 
-## Generation18 correction in production
-The result-first workflow rule is active and has already prevented a repeat of the package006 false Owner gate. Existing exact-SHA runs are consumed before any dispatch attempt.
+## Superseded package007
+Package007 reached OWNER_GATE at runtime generation78 because its result-first search did not yet observe an exact-SHA E2E run and start-new-workflow capability was unavailable.
 
-## Package007 evidence
-Generation1 / Worker B:
-- consumed existing run `36771957949` on exact main instead of dispatching;
-- raw evidence disproved strict SHA256-primary despite workflow SUCCESS;
-- found first parser bug in alternate-slot detection;
-- prepared parser-only target `a0d0dd1...`.
+After terminalization, exact-SHA E2E run `36798385755` appeared automatically via push and completed FAILURE. Thus the required external evidence became available without Owner action. Package007 is terminal/superseded and MUST NOT resume.
 
-Generation2 / Worker A:
-- executed the frozen mutation;
-- update_ref attempts1-2 explicit OSB; exact-identical attempt3 SUCCESS;
-- readback confirmed `main@a0d0dd1...`.
+## Exact-main evidence
+- Windows Build `36798385752`: SUCCESS
+- Windows End-to-End Boot `36798385755`: FAILURE
+- E2E job `110166966978`
+- steps 1-11 SUCCESS, including bundled patched rcodesign build
+- step 12 provisioning/root-shell proof FAILURE
+- failure evidence collection/upload SUCCESS
+- repeated AppleSEPManager endpoint timeouts observed
+- root shell not verified
 
-Generation3 / Worker B:
-- consumed automatically generated exact-SHA run `36775221102` by result-first logic;
-- raw log again showed primary `digest_type: sha1` and alternate `digest_type: sha256`;
-- found second parser bug: actual slot text contains a quote after `slot:`;
-- prepared immutable parser-only target `79393c0d0797fc88d02445e9afb58484dd50c6f1`;
-- no mutable ref change in generation3.
+## Generation19
+Add persistent `WAIT_EXTERNAL_EVIDENCE`.
 
-## Current baton
-Generation4 / Worker A / `MUTATION_READY`.
-Frozen descriptor:
-- mutation_id `iosm1c7-mut-0003-fix-quoted-alternate-slot`
-- baseline `a0d0dd1a9f95543dca25bfb647e1f67e3d4e1e18`
-- target `79393c0d0797fc88d02445e9afb58484dd50c6f1`
-- force=false
+Worker encountering absent/in-progress required run publishes WAIT and stops without arming a Worker.
+Recurring Watchdog remains alive and performs independent observations.
+A terminal exact-SHA run causes Watchdog to create a fresh READY baton and arm the designated resume Worker.
+OWNER_GATE is delayed until >=3 independent negative Watchdog observations and >=15 minutes elapsed, with no exact-SHA run and no authorized way to produce a truly required run.
 
-## Next
-Execute only the frozen parser mutation after authoritative reconciliation, then consume the resulting exact-SHA gate run and require truthful strict-primary evidence before any signer mutation.
+## Preserved mechanics
+Generation16 frozen mutation, generation17 recurring Watchdog, generation18 result-first workflow evidence, OCB3, exactly five tasks.
+
+## Resume point
+Package008 starts clean. Worker B first consumes run `36798385755` and analyzes the AppleSEPManager/root-shell failure before choosing one smallest bounded next unit.

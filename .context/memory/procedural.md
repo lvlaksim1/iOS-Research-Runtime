@@ -1,17 +1,17 @@
 # Procedural memory
 
-Updated: 2026-09-30 23:51 MSK
+Updated: 2026-10-01 11:04 MSK
 
-- PP-RM generation18/package007 is RUNNING.
-- Result-first workflow evidence is mandatory: search existing exact-SHA runs before any dispatch attempt.
-- A workflow SUCCESS is accepted only if its actual evidence satisfies the gate; a defective assertion can yield a false-positive SUCCESS and must be detected by log/artifact reconciliation.
-- Package007 generation1 consumed existing run `36771957949` and found SHA1-primary + SHA256-alternate despite SUCCESS.
-- First parser correction was published as `main@a0d0dd1a9f95543dca25bfb647e1f67e3d4e1e18`.
-- That publication used frozen MUTATION_READY and OCB3: attempts1-2 explicit OSB, attempt3 SUCCESS.
-- Exact-SHA run `36775221102` on `a0d0dd1...` also completed SUCCESS but raw log still showed SHA1-primary + SHA256-alternate.
-- Second parser defect: rcodesign emits `slot: 'CodeDirectory Alternate #0 (4096)'`; parser did not allow the quote immediately after `slot:`.
-- Current frozen target `79393c0d0797fc88d02445e9afb58484dd50c6f1` changes alternate-slot detection only.
-- Current baton: generation4 Worker A MUTATION_READY, baseline `a0d0dd1...`, target `79393c0d...`, force=false.
-- Do not mutate signer until the gate itself truthfully detects SHA1-primary versus SHA256-primary.
-- Generation16 two-phase mutation, generation17 recurring Watchdog and OCB3 remain unchanged.
-- Packages005 and006 must not resume.
+- Manager generation19/package008 is Owner-authorized.
+- Packages005,006,007 are terminal/superseded and must not resume.
+- Product main at package008 bootstrap is `a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`.
+- Exact-main E2E run `36798385755` exists and completed FAILURE; Windows Build `36798385752` SUCCESS.
+- E2E steps 1-11 succeeded, including bundled patched rcodesign build; provisioning/root-shell proof failed; failure evidence upload succeeded.
+- AppleSEPManager endpoint timeout repetition is current product evidence.
+- Generation19 adds nonterminal `WAIT_EXTERNAL_EVIDENCE`.
+- A single negative exact-SHA run search never produces OWNER_GATE.
+- Workers enter WAIT when required run is absent or queued/in_progress and do not arm another Worker.
+- Recurring Watchdog owns later external-evidence observation.
+- Terminal external evidence creates a fresh READY generation and wakes wait_resume_owner_slot.
+- OWNER_GATE for unavailable start-new-workflow requires >=3 independent negative Watchdog observations AND >=15 minutes elapsed AND no exact-SHA run AND a genuinely required new run.
+- Generation16 frozen mutation, generation17 recurring Watchdog, generation18 result-first evidence and OCB3 remain unchanged.

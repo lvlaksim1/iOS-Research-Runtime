@@ -1,23 +1,22 @@
 # Manager beliefs
 
-- Persistent Project Manager `ios-research-runtime-project-manager` remains the project commitment owner; product authority is `main`, Manager authority is `manager-state`.
-- Current live product authority is `main@4821fb9a9cd72dd40af2a518962f180fb4344fe7`.
-- Manager generation18 is the accepted PP-RM control logic under direct Owner authority.
-- Package `IOS-M1-CONTINUOUS-006` is terminal `FAIL_STOP_OWNER_GATE` at runtime generation16 and MUST NOT be resumed.
-- Package `IOS-M1-CONTINUOUS-007` is the authorized clean successor.
+- Persistent Project Manager `ios-research-runtime-project-manager` remains commitment owner; product authority is `main`, Manager authority is `manager-state`.
+- Current product authority is `main@a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`.
+- Manager generation19 is the accepted PP-RM control logic under direct Owner authority.
+- Packages005,006 and007 are terminal/superseded and MUST NOT resume.
+- Package008 is the authorized clean successor.
 - Topology remains exactly five Scheduled Tasks: Worker A, Worker B, Runtime Mailbox, Trace, Watchdog.
 - Worker A/B prompts and Watchdog prompt are immutable during each active package.
-- Generation16 native two-phase mutation remains authoritative: READY/PREPARE may create immutable Git objects but MUST NOT move mutable refs; MUTATION_READY is executed by a fresh runtime constrained to one frozen target.
-- Generation17 recurring Watchdog remains authoritative: every armed Watchdog retains an hourly RRULE; healthy runtimes slide the same task to approximately +5m while keeping the hourly backstop.
-- Workflow evidence is result-first and trigger-agnostic unless a test explicitly depends on trigger semantics.
-- Before attempting a new workflow dispatch, PP-RM MUST search existing runs for the required workflow on the exact required SHA.
-- A qualifying exact-SHA SUCCESS run satisfies the workflow gate regardless of whether its event is `push`, `workflow_dispatch`, rerun, or another authorized event.
-- A qualifying queued/in-progress run is observed rather than duplicated.
-- A failed/cancelled run may use authorized rerun-existing capability when appropriate.
-- Missing start-new-workflow capability is not an OWNER_GATE while a usable exact-SHA run already exists.
-- OWNER_GATE for missing dispatch capability is allowed only when a new run is actually required and no authorized path can produce it.
-- Exact-main `rcodesign Windows Gate` run `36771957949` on `4821fb9a...` completed SUCCESS, including signed-proof upload.
-- Exact-main Windows Build run `36771957738` completed SUCCESS.
-- The next product unit is to extract strict primary-SHA256 evidence from the successful gate and then continue toward exact-SHA E2E/root-shell verification.
+- Generation16 native two-phase mutation remains authoritative.
+- Generation17 recurring Watchdog remains authoritative.
+- Generation18 result-first workflow evidence remains authoritative.
+- Generation19 adds `WAIT_EXTERNAL_EVIDENCE` so temporary absence of an external run is not terminal.
+- One negative workflow observation can never directly produce OWNER_GATE.
+- When a required exact-SHA run is absent or queued/in-progress, Workers stop and recurring Watchdog owns later observation.
+- Any terminal exact-SHA run is evidence worth waking a fresh Worker to analyze, including failure/cancelled/timed_out/action_required; workflow failure is not itself an Owner gate.
+- Watchdog may transition WAIT to a fresh READY generation when terminal evidence appears.
+- OWNER_GATE for missing start-new-workflow capability requires at least 3 independent negative Watchdog observations, at least 15 minutes since wait_started_at, no qualifying exact-SHA run in any observable state, and a genuinely required new run.
+- Exact-main E2E `36798385755` exists and failed at provisioning/root-shell proof; failure evidence upload succeeded.
+- Repeated AppleSEPManager endpoint timeouts are current product evidence, not a runtime-control failure.
 - dispatch_retry remains separate from activation_attempt.
-- OCB remains explicit OpenAI safety/safety-check block only, maximum three exact-identical attempts total, no fourth attempt.
+- OCB is explicit OpenAI safety/safety-check block only, maximum three exact-identical attempts total, no fourth.

@@ -1,13 +1,14 @@
 # Next actions
 
-Updated: 2026-09-30 23:51 MSK
+Updated: 2026-10-01 11:04 MSK
 
-1. Continue package `IOS-M1-CONTINUOUS-007` from generation4 Worker A MUTATION_READY.
-2. Reconcile authoritative main against frozen baseline `a0d0dd1a...` and target `79393c0d...`.
-3. If main==baseline, publish exactly the frozen target with `force=false` under OCB3; if main==target, treat mutation as already successful; if neither, FAIL_STOP.
-4. After successful publication, use result-first workflow logic: consume the automatically created exact-SHA rcodesign Windows Gate run before considering any dispatch.
-5. Verify from raw log/artifact that the corrected gate now fails when actual signature is SHA1-primary + SHA256-alternate.
-6. Only after the gate itself is trustworthy, design or apply the smallest signer correction that can produce true SHA256-primary.
-7. Require direct post-sign evidence of `digest_type: sha256` in the primary CodeDirectory and absence/acceptable treatment of alternate CodeDirectory according to the test contract.
-8. Preserve generation16 frozen-target publication, generation17 recurring Watchdog, generation18 result-first workflow evidence, OCB3 and dispatch/runtime separation.
-9. Never resume package005 or package006.
+1. Publish Manager generation19 and DEC-0017 atomically to `manager-state`.
+2. Configure the existing five PP-RM tasks for clean package `IOS-M1-CONTINUOUS-008`; do not resume package007.
+3. Seed package008 from authoritative `main@a380f7839f04ea9f7e3a87e2342fb76b6697e9b6`.
+4. Initial Worker B consumes existing exact-SHA E2E run `36798385755`; no workflow dispatch is needed.
+5. Reconcile step-12 failure evidence, especially AppleSEPManager endpoint timeouts, then perform one smallest bounded diagnostic/fix unit.
+6. If a later required workflow run is absent or queued/in-progress, publish `WAIT_EXTERNAL_EVIDENCE` instead of OWNER_GATE and leave recurring Watchdog enabled.
+7. Watchdog independently re-observes exact-SHA workflow state; terminal evidence wakes a fresh Worker.
+8. OWNER_GATE for missing workflow-start capability requires >=3 independent negative Watchdog observations, >=15 minutes elapsed, no exact-SHA run, and an actually required new run.
+9. Preserve generation16 frozen-target publication, generation17 recurring Watchdog, generation18 result-first evidence, OCB3 and dispatch/runtime separation.
+10. Never resume packages005,006 or007.
