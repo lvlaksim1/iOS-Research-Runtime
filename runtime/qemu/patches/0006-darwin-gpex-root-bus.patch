@@ -1,15 +1,15 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: iOS Research Runtime <noreply@example.invalid>
-Date: Thu, 1 Oct 2026 15:30:00 +0000
+Date: Thu, 1 Oct 2026 16:08:00 +0000
 Subject: [PATCH] darwin: instantiate a minimal GPEX PCIe root bus
 
 The darwin machine has no PCI bus, so generic PCI devices fail before guest
 boot with "No PCI bus found for device nvme". Realize QEMU's generic GPEX
 host bridge so -device nvme can attach to a PCIe root bus.
 
-Use the QOM type name directly so this bounded probe does not depend on an
-additional header-context hunk. This intentionally does not yet map ECAM/MMIO
-or describe PCIe to the Apple DeviceTree.
+Use the QOM type name and generic object property API directly so this bounded
+probe does not require qdev-properties include plumbing. This intentionally
+does not yet map ECAM/MMIO or describe PCIe to the Apple DeviceTree.
 ---
  hw/arm/darwin.c | 4 ++++
  1 file changed, 4 insertions(+)
@@ -23,7 +23,7 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
      check_dtree(dt_root);
 +
 +    DeviceState *pcie = qdev_new("gpex-host");
-+    qdev_prop_set_uint32(pcie, "num-irqs", 0);
++    object_property_set_int(OBJECT(pcie), "num-irqs", 0, &error_fatal);
 +    sysbus_realize_and_unref(SYS_BUS_DEVICE(pcie), &error_fatal);
  
      info->has_mte = kc_uses_mte(info->bootkc_f.buf);
