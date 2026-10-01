@@ -1,45 +1,31 @@
 # PP-RM Launch Package — generation 19
 
-Status: RUNNING / WAIT_EXTERNAL_EVIDENCE
-Manager generation: 21
-Package: `IOS-M2-CONTINUOUS-009`
-Product start: `main@95caa93fc8fd0db827491e679628efa40612b55c`
-Current product: `main@24730a74051378d228efd370f3baee5a4f46bdfa`
-Previous package: `IOS-M1-CONTINUOUS-008` — FINAL_COMPLETED / MUST NOT RESUME
+Status: PREPARED / LIVE-FIRST
+Manager generation: 22
+Package: `IOS-M3-CONTINUOUS-010`
+Product baseline: `main@4542112c90bb0f84a9a904726c54a3480ba07947`
+Previous package: `IOS-M2-CONTINUOUS-009` — FINAL_COMPLETED / MUST NOT RESUME
 
 ## Mission
-IOS-M2 — Full iOS Boot Boundary.
+IOS-M3 — Full System Storage / APFS Bring-up.
 
-Determine the first verified technical boundary between the working recovery/root-shell environment and full iOS system userland.
+Establish a guest-visible full-system storage path under the proven Windows `-M darwin` boot flow, then progress toward System/Preboot APFS discovery.
 
-## Acceptance
-Complete IOS-M2 when exact runtime evidence establishes either:
-- progression into full system userland/system-launchd territory; or
-- the first concrete blocking dependency with enough reproducible evidence to define the next bounded mutation without speculation.
+## First acceptance gate
+Determine the viable storage transport from exact evidence:
+- storage-related drivers present in the iPhone17,3 BootKC;
+- compatibility with the pinned qemu-sptm darwin machine;
+- no speculative SystemOS download before a guest consumer exists.
 
-## First bounded step — published
-Commit `24730a74051378d228efd370f3baee5a4f46bdfa` preserves the proven IOS-M1 root-shell path and adds a post-root diagnostic probe for:
-- mounts/filesystem topology;
-- `/System/Volumes`;
-- `/private/preboot`;
-- visible `/dev/disk*` nodes;
-- `launchctl list`.
+## First bounded step
+Instrument the existing `ipsw kernel kexts bootkc` validation to emit bounded storage-driver capability lines for ANS/NVMe/embedded storage, VirtIO block, APFS and related candidates.
 
-No QEMU hardware, provisioning or trust/security semantics were changed.
+Publish the smallest diagnostic change to `main`, consume exact-SHA Windows E2E, then choose the transport.
 
-## Current wait
-Expected workflow: `.github/workflows/windows-e2e.yml`.
-Expected exact head: `24730a74051378d228efd370f3baee5a4f46bdfa`.
-Mailbox state: `WAIT_EXTERNAL_EVIDENCE`.
-Resume slot after terminal evidence: Worker A.
-Watchdog may perform read-only GitHub reconciliation only while waiting.
-
-## Runtime architecture retained
-- generation16 native two-phase mutation;
-- generation17 recurring-backstop Watchdog;
-- generation18 result-first workflow evidence;
-- generation19 WAIT_EXTERNAL_EVIDENCE;
-- OCB3.
+## Execution ownership
+The direct Owner-facing runtime owns the first bounded step.
+Workers A/B and Watchdog remain unarmed while the live carrier performs that same work.
+If execution reaches external-evidence wait, initialize package010 Mailbox/Trace and activate the Watchdog using retained generation16–19 semantics.
 
 ## Supersession
-Packages005,006,007 and completed package008 MUST NOT resume.
+Packages005–009 MUST NOT resume.
