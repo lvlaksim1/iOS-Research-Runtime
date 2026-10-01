@@ -109,10 +109,17 @@ public sealed class QemuRuntime : IDisposable
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        // QEMU's mon:stdio multiplexer uses Ctrl-A (0x01) as its escape byte.
-        // Ordinary guest serial input, including underscores, must be forwarded
-        // unchanged. Mux commands are sent explicitly by StopAsync.
-        await process.StandardInput.WriteLineAsync(line);
+        // Pace guest-console input. Writing a whole proof burst to redirected
+        // stdio can overrun the recovery console/TTY input path even though QEMU
+        // accepted the host-side write, leaving only a suffix visible to bash.
+        foreach (var character in line)
+        {
+            await process.StandardInput.WriteAsync(character);
+            await process.StandardInput.FlushAsync(cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
+        }
+
+        await process.StandardInput.WriteAsync('\n');
         await process.StandardInput.FlushAsync(cancellationToken);
     }
 
