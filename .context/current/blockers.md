@@ -1,31 +1,29 @@
 # Current blockers and open risks
 
-Updated: 2026-10-01 15:18 MSK
+Updated: 2026-10-01 17:09 MSK
 
-## IOS-M1
-No blocker remains. IOS-M1 is complete.
+## IOS-M1 / IOS-M2
+No blocker remains. Both milestones are complete.
 
-## IOS-M2
-The immediate blocker is evidence availability/classification, not project direction.
-A post-root diagnostic probe is now committed on `main@24730a74051378d228efd370f3baee5a4f46bdfa`; the next required fact is exact-SHA Windows E2E output.
+## IOS-M3
+The first blocker is storage transport selection.
 
-Unknowns to classify from that output:
-- whether full-system/preboot volumes or required material are present;
-- what storage/device nodes the current QEMU Darwin machine exposes;
-- whether current launchd can see/start the service graph needed for transition;
-- whether the first hard dependency is provisioning, mount topology, launchd/bootstrap, trust/security/SEP, QEMU hardware behavior, or another class.
+Proven:
+- full-system disk nodes are absent in the guest;
+- the current application does not attach a system disk;
+- upstream qemu-sptm `-M darwin` does not currently create the `vmapple` PCI/virtio storage path.
 
-No one possibility is yet promoted to root cause.
+Unknown to resolve next:
+- whether the iPhone17,3 BootKC contains a native VirtIO block driver;
+- which ANS/NVMe/embedded-storage drivers are present and therefore represent the more native emulation target;
+- whether a minimal DeviceTree/device-model addition can expose a host-backed block image without broad machine-model surgery.
 
-## Known residual issues
-- post-proof QEMU/integration harness nontermination can make an evidence-producing E2E run conclude FAILURE;
-- repeated `AppleSEPManager` endpoint timeouts remain;
-- graphical/user iOS and SpringBoard remain unproved.
+SystemOS extraction is deliberately deferred until this transport question is answered, to avoid expensive CI downloads without a guest consumer.
+
+## Residual observations
+Repeated `AppleSEPManager` endpoint timeouts remain unassigned as a causal blocker.
+GUI/SpringBoard remain later milestones.
 
 ## Runtime
-Package `IOS-M2-CONTINUOUS-009` is initialized in `WAIT_EXTERNAL_EVIDENCE`.
-Mailbox/Trace and Worker programs are prepared for package009.
-Watchdog is the designated read-only evidence-wait carrier; Workers stay disabled until terminal exact-SHA evidence is available.
-
-## Residual PP-RM risks
-GitHub visibility lag, Scheduled Task delivery delay, hourly Watchdog floor, lack of CAS, stale already-running work, frozen mutation descriptor requirements, and OCB3 remain applicable.
+Package009 is terminal FINAL_COMPLETED.
+Package010 is the clean IOS-M3 successor and may be activated when external evidence is required.
