@@ -29,6 +29,15 @@ static int ReadIntOption(string[] args, string name, int defaultValue)
     return value;
 }
 
+static async Task SendProbeLineAsync(
+    QemuRuntime runtime,
+    string line,
+    CancellationToken cancellationToken)
+{
+    await runtime.SendLineAsync(line, cancellationToken);
+    await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
+}
+
 var applicationDirectory = Path.GetFullPath(RequireOption(args, "--application-directory"));
 var dataDirectory = Path.GetFullPath(RequireOption(args, "--data-directory"));
 var timeoutMinutes = ReadIntOption(args, "--timeout-minutes", 45);
@@ -94,6 +103,8 @@ var proofCompleted = new TaskCompletionSource(
     TaskCreationOptions.RunContinuationsAsynchronously);
 var bootProgress = new TaskCompletionSource(
     TaskCreationOptions.RunContinuationsAsynchronously);
+var boundaryProbeCompleted = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
 
 coordinator.LogReceived += (_, line) =>
 {
@@ -116,6 +127,14 @@ coordinator.LogReceived += (_, line) =>
         proofCompleted.TrySetException(
             new InvalidOperationException(line));
     }
+
+    if (string.Equals(
+            line.Trim(),
+            "__IOS_M2_BOUNDARY_END__",
+            StringComparison.Ordinal))
+    {
+        boundaryProbeCompleted.TrySetResult();
+    }
 };
 
 coordinator.StatusChanged += (_, snapshot) =>
@@ -127,6 +146,7 @@ coordinator.StatusChanged += (_, snapshot) =>
         var exception = new InvalidOperationException(snapshot.Message);
         bootProgress.TrySetException(exception);
         proofCompleted.TrySetException(exception);
+        boundaryProbeCompleted.TrySetException(exception);
     }
 };
 
@@ -156,6 +176,46 @@ try
 
     Console.WriteLine("BOOT_PROOF_OK");
     Console.WriteLine($"BOOT_EVIDENCE={qemuRuntime.CurrentLogPath}");
+
+    Console.WriteLine("[integration] IOS-M2 post-root boundary probe start.");
+    var probeLines = new[]
+    {
+        "echo __IOS_M2_BOUNDARY_BEGIN__",
+        "echo __IOS_M2_PROBE_MOUNTS__",
+        "mount",
+        "echo __IOS_M2_PROBE_SYSTEM_VOLUMES__",
+        "ls -la /System/Volumes 2>&1",
+        "echo __IOS_M2_PROBE_PREBOOT__",
+        "ls -la /private/preboot 2>&1",
+        "echo __IOS_M2_PROBE_DEV_DISKS__",
+        "ls -la /dev/disk* 2>&1",
+        "echo __IOS_M2_PROBE_LAUNCHD__",
+        "launchctl list 2>&1",
+        "echo __IOS_M2_BOUNDARY_END__"
+    };
+
+    foreach (var probeLine in probeLines)
+    {
+        await SendProbeLineAsync(qemuRuntime, probeLine, cancellationToken);
+    }
+
+    using (var boundaryProbeTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+    {
+        boundaryProbeTimeout.CancelAfter(TimeSpan.FromMinutes(3));
+        try
+        {
+            await boundaryProbeCompleted.Task.WaitAsync(boundaryProbeTimeout.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            var evidencePath = qemuRuntime.CurrentLogPath ?? "<not-created>";
+            throw new TimeoutException(
+                "IOS-M2 post-root boundary probe did not reach its terminal marker within 3 minutes. " +
+                $"Boot evidence: {evidencePath}");
+        }
+    }
+
+    Console.WriteLine("IOS_M2_BOUNDARY_PROBE_OK");
 }
 finally
 {
