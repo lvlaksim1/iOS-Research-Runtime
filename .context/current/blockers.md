@@ -1,29 +1,22 @@
 # Current blockers and open risks
 
-Updated: 2026-10-01 17:09 MSK
-
-## IOS-M1 / IOS-M2
-No blocker remains. Both milestones are complete.
+Updated: 2026-10-01 17:13 MSK
 
 ## IOS-M3
-The first blocker is storage transport selection.
+Immediate blocker: exact evidence about storage drivers present in the actual iPhone17,3 BootKC.
 
-Proven:
-- full-system disk nodes are absent in the guest;
-- the current application does not attach a system disk;
-- upstream qemu-sptm `-M darwin` does not currently create the `vmapple` PCI/virtio storage path.
+Current architecture proves no full-system device is attached to `-M darwin`.
+Upstream `vmapple-virtio-blk` cannot be adopted blindly because it belongs to another machine model.
 
-Unknown to resolve next:
-- whether the iPhone17,3 BootKC contains a native VirtIO block driver;
-- which ANS/NVMe/embedded-storage drivers are present and therefore represent the more native emulation target;
-- whether a minimal DeviceTree/device-model addition can expose a host-backed block image without broad machine-model surgery.
+Await exact-SHA E2E for `main@951575209542d70d9f370049b3d17cde83ee64cf`.
 
-SystemOS extraction is deliberately deferred until this transport question is answered, to avoid expensive CI downloads without a guest consumer.
+After evidence, the next blocker will be one of:
+- native ANS/NVMe-compatible device emulation;
+- Apple VirtIO transport integration if the iPhone kernel actually contains a usable driver;
+- another directly evidenced storage class.
 
-## Residual observations
-Repeated `AppleSEPManager` endpoint timeouts remain unassigned as a causal blocker.
-GUI/SpringBoard remain later milestones.
+SystemOS extraction remains intentionally deferred.
 
 ## Runtime
-Package009 is terminal FINAL_COMPLETED.
-Package010 is the clean IOS-M3 successor and may be activated when external evidence is required.
+Package010 is active in WAIT_EXTERNAL_EVIDENCE.
+Packages005–009 are terminal/superseded.
