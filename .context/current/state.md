@@ -1,29 +1,37 @@
 # Current state
 
-Updated: 2026-10-01 17:13 MSK
+Updated: 2026-10-01 22:39 MSK
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
-- manager generation: 23
-- product authority: `main@951575209542d70d9f370049b3d17cde83ee64cf`
-- execution status: ACTIVE / IOS-M3 / WAIT_EXTERNAL_EVIDENCE
+- manager generation: 24
+- macro stage: LARGE STAGE 1 — Full iOS System Boot
+- product authority: `main@32dd17014113543862e756c7daa52822e2eec073`
+- execution status: ACTIVE / WAIT_EXTERNAL_EVIDENCE
 - active package: `IOS-M3-CONTINUOUS-010`
+- PP-RM runtime schema: 10
 
-## Completed foundation
-IOS-M1 complete.
-IOS-M2 complete: exact-SHA E2E `36870111560` / `110395408194` SUCCESS isolated the missing full-system storage boundary.
+## Product progress
+Recovery/root-shell foundation remains reproducible.
+GPEX/PCIe root plumbing and bounded ECAM/MMIO windows are present in the darwin machine.
+Exact-SHA E2E `36908440572` on `82c710bd243a57f89964a8c381879e14f1a0b4fc` succeeded, but `/dev/disk*` remained absent.
+Generation45 identified Apple I/O hierarchy as the next bounded dependency.
 
-## IOS-M3 product progress
-Commit `951575209542d70d9f370049b3d17cde83ee64cf` is published to main.
-It adds no new download and no QEMU/storage mutation.
-It emits BootKC storage capability evidence from the existing kext listing.
+Commit `32dd17014113543862e756c7daa52822e2eec073` moves the PCIe discovery node from DeviceTree root under `arm-io`.
 
 ## Current wait
-Expected workflow: `.github/workflows/windows-e2e.yml`.
-Expected exact head: `951575209542d70d9f370049b3d17cde83ee64cf`.
-Required output: `[storage-capability]` lines identifying ANS/NVMe/VirtIO/embedded-storage/APFS candidates.
+Workflow: Windows End-to-End Boot.
+Exact head: `32dd17014113543862e756c7daa52822e2eec073`.
+Run: `36915159246`.
+State: in progress / WAIT_EXTERNAL_EVIDENCE.
+Resume owner: Worker B.
+
+## PP-RM resilience
+DEC-0018 adopted.
+OCB3 no longer implies OWNER_GATE.
+Transient OCB is recovered by fresh Worker runtime, alternate compliant path, or Watchdog OCB_BACKOFF.
+Only a genuine no-compliant-path safety/governance boundary may terminalize on safety grounds.
 
 ## Constraints
-Do not download SystemOS in normal E2E until transport is proven.
-Do not infer AppleSEPManager as causal blocker without evidence.
-Packages005–009 must not resume.
+Do not stage SystemOS until guest-visible storage is evidenced.
+Packages005–009 remain terminal/superseded and must not resume.
