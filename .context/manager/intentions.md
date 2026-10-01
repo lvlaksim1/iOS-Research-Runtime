@@ -8,23 +8,27 @@
 - authoritative product: `main@95caa93fc8fd0db827491e679628efa40612b55c`
 - evidence: Windows End-to-End Boot run `36844422600`, job `110311023233`
 - semantic result: SUCCESS
-- verified: launchd, spawned bash, interactive root shell, Darwin uname, `whoami=root`, root filesystem listing, proof-end marker
 - workflow conclusion: FAILURE only because of post-proof QEMU/harness nontermination
-- completion accepted by PP-RM generation8 `FINAL_COMPLETED`
 
 ### IOS-PP-RM-005 — generation19 persistent external-evidence wait
 - status: IMPLEMENTED / VALIDATED IN PRODUCTION
 - package008 completed successfully under generation19 semantics
-- generation16 two-phase mutation, generation17 recurring Watchdog, generation18 result-first evidence and generation19 WAIT_EXTERNAL_EVIDENCE remain available for future packages
 
 ## Active
-No active product implementation commitment.
 
-## Pending Owner/Manager decision
-Select the next product milestone. Do not infer or auto-select whether it should be harness stabilization, AppleSEPManager, additional services, SpringBoard/GUI, packaging, or another direction.
+### IOS-M2 — Full iOS Boot Boundary
+- status: ACTIVE
+- owner authorization: direct Owner directive on 2026-10-01 after roadmap review
+- start baseline: `main@95caa93fc8fd0db827491e679628efa40612b55c`
+- objective: determine the first verified technical boundary between the working recovery/root shell and full iOS system userland
+- acceptance A: demonstrate progression into full system userland/system-launchd territory with exact runtime evidence; or
+- acceptance B: identify the first concrete blocking dependency with reproducible evidence sufficient to define the next bounded engineering mutation
+- first method: collect post-root evidence before speculative QEMU or firmware changes
+- initial probe scope: mounts/volumes, system/preboot paths, disk/device exposure, launchd/service state
+- reserved successor package: `IOS-M2-CONTINUOUS-009`
 
 ## Superseded runtime packages
 Packages005,006,007 and completed package008 must not resume.
 
 ## OCB
-Explicit OSB only; max three exact-identical attempts; no automatic fourth; reconcile ambiguous mutable side effects before replay.
+Explicit safety/safety-check block only; max three exact-identical attempts; no automatic fourth; reconcile ambiguous mutable side effects before replay.
