@@ -144,6 +144,8 @@ public sealed class RuntimeCoordinator : IDisposable
         try
         {
             LogReceived?.Invoke(this, "[proof] Проверяю root shell: uname, whoami, ls /.");
+            _proofLines.Clear();
+            _proofActive = true;
             await _runtime.SendLineAsync($"echo {ProofBeginMarker}");
             await _runtime.SendLineAsync("uname -v");
             await _runtime.SendLineAsync("whoami");
