@@ -1,33 +1,32 @@
 # Manager intentions and commitments
 
-## Completed
+Manager generation: 24.
 
-### IOS-M1
-- status: COMPLETED
-- verified recovery launchd + root shell
+## Completed foundation
+- IOS-M1: COMPLETED — recovery launchd + root shell.
+- IOS-M2: COMPLETED — exact-SHA E2E `36870111560` / job `110395408194` SUCCESS isolated the missing full-system storage boundary.
 
-### IOS-M2 — Full iOS Boot Boundary
-- status: COMPLETED
-- authoritative product: `main@4542112c90bb0f84a9a904726c54a3480ba07947`
-- evidence: Windows E2E run `36870111560`, job `110395408194`, SUCCESS
-- boundary: recovery md0/devfs only; no System/Volumes, private/preboot or disk nodes
-- package009: FINAL_COMPLETED
+## Active macro stage
+### LARGE STAGE 1 — Full iOS System Boot
+Status: ACTIVE / WAIT_EXTERNAL_EVIDENCE.
+Active runtime package: `IOS-M3-CONTINUOUS-010`.
+Current product: `main@32dd17014113543862e756c7daa52822e2eec073`.
+Current evidence run: `36915159246`.
 
-## Active
+Current bounded objective:
+verify whether moving the bounded PCIe discovery node under `arm-io` causes XNU to bind/discover the emulated NVMe path and produce guest disk nodes.
 
-### IOS-M3 — Full System Storage / APFS Bring-up
-- status: ACTIVE / WAIT_EXTERNAL_EVIDENCE
-- owner authorization: direct Owner directive on 2026-10-01
-- start baseline: `main@4542112c90bb0f84a9a904726c54a3480ba07947`
-- current product: `main@951575209542d70d9f370049b3d17cde83ee64cf`
-- objective: establish a guest-visible full-system storage path and progress toward mountable System/Preboot APFS volumes
-- first diagnostic mutation: published
-- exact evidence target: Windows End-to-End Boot on `951575209542d70d9f370049b3d17cde83ee64cf`
-- required evidence: BootKC storage candidates for ANS/NVMe, VirtIO, embedded storage/NAND and APFS
-- active runtime package: `IOS-M3-CONTINUOUS-010`
+When guest-visible storage is proven, continue automatically through SystemOS/Preboot/Data staging, APFS discovery/mounting, system launchd and core full-system userland.
 
-## Rule
-Do not stage the large SystemOS image until a guest-visible transport is evidenced.
+## Runtime continuity commitment
+DEC-0018 / schema10 applies:
+- OCB3 exhausts one disposable Worker runtime only;
+- first recovery rotates to a fresh partner runtime;
+- repeated transient OCB enters nonterminal Watchdog-owned OCB_BACKOFF and later safe replan;
+- successful progress resets OCB recovery state;
+- only genuine strategy/authority/safety boundaries may require Owner intervention.
 
-## Superseded runtime packages
+## Constraints
+Do not stage large SystemOS assets until guest-visible storage transport is evidenced.
+Do not infer AppleSEPManager as causal without evidence.
 Packages005–009 must not resume.
