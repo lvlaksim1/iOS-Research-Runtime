@@ -17,15 +17,16 @@
 ## Active
 
 ### IOS-M2 — Full iOS Boot Boundary
-- status: ACTIVE
+- status: ACTIVE / WAIT_EXTERNAL_EVIDENCE
 - owner authorization: direct Owner directive on 2026-10-01 after roadmap review
 - start baseline: `main@95caa93fc8fd0db827491e679628efa40612b55c`
+- current product: `main@24730a74051378d228efd370f3baee5a4f46bdfa`
 - objective: determine the first verified technical boundary between the working recovery/root shell and full iOS system userland
 - acceptance A: demonstrate progression into full system userland/system-launchd territory with exact runtime evidence; or
 - acceptance B: identify the first concrete blocking dependency with reproducible evidence sufficient to define the next bounded engineering mutation
-- first method: collect post-root evidence before speculative QEMU or firmware changes
-- initial probe scope: mounts/volumes, system/preboot paths, disk/device exposure, launchd/service state
-- reserved successor package: `IOS-M2-CONTINUOUS-009`
+- first diagnostic mutation: published; post-root probe added without changing QEMU/firmware semantics
+- expected evidence: Windows End-to-End Boot on exact head `24730a74051378d228efd370f3baee5a4f46bdfa`
+- active runtime package: `IOS-M2-CONTINUOUS-009`
 
 ## Superseded runtime packages
 Packages005,006,007 and completed package008 must not resume.
