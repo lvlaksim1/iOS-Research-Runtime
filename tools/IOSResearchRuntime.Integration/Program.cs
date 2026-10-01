@@ -193,7 +193,7 @@ try
         "command -v ioreg 2>&1",
         "ioreg -p IODeviceTree -l -w 0 2>&1 | grep -Ei 'pcie|pciec|nvme' | head -80",
         "echo __IOS_M3_PROBE_PCI_SERVICES__",
-        "ioreg -p IOService -l -w 0 2>&1 | grep -Ei 'pci|nvme' | head -120",
+        "ioreg -p IOService -n IONVMeController -l -w 0 2>&1 | head -120",
         "echo __IOS_M2_PROBE_LAUNCHD__",
         "launchctl list 2>&1",
         "echo __IOS_M2_BOUNDARY_END__"
