@@ -1,30 +1,29 @@
 # Latest handoff
 
-Updated: 2026-10-01 15:13 MSK
+Updated: 2026-10-01 15:18 MSK
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 20.
-Product baseline: `main@95caa93fc8fd0db827491e679628efa40612b55c`.
-Execution status: ACTIVE / IOS-M2.
-Active milestone: `IOS-M2 — Full iOS Boot Boundary`.
-Reserved successor package: `IOS-M2-CONTINUOUS-009`.
+Manager generation: 21.
+Product authority: `main@24730a74051378d228efd370f3baee5a4f46bdfa`.
+Execution status: ACTIVE / IOS-M2 / WAIT_EXTERNAL_EVIDENCE.
+Active package: `IOS-M2-CONTINUOUS-009`.
 
 ## Owner authorization
-On 2026-10-01 the Owner accepted the proposed post-IOS-M1 roadmap and directed the Project Manager to execute it.
+On 2026-10-01 the Owner accepted the post-IOS-M1 roadmap and directed the Project Manager to execute it.
 
-## Completed foundation
-IOS-M1 is terminal complete. Exact-SHA Windows E2E run `36844422600`, job `110311023233`, contains the verified root-shell proof. Its later workflow FAILURE is caused by post-proof QEMU/harness nontermination.
+## Product action completed
+The Manager published commit `24730a74051378d228efd370f3baee5a4f46bdfa` to `main`.
+It preserves the verified IOS-M1 root-shell path and adds a bounded post-root diagnostic probe for mounts, `/System/Volumes`, `/private/preboot`, `/dev/disk*` and `launchctl list`.
 
-## Current IOS-M2 responsibility
-Determine the first concrete boundary between the recovery/root-shell environment and full iOS system userland.
+## Runtime handoff
+Package009 Scheduled Task programs, Mailbox and Trace are initialized for this milestone.
+Mailbox state: `WAIT_EXTERNAL_EVIDENCE`.
+Expected workflow: `.github/workflows/windows-e2e.yml`.
+Expected head: `24730a74051378d228efd370f3baee5a4f46bdfa`.
+Resume owner after terminal evidence: Worker A.
+Watchdog is the read-only evidence-wait carrier. Workers must remain disabled until the Watchdog converts terminal exact-SHA evidence to READY.
 
-Immediate execution:
-1. instrument the existing integration harness after successful root proof;
-2. collect bounded evidence for mounts, volumes, preboot/system paths, disk/device nodes and launchd/service state;
-3. push to `main` and consume exact-SHA Windows E2E evidence;
-4. classify the blocker before selecting a QEMU/firmware/security fix.
-
-The current direct Owner-facing runtime owns this first probe.
-PP-RM Workers/Watchdog are not armed at this checkpoint; package009 is reserved for autonomous continuation if required.
+## Next responsibility
+Consume the exact-SHA probe evidence and identify the first concrete boundary between recovery/root shell and full iOS system userland before selecting any QEMU, provisioning or security mutation.
 
 Packages005–008 must not resume.
