@@ -1,37 +1,36 @@
 # Current state
 
-Updated: 2026-10-01 15:18 MSK
+Updated: 2026-10-01 17:09 MSK
 
 ## Governance
 - manager: `ios-research-runtime-project-manager`
-- manager generation: 21
-- product authority: `main@24730a74051378d228efd370f3baee5a4f46bdfa`
-- PP-RM architecture: generation19 persistent external-evidence wait + generation18 result-first evidence + generation17 recurring Watchdog + generation16 native two-phase mutation
-- execution status: ACTIVE / IOS-M2 / WAIT_EXTERNAL_EVIDENCE
-- active package: `IOS-M2-CONTINUOUS-009`
-- scheduler handoff: Mailbox/Trace/Worker programs prepared; Watchdog is the designated external-evidence carrier
+- manager generation: 22
+- product authority: `main@4542112c90bb0f84a9a904726c54a3480ba07947`
+- execution status: ACTIVE / IOS-M3
+- active milestone: `IOS-M3 — Full System Storage / APFS Bring-up`
+- successor package: `IOS-M3-CONTINUOUS-010`
 
 ## Completed foundation
-IOS-M1 remains COMPLETE. Exact-SHA E2E run `36844422600`, job `110311023233`, proved recovery Darwin, launchd, interactive root shell, Darwin uname, `whoami=root`, root filesystem listing and `__IOS_RESEARCH_PROOF_END__`.
+IOS-M1 is complete.
+IOS-M2 is complete on exact-SHA Windows E2E run `36870111560`, job `110395408194`, conclusion SUCCESS.
 
-## IOS-M2 product progress
-Commit `24730a74051378d228efd370f3baee5a4f46bdfa` was published to `main`.
-It adds a bounded post-root boundary probe to the existing integration harness after the verified IOS-M1 proof.
-Probe evidence requested:
-- mounts/filesystem topology;
-- `/System/Volumes`;
-- `/private/preboot`;
-- `/dev/disk*`;
-- `launchctl list`.
+Verified IOS-M2 boundary:
+- root mount: `/dev/md0` read-only APFS;
+- devfs present;
+- `/System/Volumes` absent;
+- `/private/preboot` absent;
+- `/dev/disk*` absent;
+- recovery userspace has no `launchctl` executable.
 
-The normal `windows-e2e.yml` push path includes the integration harness and is expected to produce exact-SHA evidence for this commit.
+This proves the current runtime has no guest-visible full-system storage path.
 
-## Current execution state
-Package009 Mailbox is `WAIT_EXTERNAL_EVIDENCE` for `.github/workflows/windows-e2e.yml` on exact head `24730a74051378d228efd370f3baee5a4f46bdfa`.
-Worker A/B remain disabled until Watchdog observes terminal evidence.
-The Watchdog may only perform read-only GitHub reconciliation while waiting.
+## IOS-M3 current technical state
+The application currently passes only BootKC, DeviceTree, trustcache and recovery ramdisk to `-M darwin`.
+The pinned qemu-sptm source contains Apple-compatible `vmapple-virtio-blk`, but that is attached to the separate vmapple machine. The working darwin machine creates no equivalent storage transport.
 
-## Known residual issues
-Post-proof QEMU/harness nontermination and repeated `AppleSEPManager` endpoint timeouts remain observations, not yet promoted to the IOS-M2 root blocker.
+## Immediate execution
+Add diagnostic classification of the actual iPhone17,3 BootKC storage drivers using the existing `ipsw kernel kexts` output. Then run exact-SHA Windows E2E and select the next device-model mutation from evidence.
 
-Packages005–008 must not resume.
+Do not stage/download SystemOS in ordinary E2E until guest storage transport is proven.
+
+Packages005–009 must not resume.
