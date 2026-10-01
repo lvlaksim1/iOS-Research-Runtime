@@ -1,18 +1,17 @@
 # Manager beliefs
 
 - Persistent Project Manager `ios-research-runtime-project-manager` remains commitment owner; product authority is `main`, Manager authority is `manager-state`.
-- IOS-M2 started from baseline `main@95caa93fc8fd0db827491e679628efa40612b55c`.
-- Current product authority is now `main@24730a74051378d228efd370f3baee5a4f46bdfa`.
-- IOS-M1 is completed: verified recovery `launchd` plus verified root shell on Windows. Exact-SHA E2E run `36844422600`, job `110311023233`, remains authoritative milestone evidence.
-- The workflow-level FAILURE of that run occurred after the required proof because QEMU/integration harness did not terminate cleanly.
-- On 2026-10-01 the Owner accepted the proposed roadmap and explicitly authorized execution.
-- IOS-M2 — Full iOS Boot Boundary — is the active product commitment.
-- Commit `24730a74051378d228efd370f3baee5a4f46bdfa` preserves the IOS-M1 path and adds a bounded post-root probe for mounts/volumes, system/preboot paths, disk/device exposure and launchd/service state.
-- The correct next state is external-evidence wait for Windows End-to-End Boot on that exact SHA; blocker classification must wait for runtime evidence.
-- Do not mutate QEMU hardware or firmware semantics speculatively before the probe classifies the first concrete boundary.
-- Repeated `AppleSEPManager` endpoint timeouts and post-proof harness/QEMU nontermination remain known issues, but are IOS-M2 blockers only if evidence shows they block the next boundary.
-- Full graphical/user iOS, SpringBoard and broad service completeness are not established yet.
-- Package008 is terminal `FINAL_COMPLETED`; packages005,006,007 are terminal/superseded. None may resume.
-- Package009 `IOS-M2-CONTINUOUS-009` is the active PP-RM successor package and is entering `WAIT_EXTERNAL_EVIDENCE`.
-- PP-RM generation19 control logic remains the accepted runtime design: generation16 two-phase mutation, generation17 recurring Watchdog, generation18 result-first evidence, generation19 `WAIT_EXTERNAL_EVIDENCE`.
-- OCB remains explicit safety/safety-check block only, maximum three exact-identical attempts total, no fourth attempt.
+- IOS-M1 is complete with verified recovery `launchd` plus verified root shell on Windows.
+- IOS-M2 is complete on authoritative product `main@4542112c90bb0f84a9a904726c54a3480ba07947`.
+- Exact-SHA Windows End-to-End Boot run `36870111560`, job `110395408194`, completed SUCCESS and produced `IOS_M2_BOUNDARY_PROBE_OK`.
+- IOS-M2 evidence reproducibly isolates the first full-system boundary: recovery root is `/dev/md0` read-only APFS plus devfs; `/System/Volumes`, `/private/preboot`, and `/dev/disk*` are absent; `launchctl` is absent from the injected recovery userspace.
+- Repeated `AppleSEPManager` endpoint timeouts remain observed but are not causally assigned as the first blocker.
+- The Owner explicitly authorized continued development on 2026-10-01.
+- IOS-M3 — Full System Storage / APFS Bring-up — is now the active product commitment.
+- Current `-M darwin` command line supplies BootKC, DeviceTree, trustcache and recovery ramdisk only; it supplies no system disk.
+- Upstream `qemu-sptm` contains `vmapple-virtio-blk`, but that device is wired to the separate `-M vmapple` machine, while the working iOS path uses `-M darwin` with an iPhone DeviceTree and no PCI/virtio storage bus.
+- Therefore the first IOS-M3 step is capability discovery from the actual iPhone17,3 BootKC before choosing a storage emulation path: identify native ANS/NVMe/storage drivers and whether any VirtIO block driver exists.
+- Do not download or attach the large SystemOS image to ordinary E2E until a guest-visible storage transport is evidenced.
+- Package009 is terminal `FINAL_COMPLETED`. Packages005–009 must not resume.
+- Fresh successor package is `IOS-M3-CONTINUOUS-010`.
+- PP-RM generation19 runtime semantics remain authoritative: generation16 two-phase mutation, generation17 recurring Watchdog, generation18 result-first evidence, generation19 `WAIT_EXTERNAL_EVIDENCE`, OCB3.
