@@ -26,6 +26,12 @@ public sealed class QemuCommandBuilder
             // root-proof commands cannot be consumed by the stdio multiplexer.
             "-monitor", "none",
             "-serial", "stdio",
+            // BootKC contains IONVMeFamily while VirtIO storage is absent. Probe the
+            // smallest host-backed transport without staging SystemOS: expose an
+            // empty raw image through QEMU NVMe and let the guest tell us whether
+            // this darwin machine maps it to an IONVMe-compatible controller.
+            "-drive", $"file={Path.Combine(_layout.DataDirectory, "ios-m3-nvme-probe.img")},if=none,format=raw,id=iosm3nvme",
+            "-device", "nvme,drive=iosm3nvme,serial=IOSM3PROBE",
             "-m", "8G",
             // The exact b1295ce E2E trace still first sees 0x12ed0000 at
             // the load from boot-state slot 0x...090b80 at 0x...0b3978.
