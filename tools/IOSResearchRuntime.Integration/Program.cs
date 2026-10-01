@@ -192,6 +192,7 @@ try
         "echo __IOS_M3_PROBE_IOREG_RUNTIME_DEPS__",
         "ls -la /usr/lib/libncurses* /usr/lib/libcurses* 2>&1",
         "find /usr /System -type f \\( -name 'libncurses*.dylib' -o -name 'libcurses*.dylib' \\) -print 2>/dev/null | head -40",
+        "find / -type f \\( -name 'libncurses*.dylib' -o -name 'libcurses*.dylib' \\) -print 2>/dev/null | head -40",
         "echo __IOS_M3_PROBE_PCIE_DISCOVERY__",
         "command -v ioreg 2>&1",
         "ioreg -p IODeviceTree -l -w 0 2>&1 | grep -Ei 'pcie|pciec|nvme' | head -80",
