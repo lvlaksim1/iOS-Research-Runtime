@@ -101,6 +101,18 @@ func run(opts options) error {
 	}
 
 	fmt.Println("source recovery executable inventory (pre-merge):")
+	for _, dependencyPath := range []string{
+		"usr/lib/libncurses.5.4.dylib",
+		"usr/lib/libncurses.dylib",
+		"System/Library/Frameworks/IOKit.framework/IOKit",
+		"System/Library/Frameworks/IOKit.framework/Versions/A/IOKit",
+	} {
+		if entry, err := findPath(root, dependencyPath); err == nil {
+			fmt.Printf("source-path path=/%s present=true mode=%v size=%d symlink=%t\n", dependencyPath, entry.Mode, len(entry.Data), entry.Mode&fs.ModeSymlink != 0)
+		} else {
+			fmt.Printf("source-path path=/%s present=false\n", dependencyPath)
+		}
+	}
 	for _, line := range sourceRecoveryExecutableInventory(root) {
 		fmt.Println(line)
 	}
