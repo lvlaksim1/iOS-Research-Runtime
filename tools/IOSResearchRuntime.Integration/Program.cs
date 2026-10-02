@@ -199,6 +199,8 @@ try
         "ls -l /usr/bin/otool /usr/bin/dyld_info /usr/bin/nm /usr/bin/strings /usr/bin/sysctl /sbin/sysctl /bin/sysctl 2>&1",
         "echo __IOS_M3_PROBE_PCI_TRANSPORT_STAGE__",
         "ls -l /usr/lib/libPCITransport.dylib /System/DriverKit/System/Library/Frameworks/PCIDriverKit.framework/PCIDriverKit 2>&1",
+        "echo __IOS_M3_PROBE_ARM_IO_PCIE_NODES__",
+        "ls -ld /arm-io/*pcie* /arm-io/*nvme* /arm-io/*ans* 2>&1",
         "echo __IOS_M2_BOUNDARY_END__"
     };
 
