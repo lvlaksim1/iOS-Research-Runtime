@@ -191,6 +191,8 @@ try
         "ls -la /dev/disk* 2>&1",
         "echo __IOS_M3_PROBE_IONVMEFAMILY_STAGE__",
         "ls -ld /System/Library/Extensions/IONVMeFamily.kext /System/Library/Extensions/IONVMeFamily.kext/Contents/MacOS/IONVMeFamily 2>&1",
+        "echo __IOS_M3_PROBE_STORAGE_DIAG_TOOLS__",
+        "ls -l /usr/sbin/kextstat /usr/bin/kmutil /usr/bin/dmesg /sbin/kextstat /usr/sbin/ioreg 2>&1",
         "echo __IOS_M2_PROBE_LAUNCHD__",
         "launchctl list 2>&1",
         "echo __IOS_M2_BOUNDARY_END__"
