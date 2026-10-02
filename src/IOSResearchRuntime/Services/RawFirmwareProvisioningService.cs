@@ -240,7 +240,9 @@ public sealed class RawFirmwareProvisioningService
             ["nvme"] = new[] { "NVMe" },
             ["virtio"] = new[] { "VirtIO" },
             ["embedded-storage"] = new[] { "EmbeddedStorage", "NAND" },
-            ["apfs"] = new[] { "APFS" }
+            ["apfs"] = new[] { "APFS" },
+            ["apple-pcie-controller"] = new[] { "AppleT8103PCIeC", "AppleEmbeddedPCIE", "apciec" },
+            ["apple-pcie-host-bridge"] = new[] { "ApplePCIECHostBridge", "pciec-bridge" }
         };
 
         var summary = new List<string>();
