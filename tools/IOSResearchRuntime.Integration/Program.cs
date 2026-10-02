@@ -194,6 +194,7 @@ try
         "find /usr /System -type f \\( -name 'libncurses*.dylib' -o -name 'libcurses*.dylib' \\) -print 2>/dev/null | head -40",
         "find / -type f \\( -name 'libncurses*.dylib' -o -name 'libcurses*.dylib' \\) -print 2>/dev/null | head -40",
         "find / -type f -name 'libIOKit*.dylib' -print 2>/dev/null | head -40",
+        "ls -ld /System/Library/Extensions/IONVMeFamily.kext /System/Library/Extensions/IONVMeFamily.kext/Contents/MacOS/IONVMeFamily 2>&1",
         "echo __IOS_M3_PROBE_PCIE_DISCOVERY__",
         "command -v ioreg 2>&1",
         "ioreg -p IODeviceTree -l -w 0 2>&1 | grep -Ei 'pcie|pciec|nvme' | head -80",
