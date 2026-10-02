@@ -209,7 +209,7 @@ try
 
     using (var boundaryProbeTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
     {
-        boundaryProbeTimeout.CancelAfter(TimeSpan.FromMinutes(3));
+        boundaryProbeTimeout.CancelAfter(TimeSpan.FromMinutes(4));
         try
         {
             await boundaryProbeCompleted.Task.WaitAsync(boundaryProbeTimeout.Token);
