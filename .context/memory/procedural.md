@@ -1,6 +1,6 @@
 # Procedural memory
 
-Updated: 2026-10-01 14:14 MSK
+Updated: 2026-10-03 01:05 MSK
 
 - IOS-M1 is COMPLETED on `main@95caa93fc8fd0db827491e679628efa40612b55c`.
 - Package008 reached runtime generation8 `FINAL_COMPLETED`; activation token revoked; Worker A/B and Watchdog disabled.
@@ -10,7 +10,7 @@ Updated: 2026-10-01 14:14 MSK
 - Patched bundled rcodesign produced SHA256-primary CodeDirectory evidence for injected binaries including `/bin/bash`.
 - Repeated AppleSEPManager endpoint timeouts remain a known technical issue.
 - Full GUI/SpringBoard/user-device completeness is not proven by IOS-M1.
-- No product implementation commitment is active after IOS-M1 completion.
-- Owner should choose the next milestone directly with Project Manager before any new PP-RM launch.
-- Packages005,006,007,008 must not resume.
-- Future PP-RM packages retain generation16 frozen mutation, generation17 recurring Watchdog, generation18 result-first evidence, generation19 WAIT_EXTERNAL_EVIDENCE and OCB3.
+- Packages005–009 must not resume.
+- Future PP-RM packages retain frozen mutation, recurring Watchdog, result-first exact-SHA evidence, WAIT_EXTERNAL_EVIDENCE and bounded OCB recovery semantics from the current schema.
+- DEC-0019 publication recovery: canonical `update_ref(force=false)` remains primary; for a repeated explicit OCB on an unambiguous existing single-file bounded change, a fresh-blob-SHA-fenced `update_file` may publish semantically equivalent content, and the returned new commit SHA becomes authoritative and requires fresh exact-SHA evidence.
+- DEC-0020 Durable Finding Gate: after Verify/Reflect, promptly persist any verified finding that would materially change a future Manager's action or prevent repetition of an already-solved problem. Runtime Mailbox/Trace/log/chat evidence is not a substitute for durable managerial memory.

@@ -63,7 +63,8 @@
     ".context/decisions/DEC-0016-result-first-workflow-evidence.md",
     ".context/decisions/DEC-0017-persistent-external-evidence-wait.md",
     ".context/decisions/DEC-0018-ocb-runtime-self-healing.md",
-    ".context/decisions/DEC-0019-high-level-single-file-publication-fallback.md"
+    ".context/decisions/DEC-0019-high-level-single-file-publication-fallback.md",
+    ".context/decisions/DEC-0020-durable-finding-gate.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"
@@ -112,7 +113,8 @@
     "evidence_backed_external_completion_required": true,
     "terminal_execution_cleanup_required": true,
     "external_gate_reconciliation_required": true,
-    "manager_state_coherence_required": true
+    "manager_state_coherence_required": true,
+    "durable_finding_gate_required": true
   },
   "updated_at": "2026-10-03",
   "context_version": "2.0.0-dev",
