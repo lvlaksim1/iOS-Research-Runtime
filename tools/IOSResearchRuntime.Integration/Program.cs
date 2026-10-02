@@ -200,6 +200,7 @@ try
         "echo __IOS_M3_PROBE_PCI_TRANSPORT_STAGE__",
         "ls -l /usr/lib/libPCITransport.dylib /System/DriverKit/System/Library/Frameworks/PCIDriverKit.framework/PCIDriverKit 2>&1",
         "echo __IOS_M3_PROBE_ARM_IO_PCIE_NODES__",
+        "ls -ld /IODeviceTree:/arm-io /IODeviceTree:/arm-io/pcie 2>&1",
         "echo __IOS_M2_BOUNDARY_END__"
     };
 
