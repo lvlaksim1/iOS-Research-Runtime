@@ -35,7 +35,7 @@ static async Task SendProbeLineAsync(
     CancellationToken cancellationToken)
 {
     await runtime.SendLineAsync(line, cancellationToken);
-    await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
+    await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
 }
 
 var applicationDirectory = Path.GetFullPath(RequireOption(args, "--application-directory"));
