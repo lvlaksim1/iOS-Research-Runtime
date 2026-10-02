@@ -1,25 +1,31 @@
 # Latest handoff
 
-Updated: 2026-10-01 17:13 MSK
+Updated: 2026-10-03 00:42 MSK
 
 Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 23.
-Product authority: `main@951575209542d70d9f370049b3d17cde83ee64cf`.
-Execution status: ACTIVE / IOS-M3 / WAIT_EXTERNAL_EVIDENCE.
+Manager generation: 25.
+Product authority: `main@a8c960bc7d26011c7e87e0791cb2e7621f0cd61e`.
+Execution status: ACTIVE / LARGE STAGE 1 / WAIT_EXTERNAL_EVIDENCE.
 Active package: `IOS-M3-CONTINUOUS-010`.
 
-## Completed
-IOS-M2 is FINAL_COMPLETED on `main@4542112c90bb0f84a9a904726c54a3480ba07947`, Windows E2E run `36870111560`, job `110395408194`, SUCCESS.
+## Verified evidence
+Exact-SHA Windows E2E `37063868899` on `a79bd0f87fafcecb76a9cc751e4fa9cfaa47b199` completed SUCCESS.
+It proved `BOOT_PROOF_OK` and `IOS_M2_BOUNDARY_PROBE_OK`.
+IONVMeFamily, AppleEmbeddedPCIE and AppleT8140PCIe are present; source DeviceTree contains native apcie/DART/IOMMU/range data; `/dev/disk*` remains absent.
+Filtered runtime IORegistry returned no matching PCIe/NVMe provider lines.
 
 ## Current product action
-Commit `951575209542d70d9f370049b3d17cde83ee64cf` adds bounded BootKC storage-capability diagnostics without adding storage hardware or downloading SystemOS.
+Commit `a8c960bc7d26011c7e87e0791cb2e7621f0cd61e` captures unfiltered IODeviceTree and IOService registry output.
+Exact-SHA Windows E2E run `37068183031` is in progress.
 
-## External evidence contract
-Workflow: `.github/workflows/windows-e2e.yml`.
-Exact head: `951575209542d70d9f370049b3d17cde83ee64cf`.
-Consume ANS/NVMe/VirtIO/embedded-storage/APFS candidate lines.
+## Publication recovery rule
+DEC-0019 is durable authority:
+- canonical path: prebuilt target + `update_ref(force=false)`;
+- narrow alternate path after repeated explicit OCB: for one existing UTF-8 file only, reconcile `main`, fetch current blob SHA, publish exact authorized content with `update_file`;
+- the returned commit SHA, not the prebuilt target SHA, becomes authoritative and requires fresh exact-SHA CI evidence;
+- never generalize this to ambiguous/multi-file publication or substantive safety restrictions.
 
 ## Next responsibility
-Use exact evidence to choose the storage transport, then build one host-backed block-device proof. SystemOS comes only after guest-visible disk evidence.
+Consume run `37068183031`, use unfiltered registry evidence to isolate the next smallest PCIe/NVMe binding dependency, and continue Large Stage 1 autonomously.
 
 Packages005–009 must not resume.
