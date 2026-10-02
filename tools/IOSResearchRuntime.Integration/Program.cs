@@ -200,7 +200,7 @@ try
         "echo __IOS_M3_PROBE_PCI_TRANSPORT_STAGE__",
         "ls -l /usr/lib/libPCITransport.dylib /System/DriverKit/System/Library/Frameworks/PCIDriverKit.framework/PCIDriverKit 2>&1",
         "echo __IOS_M3_PROBE_ARM_IO_PCIE_NODES__",
-        "echo /arm-io/*pcie* /arm-io/*nvme* /arm-io/*ans*",
+        "for p in /arm-io/apciec0 /arm-io/apciec1 /arm-io/apciec2 /arm-io/ans; do if [ -e \"$p\" ]; then echo \"$p\"; fi; done",
         "echo __IOS_M2_BOUNDARY_END__"
     };
 
