@@ -82,6 +82,10 @@ public sealed class RawFirmwareProvisioningService
                 Path.Combine(firmwareDirectory, "dtree.raw"),
                 cancellationToken);
 
+            await ReportDeviceTreePcieCapabilitiesAsync(
+                Path.Combine(firmwareDirectory, "dtree.raw"),
+                cancellationToken);
+
             ProgressChanged?.Invoke(this, "[dtree] Применение qemu-sptm DeviceTree fixups…");
             _deviceTreePatcher.PatchFile(
                 Path.Combine(firmwareDirectory, "dtree.raw"),
@@ -272,6 +276,47 @@ public sealed class RawFirmwareProvisioningService
         ProgressChanged?.Invoke(
             this,
             $"[storage-capability] summary {string.Join(" ", summary)}");
+    }
+
+    private async Task ReportDeviceTreePcieCapabilitiesAsync(
+        string deviceTreePath,
+        CancellationToken cancellationToken)
+    {
+        var result = await _processRunner.RunAsync(
+            _layout.IpswExecutable,
+            [
+                "dtree",
+                deviceTreePath
+            ],
+            _layout.DataDirectory,
+            cancellationToken);
+
+        result.EnsureSuccess("ipsw dtree dtree.raw");
+
+        var matches = string.Concat(
+                result.StandardOutput,
+                Environment.NewLine,
+                result.StandardError)
+            .Split(
+                ['\r', '\n'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(line =>
+                line.Contains("pcie", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("apcie", StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(120)
+            .ToArray();
+
+        ProgressChanged?.Invoke(
+            this,
+            $"[dtree-pcie] match_count={matches.Length}");
+
+        foreach (var match in matches)
+        {
+            ProgressChanged?.Invoke(
+                this,
+                $"[dtree-pcie] {match}");
+        }
     }
 
     private async Task ExtractAndUnwrapPatternAsync(
