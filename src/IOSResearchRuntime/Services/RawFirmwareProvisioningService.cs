@@ -246,6 +246,8 @@ public sealed class RawFirmwareProvisioningService
             ["embedded-storage"] = new[] { "EmbeddedStorage", "NAND" },
             ["apfs"] = new[] { "APFS" },
             ["apple-pcie-controller"] = new[] { "AppleT8103PCIeC", "AppleEmbeddedPCIE", "apciec" },
+            ["apple-pcie-t8140"] = new[] { "com.apple.driver.AppleT8140PCIe", "AppleT8140PCIe" },
+            ["apple-pcie-concrete-class"] = new[] { "AppleEmbeddedPCIEV", "AppleT8140PCIe" },
             ["apple-pcie-host-bridge"] = new[] { "ApplePCIECHostBridge", "pciec-bridge" }
         };
 
