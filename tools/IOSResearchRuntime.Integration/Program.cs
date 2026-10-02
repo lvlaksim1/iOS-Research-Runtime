@@ -199,8 +199,6 @@ try
         "ls -l /usr/bin/otool /usr/bin/dyld_info /usr/bin/nm /usr/bin/strings /usr/bin/sysctl /sbin/sysctl /bin/sysctl 2>&1",
         "echo __IOS_M3_PROBE_PCI_TRANSPORT_STAGE__",
         "ls -l /usr/lib/libPCITransport.dylib /System/DriverKit/System/Library/Frameworks/PCIDriverKit.framework/PCIDriverKit 2>&1",
-        "echo __IOS_M2_PROBE_LAUNCHD_BINARY__",
-        "ls -l /bin/launchctl /usr/bin/launchctl 2>&1",
         "echo __IOS_M2_BOUNDARY_END__"
     };
 
