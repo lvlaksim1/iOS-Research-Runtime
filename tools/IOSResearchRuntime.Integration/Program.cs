@@ -200,7 +200,7 @@ try
         "echo __IOS_M3_PROBE_PCI_TRANSPORT_STAGE__",
         "ls -l /usr/lib/libPCITransport.dylib /System/DriverKit/System/Library/Frameworks/PCIDriverKit.framework/PCIDriverKit 2>&1",
         "echo __IOS_M3_PROBE_IOREGISTRY_PCIE_PROVIDERS__",
-        "if [ -x /usr/sbin/ioreg ]; then echo __IOS_M3_IOREGISTRY_DEVICETREE__; /usr/sbin/ioreg -p IODeviceTree -l -w 0 2>&1 | grep -Ei 'arm-io|apcie|pcie' || true; echo __IOS_M3_IOREGISTRY_IOSERVICE__; /usr/sbin/ioreg -p IOService -l -w 0 2>&1 | grep -Ei 'AppleT8140PCIe|AppleEmbeddedPCIE|IOPCIBridge|IONVMe' || true; else echo __IOS_M3_IOREG_UNAVAILABLE__; fi",
+        "if [ -x /usr/sbin/ioreg ]; then echo __IOS_M3_IOREGISTRY_DEVICETREE__; /usr/sbin/ioreg -p IODeviceTree -l -w 0 2>&1; echo __IOS_M3_IOREGISTRY_IOSERVICE__; /usr/sbin/ioreg -p IOService -l -w 0 2>&1; else echo __IOS_M3_IOREG_UNAVAILABLE__; fi",
         "echo __IOS_M2_BOUNDARY_END__"
     };
 
