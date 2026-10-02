@@ -195,6 +195,8 @@ try
         "ls -l /usr/sbin/kextstat /usr/bin/kmutil /usr/bin/dmesg /sbin/kextstat /usr/sbin/ioreg 2>&1",
         "echo __IOS_M3_PROBE_NVME_SUPPORT_TOOLS__",
         "ls -l /usr/bin/nvmefwupdater /System/Library/PrivateFrameworks/AppleNVMe.framework/AppleNVMe /usr/sbin/sysctl 2>&1",
+        "echo __IOS_M3_PROBE_BINARY_INSPECTION_TOOLS__",
+        "ls -l /usr/bin/otool /usr/bin/dyld_info /usr/bin/nm /usr/bin/strings /usr/bin/sysctl /sbin/sysctl /bin/sysctl 2>&1",
         "echo __IOS_M2_PROBE_LAUNCHD__",
         "launchctl list 2>&1",
         "echo __IOS_M2_BOUNDARY_END__"
