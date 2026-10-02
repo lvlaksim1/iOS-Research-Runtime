@@ -200,8 +200,8 @@ try
         "echo __IOS_M3_PROBE_PCI_TRANSPORT_STAGE__",
         "ls -l /usr/lib/libPCITransport.dylib /System/DriverKit/System/Library/Frameworks/PCIDriverKit.framework/PCIDriverKit 2>&1",
         "echo __IOS_M3_PROBE_ARM_IO_PCIE_NODES__",
-        "/usr/sbin/ioreg -p IODeviceTree -r -n pcie 2>&1 &",
-        "echo __IOS_M2_BOUNDARY_END__"
+        "echo __IOS_M2_BOUNDARY_END__",
+        "/usr/sbin/ioreg -p IODeviceTree -r -n pcie 2>&1 &"
     };
 
     foreach (var probeLine in probeLines)
