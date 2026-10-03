@@ -75,6 +75,32 @@ Console.WriteLine("[integration] Provisioning start.");
 await toolBootstrap.BootstrapAllAsync(cancellationToken);
 await resourceBootstrap.BootstrapAllAsync(cancellationToken);
 await rawProvisioning.PrepareAsync(ProvisioningProfile.Default, cancellationToken);
+
+var pinnedIoprintSha256 = "8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee";
+var pinnedIoprint = Directory
+    .EnumerateFiles(Path.GetTempPath(), "ioprint", SearchOption.AllDirectories)
+    .Select(path => new FileInfo(path))
+    .Where(file => file.Exists && file.Length > 0)
+    .OrderByDescending(file => file.LastWriteTimeUtc)
+    .FirstOrDefault(file =>
+    {
+        using var stream = file.OpenRead();
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream))
+            .Equals(pinnedIoprintSha256, StringComparison.OrdinalIgnoreCase);
+    });
+
+if (pinnedIoprint is not null)
+{
+    var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar");
+    File.Copy(layout.IosCliToolsArchive, repackedSysroot, overwrite: true);
+    await processRunner.RunAsync(
+        "tar",
+        new[] { "-rf", repackedSysroot, "-C", pinnedIoprint.DirectoryName!, "--transform=s,^ioprint$,usr/local/bin/ioprint,", "ioprint" },
+        cancellationToken);
+    File.Copy(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
+    Console.WriteLine($"[integration] PINNED_IOPRINT_STAGED={pinnedIoprint.FullName}");
+}
+
 await ramdiskProvisioning.PrepareAsync(cancellationToken);
 
 var apfsEvidencePath = Path.Combine(layout.LogDirectory, "apfs-structural-evidence.json");
