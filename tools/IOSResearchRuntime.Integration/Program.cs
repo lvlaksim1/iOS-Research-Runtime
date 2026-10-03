@@ -188,8 +188,7 @@ coordinator.LogReceived += (_, line) =>
         boundaryProbeCompleted.TrySetResult();
     }
 
-    if (string.Equals(
-            line.Trim(),
+    if (line.Contains(
             "__IOS_M3_PROVIDER_PROBE_END__",
             StringComparison.Ordinal))
     {
@@ -236,9 +235,9 @@ try
     Console.WriteLine("[integration] IOS-M3 read-only provider probe start.");
     var providerProbeLines = new[]
     {
-        "echo __IOS_M3_PROVIDER_PROBE_BEGIN__",
-        "if [ -x /usr/local/bin/ioprint ]; then echo __IOS_M3_IOPRINT_SHA256_EXPECTED_8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee__; echo __IOS_M3_IOPRINT_DEVICETREE__; /usr/local/bin/ioprint -p IODeviceTree 2>&1; echo __IOS_M3_IOPRINT_IOSERVICE__; /usr/local/bin/ioprint -p IOService 2>&1; else echo __IOS_M3_IOPRINT_UNAVAILABLE__; fi",
-        "echo __IOS_M3_PROVIDER_PROBE_END__"
+        "printf '__IOS_M3_PROVIDER_PROBE_BEGIN__\\n'",
+        "if [ -x /usr/local/bin/ioprint ]; then printf '__IOS_M3_IOPRINT_SHA256_EXPECTED_8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee__\\n__IOS_M3_DT_BEGIN__\\n'; /usr/local/bin/ioprint -p IODeviceTree 2>&1; printf '\\n__IOS_M3_DT_END__\\n__IOS_M3_SVC_BEGIN__\\n'; /usr/local/bin/ioprint -p IOService 2>&1; printf '\\n__IOS_M3_SVC_END__\\n'; else printf '__IOS_M3_IOPRINT_UNAVAILABLE__\\n'; fi",
+        "printf '__IOS_M3_PROVIDER_PROBE_END__\\n'"
     };
 
     foreach (var probeLine in providerProbeLines)
