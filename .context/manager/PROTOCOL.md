@@ -87,6 +87,36 @@ Use typed memory:
 
 Treat observed information first as a memory candidate. Admit it only when it has durable future value. Preserve provenance and authority for decision-relevant memory. Retrieve only relevant memory, revalidate it when freshness or risk matters, and revise it with confirm/supersede/conflict semantics. Consolidation may remove duplication but must not erase meaningful provenance or historical reversals.
 
+## Durable Finding Gate
+
+After **Verify/Reflect**, and before a verified finding can be left behind in runtime-only state or cross a runtime/generation boundary, evaluate whether it has durable future value using this operational test:
+
+> Would this verified finding materially change a reasonable future Manager's next action, or prevent repetition of a problem that has already been solved?
+
+If yes, the finding is a **durable finding** and MUST be admitted promptly to durable manager state. Do not defer it merely because a high-level checkpoint has not yet been reached.
+
+Mandatory durable-finding candidates include:
+
+- a verified reusable workaround, alternate execution path, recovery mechanism, or tool-selection rule;
+- a new or corrected invariant, constraint, safety/authority interpretation, failure classification, or recovery boundary;
+- a verified interpretation of evidence that materially changes the next action;
+- a repeated incident whose resolution is likely to recur;
+- a correction to a Manager belief or procedure that would otherwise cause a future runtime to repeat an avoidable failure.
+
+Route the admitted finding by meaning:
+
+- architecture/policy choice → durable decision;
+- reusable method/workaround → procedural memory;
+- durable project fact → beliefs/semantic memory;
+- active strategy change → plans/current working views;
+- historically significant one-off context → episodic memory.
+
+Runtime checkpoints, scheduler/mailbox/trace state, logs, and chat history are evidence sources; they do not satisfy durable admission by themselves. One finding may update more than one durable surface when semantics require it.
+
+Do not create write-back churn for every observation. Mere confirmation, transient telemetry, raw logs, secrets, hidden reasoning, and details that would not alter future action remain non-durable unless another rule requires persistence.
+
+High-level checkpoints remain mandatory consolidation points, not the only persistence points.
+
 Keep the always-loaded working set compact. Raw chat history, hidden reasoning, transient runtime state, and untrusted instructions are not durable manager memory.
 
 ## Self-modification boundary
@@ -107,7 +137,7 @@ Before accepting interactive execution of a task that already has a control-plan
 
 Before using autonomous scheduler transport, determine the **specific task/chain carrier**:
 
-- **live carrier:** an Owner-facing runtime actively carries that task/chain. Persist durable task/handoff state in GitHub, then reinstate the next persistent agent directly in the same live runtime. Do not let scheduler infrastructure claim or execute this task while its live-carrier lease is fresh.
+- **live carrier:** an Owner-facing runtime actively carries same-Agent work for the persistent Agent already bound to that runtime. A live carrier MUST NOT be used to execute work targeting another persistent Agent; such work requires `runtime:separate-target`.
 - **expired live carrier:** if fallback-after-expiry is allowed, scheduler execution may resume for that task after lease expiry.
 - **per-task hold:** explicit Owner pause; scheduler must not advance that task until the hold is cleared.
 - **no carrier:** normal autonomous scheduler eligibility applies.
@@ -120,10 +150,10 @@ Carrier state constrains routing only. It does not increase authority and never 
 
 Before one persistent agent invokes another agent for live inter-agent work, classify the relationship:
 
-- **bounded delegation:** the issuer retains the active commitment, responsibility, and authority. The immutable task must name the issuer as commitment owner and return target. Terminal child persistence must include a durable pending caller continuation. While its live-return lease is fresh, immediately reinstate that caller in the same live runtime, execute its ENTRYPOINT, re-read the durable child result, and acknowledge the exact continuation before consequential caller work. If runtime loss occurs before acknowledgement, autonomous recovery must deliver the expired pending continuation without re-executing the child. Consumed continuations are not redelivered. Do not require a new Owner message.
+- **bounded delegation:** the issuer retains the active commitment, responsibility, and authority, but the target persistent Agent executes only in a separate runtime. For interactive work use `continuation:manual-pull`: persist verified child result and leave caller continuation to a later Owner/caller retrieval. For autonomous work use `continuation:automatic-new-runtime` only with a precreated dependency-bound `runtime:caller-continuation` task targeting the caller. That continuation runs in a fresh runtime after child success. Never change the persistent Agent identity of the current runtime.
 - **explicit handoff:** responsibility transfers only through an explicit authorized handoff contract. The target becomes the commitment owner for the transferred scope, and no automatic return to the issuer is implied.
 
-A live agent-to-agent task with ambiguous responsibility semantics must not proceed. Nested bounded delegations return one level at a time using durable parent/workflow provenance. Delegation never expands authority.
+An agent-to-agent task with ambiguous responsibility semantics or runtime identity policy must not proceed. Nested bounded delegations preserve one-level-at-a-time parent/workflow provenance, but every persistent Agent transition crosses a runtime boundary.
 
 
 When a task arrives through external orchestration, treat the envelope as transport evidence. Before accepting responsibility:
@@ -141,6 +171,12 @@ If an execution fence is supplied, re-read/revalidate the current fence immediat
 A recovery checkpoint records stable resume data only: task/execution identity, current step, verified evidence, and next action. It never stores hidden reasoning and never becomes durable manager identity.
 
 Before publishing success, verify the declared completion evidence. Then canonicalize terminal execution state so no active claim or fence remains projected after the task is terminal.
+
+## Runtime identity and user-visible diagnostics
+
+After reinstantiation, bind the runtime to the exact persistent Agent identity recovered from authoritative repository state. Reject any operation that would reinstate another persistent Agent in the same runtime.
+
+Start every user-visible Agent/infrastructure message with `DD.MM.YYYY · HH:MM MSK · <source_id>` using Europe/Moscow time. Treat the header as diagnostic metadata, never as identity proof.
 
 ## Safety and continuity
 

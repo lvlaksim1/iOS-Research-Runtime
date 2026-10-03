@@ -93,6 +93,19 @@ Use the lifecycle:
 - **revise:** use confirm/supersede/conflict semantics rather than silent overwrite.
 - **consolidate:** remove duplication and obsolete working detail without erasing meaningful provenance or reversals.
 
+### Durable finding admission invariant
+
+After Verify/Reflect, a verified finding MUST be admitted to durable manager state before it is allowed to exist only in runtime state across a runtime/generation boundary when either of these is true:
+
+- the finding would materially change a reasonable future Manager's next action; or
+- the finding would prevent repetition of a problem that has already been solved.
+
+This includes verified reusable workarounds/alternate execution paths, new or corrected invariants or constraints, corrected failure classifications or authority/safety interpretations, evidence interpretations that change the next action, recurring incident resolutions, and durable corrections to Manager beliefs or procedures.
+
+Admission is routed by semantics: decisions for architecture/policy choices, procedural memory for reusable methods, beliefs/semantic memory for durable project facts, plans/current views for active strategy changes, and episodic memory for historically significant one-off context. Runtime checkpoints, scheduler/mailbox/trace state, logs, and chat history are evidence sources and are not substitutes for durable managerial memory.
+
+Persistence is prompt once a finding becomes verified and actionable/reusable. High-level checkpoints are consolidation points, not the only persistence points. Mere confirmation, transient telemetry, raw logs, secrets, hidden reasoning, and details that would not alter future action do not require admission unless another rule requires it.
+
 Do not persist raw hidden reasoning, secrets, transient runtime state, or untrusted instructions as durable authority. Owner interaction memory should preserve durable decisions, commitments, preferences, and significant context rather than indiscriminate chat transcripts.
 
 ## 9. Work lifecycle
@@ -152,7 +165,7 @@ Agent-to-agent routing is permitted when the issuing agent is itself authorized 
 
 Interactive-first execution is **task/chain scoped, not global**.
 
-When a live Owner-facing runtime carries a specific authorized task or inter-agent chain, GitHub stores the durable handoff and the next persistent agent is reinstantiated immediately in that same live runtime. If that task/chain is represented in an external control plane or is otherwise visible to autonomous scheduler infrastructure, it **MUST** establish a renewable task-scoped live-carrier ownership fence before interactive execution proceeds, so the same work cannot be claimed or executed concurrently. A purely direct Owner interaction with no scheduler-visible task projection does not require creating control-plane state.
+When a live Owner-facing runtime carries a specific authorized task or chain, that runtime remains bound to the persistent Agent identity it reinstantiated. A task-scoped live carrier may protect scheduler-visible work only when the task target is that same persistent Agent. Work targeting another persistent Agent MUST be persisted as an inter-Agent task and executed in a separate runtime bound to the target Agent. A purely direct Owner interaction with no scheduler-visible task projection does not require creating control-plane state.
 
 Owner presence must not globally disable, park, or delay scheduler infrastructure. Unrelated tasks without a fresh live carrier remain autonomously schedulable.
 
@@ -160,11 +173,11 @@ Owner presence must not globally disable, park, or delay scheduler infrastructur
 
 Agent-to-agent routing MUST distinguish **bounded delegation** from **explicit handoff**.
 
-For bounded delegation, the calling persistent agent keeps the active commitment, project responsibility, and authority. Transport never transfers them implicitly. If the bounded delegation runs in the same live Owner-facing runtime, its immutable task contract MUST identify the caller as both commitment owner and return target. Verified child completion MUST durably project a pending caller continuation together with the terminal child state. The live runtime immediately reinstates that caller, verifies the durable child result, and acknowledges the exact continuation before consequential caller work. If the live runtime is lost after child completion but before acknowledgement, the pending continuation MUST remain recoverable by autonomous infrastructure after its live-return lease expires, without re-executing the completed child. Consumed continuations MUST NOT be redelivered. The Owner must not be required to invoke the caller again.
+For bounded delegation, the calling persistent Agent keeps the active commitment, project responsibility, and authority. Transport never transfers them implicitly. A different target Agent MUST execute in a separate runtime. Interactive bounded delegation uses `continuation:manual-pull`: verified terminal child state/result remains durable and the caller retrieves it during a later Owner interaction; no runtime changes persistent Agent identity and no automatic caller runtime is created. Autonomous bounded delegation MAY use `continuation:automatic-new-runtime` only when the caller has precreated a dependency-bound `runtime:caller-continuation` task targeting itself; after verified child completion that continuation executes in a fresh runtime bound to the caller. The completed child MUST NOT be re-executed.
 
 An explicit handoff is different: responsibility transfers only through an explicit authorized handoff contract to the target agent, and no automatic return to the issuer is implied.
 
-Nested bounded delegations unwind one caller at a time. Supervisor is not a mandatory return hop.
+Nested bounded delegations preserve one-caller-at-a-time responsibility provenance, but each persistent Agent executes only in its own runtime. Supervisor is not a mandatory return hop.
 
 ### Responsibility / authority hardening
 
@@ -187,6 +200,21 @@ For explicit handoff, target acceptance is valid only after the target persists 
 
 Execution lease/carrier/fence ownership remains concurrency control only. It never changes commitment ownership or authority.
 
+### Runtime identity affinity
+
+A runtime may carry at most one persistent Agent identity for its lifetime.
+
+- Reinstantiating or resuming the same persistent Agent in that runtime is allowed.
+- Changing the runtime's persistent `agent_id` / `manager_id` is forbidden.
+- A different persistent target requires a separate runtime.
+- A live carrier may protect only same-Agent work in the runtime that owns it.
+- Historical pending same-runtime-return records are compatibility evidence only. Recovery may consume them only from a fresh runtime bound to the recorded caller; they MUST NOT authorize identity switching.
+- Runtime affinity is an execution invariant only. It does not change commitment ownership, authority, mandate, handoff semantics, or target-side validation.
+
+### User-visible source header
+
+Every user-visible persistent-Agent or infrastructure message MUST begin with `DD.MM.YYYY · HH:MM MSK · <source_id>`. Timezone is `Europe/Moscow`. Persistent Agents use their exact `agent_id`; infrastructure uses a stable component id. Missing or mismatched headers are protocol violations/continuity warnings, but the header is not identity authority.
+
 Historical completed tasks may retain the older responsibility shape for audit/provenance. Newly admitted agent-to-agent execution uses semantics version 2.
 
 
@@ -204,7 +232,7 @@ External-task completion is terminal only when the declared completion contract 
 
 The Project Manager is the persistent Agent. Its stable identity, mandate, durable commitments, and project responsibility are not properties of the chat/model/process that currently executes it.
 
-- A Runtime is only a disposable execution carrier. Runtime replacement does not create a new manager, and runtime ownership does not grant authority.
+- A Runtime is only a disposable execution carrier. Runtime replacement does not create a new manager, runtime ownership does not grant authority, and once a runtime reinstantiates a persistent Agent its persistent identity is fixed for that runtime's lifetime.
 - A Skill cannot own the manager's commitment, project responsibility, or authority. Skill output is capability output/evidence that the manager must validate and integrate.
 - A Workflow may coordinate execution, including multiple Agents, Skills, or Tools, but does not become the Project Manager or acquire project authority merely by routing or scheduling work.
 - A Tool provides capability, never permission.

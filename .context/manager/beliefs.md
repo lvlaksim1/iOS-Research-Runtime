@@ -1,18 +1,50 @@
 # Manager beliefs
 
 - Persistent Project Manager `ios-research-runtime-project-manager` remains commitment owner; product authority is `main`, Manager authority is `manager-state`.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - Owner-facing work is organized into four large stages; IOS-M* labels are internal checkpoints and do not create routine Owner gates.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - LARGE STAGE 1 — Full iOS System Boot — is active.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - IOS-M1 and IOS-M2 are complete.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - Recovery XNU/launchd/root shell remains reproducible.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - BootKC evidence for iPhone17,3 contains IONVMeFamily, APFS, AppleEmbeddedPCIE and AppleT8140PCIe; a usable VirtIO storage path is absent.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - Source DeviceTree evidence contains native `apcie` hierarchy, DART/IOMMU relationships and PCIe ranges.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - Exact-SHA E2E `37063868899` on `a79bd0f87fafcecb76a9cc751e4fa9cfaa47b199` succeeded with both `BOOT_PROOF_OK` and `IOS_M2_BOUNDARY_PROBE_OK`, while `/dev/disk*` remained absent.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - The filtered runtime IORegistry probe on that green run produced no matching PCIe/NVMe provider lines, narrowing the immediate boundary to runtime IOService matching/binding rather than missing BootKC PCIe/NVMe code.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - Current product authority is `main@a8c960bc7d26011c7e87e0791cb2e7621f0cd61e`, which captures unfiltered IODeviceTree and IOService registry evidence.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - Current correct runtime state is WAIT_EXTERNAL_EVIDENCE for Windows E2E run `37068183031` on that exact head.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - SystemOS staging remains deferred until guest-visible block transport is evidenced.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - Package009 is terminal FINAL_COMPLETED. Package010 is active. Packages005–009 must not resume.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - PP-RM runtime schema 10 and DEC-0018 are authoritative: OCB3 exhausts a disposable Worker runtime, not the package. Transient OCB self-heals through fresh-runtime failover / alternate compliant path / Watchdog OCB_BACKOFF.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - DEC-0019 is authoritative for publication recovery: `update_ref(force=false)` remains canonical, while `update_file` is a narrow alternate compliant path for an unambiguous existing single-file bounded change after repeated explicit OCB; the returned new commit SHA becomes authoritative and requires new exact-SHA evidence.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
 - PP-RM must never bypass a substantive safety restriction; only a genuine no-compliant-path safety boundary may become OWNER_GATE.
+  - source: legacy-v2-state
+  - authority: legacy-unverified
