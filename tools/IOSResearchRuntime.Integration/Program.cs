@@ -96,6 +96,7 @@ if (pinnedIoprint is not null)
     await processRunner.RunAsync(
         "tar",
         new[] { "-rf", repackedSysroot, "-C", pinnedIoprint.DirectoryName!, "--transform=s,^ioprint$,usr/local/bin/ioprint,", "ioprint" },
+        layout.DataDirectory,
         cancellationToken);
     File.Copy(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
     Console.WriteLine($"[integration] PINNED_IOPRINT_STAGED={pinnedIoprint.FullName}");
