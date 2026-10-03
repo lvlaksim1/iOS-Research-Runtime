@@ -109,6 +109,38 @@ jobs:
           "QEMU_GATE_SHA=${{ steps.qemu.outputs.head_sha }}" | Add-Content e2e-evidence/revisions.txt
           "APPLICATION_SHA=$appSha" | Add-Content e2e-evidence/revisions.txt
 
+      - name: Probe pinned iokit-utils release asset provenance
+        shell: pwsh
+        run: |
+          $asset = Join-Path $env:RUNNER_TEMP "iokit-utils-1.4.0.tar.xz"
+          $extract = Join-Path $env:RUNNER_TEMP "iokit-utils-1.4.0"
+          $url = "https://github.com/Siguza/iokit-utils/releases/download/1.4.0/iokit-utils.tar.xz"
+          Invoke-WebRequest -Uri $url -OutFile $asset
+          $length = (Get-Item $asset).Length
+          if ($length -ne 27460) { throw "Unexpected iokit-utils 1.4.0 asset size: $length" }
+          $assetHash = (Get-FileHash -Algorithm SHA256 $asset).Hash.ToLowerInvariant()
+          New-Item -ItemType Directory -Path $extract -Force | Out-Null
+          tar -xJf $asset -C $extract
+          $ioprint = Join-Path $extract "ios/ioprint"
+          if (!(Test-Path $ioprint)) { throw "Pinned asset does not contain ios/ioprint" }
+          $ioprintHash = (Get-FileHash -Algorithm SHA256 $ioprint).Hash.ToLowerInvariant()
+          $ioprintSize = (Get-Item $ioprint).Length
+          @(
+            "IOKIT_UTILS_RELEASE=1.4.0"
+            "IOKIT_UTILS_RELEASE_COMMIT=df1d6b5172a19950edac74b8a05a28c12b34bba9"
+            "IOKIT_UTILS_ASSET_ID=70955572"
+            "IOKIT_UTILS_ASSET_SIZE=$length"
+            "IOKIT_UTILS_ASSET_SHA256=$assetHash"
+            "IOKIT_UTILS_IOS_IOPRINT_SIZE=$ioprintSize"
+            "IOKIT_UTILS_IOS_IOPRINT_SHA256=$ioprintHash"
+          ) | Set-Content e2e-evidence/iokit-utils-provenance.txt
+          $objdump = Get-Command llvm-objdump -ErrorAction SilentlyContinue
+          if ($objdump) {
+            & $objdump.Source --macho --dylibs-used $ioprint 2>&1 | Tee-Object -FilePath e2e-evidence/ioprint-dylibs.txt
+          } else {
+            "LLVM_OBJDUMP_UNAVAILABLE" | Set-Content e2e-evidence/ioprint-dylibs.txt
+          }
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
