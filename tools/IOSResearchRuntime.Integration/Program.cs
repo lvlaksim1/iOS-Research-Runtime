@@ -96,15 +96,33 @@ var pinnedIoprint = Directory
 
 if (pinnedIoprint is not null)
 {
-    var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar");
-    File.Copy(layout.IosCliToolsArchive, repackedSysroot, overwrite: true);
+    var repackRoot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint-root");
+    if (Directory.Exists(repackRoot))
+    {
+        Directory.Delete(repackRoot, recursive: true);
+    }
+    Directory.CreateDirectory(repackRoot);
     await processRunner.RunAsync(
         "tar",
-        new[] { "-rf", repackedSysroot, "-C", pinnedIoprint.DirectoryName!, "--transform=s,^ioprint$,sysroot/usr/local/bin/ioprint,", "ioprint" },
+        new[] { "-xzf", layout.IosCliToolsArchive, "-C", repackRoot },
+        layout.DataDirectory,
+        cancellationToken);
+    var stagedIoprint = Path.Combine(repackRoot, "sysroot", "usr", "local", "bin", "ioprint");
+    Directory.CreateDirectory(Path.GetDirectoryName(stagedIoprint)!);
+    File.Copy(pinnedIoprint.FullName, stagedIoprint, overwrite: true);
+    var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar");
+    if (File.Exists(repackedSysroot))
+    {
+        File.Delete(repackedSysroot);
+    }
+    await processRunner.RunAsync(
+        "tar",
+        new[] { "-czf", repackedSysroot, "-C", repackRoot, "sysroot" },
         layout.DataDirectory,
         cancellationToken);
     File.Copy(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
     Console.WriteLine($"[integration] PINNED_IOPRINT_STAGED={pinnedIoprint.FullName}");
+    Console.WriteLine($"[integration] PINNED_IOPRINT_REPACKED={stagedIoprint}");
 }
 
 await ramdiskProvisioning.PrepareAsync(cancellationToken);
