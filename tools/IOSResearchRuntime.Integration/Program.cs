@@ -155,6 +155,8 @@ var bootProgress = new TaskCompletionSource(
     TaskCreationOptions.RunContinuationsAsynchronously);
 var boundaryProbeCompleted = new TaskCompletionSource(
     TaskCreationOptions.RunContinuationsAsynchronously);
+var providerProbeCompleted = new TaskCompletionSource(
+    TaskCreationOptions.RunContinuationsAsynchronously);
 
 coordinator.LogReceived += (_, line) =>
 {
@@ -185,6 +187,14 @@ coordinator.LogReceived += (_, line) =>
     {
         boundaryProbeCompleted.TrySetResult();
     }
+
+    if (string.Equals(
+            line.Trim(),
+            "__IOS_M3_PROVIDER_PROBE_END__",
+            StringComparison.Ordinal))
+    {
+        providerProbeCompleted.TrySetResult();
+    }
 };
 
 coordinator.StatusChanged += (_, snapshot) =>
@@ -197,6 +207,7 @@ coordinator.StatusChanged += (_, snapshot) =>
         bootProgress.TrySetException(exception);
         proofCompleted.TrySetException(exception);
         boundaryProbeCompleted.TrySetException(exception);
+        providerProbeCompleted.TrySetException(exception);
     }
 };
 
@@ -219,6 +230,33 @@ try
             throw new TimeoutException(
                 $"QEMU produced no XNU/launchd/root-shell progress within {bootProgressTimeoutMinutes} minute(s). " +
                 $"Boot evidence: {evidencePath}");
+        }
+    }
+
+    Console.WriteLine("[integration] IOS-M3 read-only provider probe start.");
+    var providerProbeLines = new[]
+    {
+        "echo __IOS_M3_PROVIDER_PROBE_BEGIN__",
+        "if [ -x /usr/local/bin/ioprint ]; then echo __IOS_M3_IOPRINT_SHA256_EXPECTED_8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee__; echo __IOS_M3_IOPRINT_DEVICETREE__; /usr/local/bin/ioprint -p IODeviceTree 2>&1; echo __IOS_M3_IOPRINT_IOSERVICE__; /usr/local/bin/ioprint -p IOService 2>&1; else echo __IOS_M3_IOPRINT_UNAVAILABLE__; fi",
+        "echo __IOS_M3_PROVIDER_PROBE_END__"
+    };
+
+    foreach (var probeLine in providerProbeLines)
+    {
+        await SendProbeLineAsync(qemuRuntime, probeLine, cancellationToken);
+    }
+
+    using (var providerProbeTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+    {
+        providerProbeTimeout.CancelAfter(TimeSpan.FromMinutes(2));
+        try
+        {
+            await providerProbeCompleted.Task.WaitAsync(providerProbeTimeout.Token);
+            Console.WriteLine("IOS_M3_PROVIDER_PROBE_OK");
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Console.WriteLine("[integration] IOS-M3 read-only provider probe did not reach its terminal marker; continuing existing proof path.");
         }
     }
 
