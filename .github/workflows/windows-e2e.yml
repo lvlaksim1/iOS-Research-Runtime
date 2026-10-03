@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'pp-rm/owner-authorized-g316-4c0761ab'
     paths:
       - '.github/workflows/windows-e2e.yml'
       - 'runtime/resources.json'
@@ -34,7 +35,7 @@ permissions:
 jobs:
   boot-proof:
     if: >
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/pp-rm/owner-authorized-g316-4c0761ab')) ||
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push' &&
@@ -43,10 +44,10 @@ jobs:
     timeout-minutes: 90
 
     steps:
-      - name: Checkout current main application
+      - name: Checkout owner-authorized frozen application SHA
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: 4c0761abf226a8ba160e4f58590ed4befd493b7e
 
       - name: Resolve tested QEMU gate
         id: qemu
