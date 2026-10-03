@@ -77,8 +77,13 @@ await resourceBootstrap.BootstrapAllAsync(cancellationToken);
 await rawProvisioning.PrepareAsync(ProvisioningProfile.Default, cancellationToken);
 
 var pinnedIoprintSha256 = "8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee";
+var runnerTemp = Environment.GetEnvironmentVariable("RUNNER_TEMP");
+var ioprintSearchRoot = !string.IsNullOrWhiteSpace(runnerTemp) && Directory.Exists(runnerTemp)
+    ? runnerTemp
+    : Path.GetTempPath();
+Console.WriteLine($"[integration] PINNED_IOPRINT_SEARCH_ROOT={ioprintSearchRoot}");
 var pinnedIoprint = Directory
-    .EnumerateFiles(Path.GetTempPath(), "ioprint", SearchOption.AllDirectories)
+    .EnumerateFiles(ioprintSearchRoot, "ioprint", SearchOption.AllDirectories)
     .Select(path => new FileInfo(path))
     .Where(file => file.Exists && file.Length > 0)
     .OrderByDescending(file => file.LastWriteTimeUtc)
