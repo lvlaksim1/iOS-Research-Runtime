@@ -284,7 +284,20 @@ try
         {
             Console.WriteLine("[integration] Root-shell prompt not observed after launchd; sending a newline to request the recovery shell prompt.");
             await qemuRuntime.SendLineAsync(string.Empty, cancellationToken);
-            await proofCompleted.Task.WaitAsync(cancellationToken);
+            using var recoveryShellTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            recoveryShellTimeout.CancelAfter(TimeSpan.FromMinutes(2));
+            try
+            {
+                await proofCompleted.Task.WaitAsync(recoveryShellTimeout.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                var evidencePath = qemuRuntime.CurrentLogPath ?? "<not-created>";
+                throw new TimeoutException(
+                    "launchd reached userspace but no recovery root-shell proof appeared within 2 minutes after the console newline. " +
+                    "Repeated AppleSEPManager endpoint waits in boot evidence may indicate the current full-system bootstrap boundary. " +
+                    $"Boot evidence: {evidencePath}");
+            }
         }
     }
 
