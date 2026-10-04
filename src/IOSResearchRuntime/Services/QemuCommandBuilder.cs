@@ -24,6 +24,7 @@ public sealed class QemuCommandBuilder
             "-nographic",
             // Keep guest serial on raw stdio. The QEMU monitor is disabled so
             // root-proof commands cannot be consumed by the stdio multiplexer.
+            "-qmp", $"unix:{Path.Combine(_layout.DataDirectory, "ios-m3-qmp.sock")},server=on,wait=off",
             "-monitor", "none",
             "-serial", "stdio",
             // BootKC contains IONVMeFamily while VirtIO storage is absent. Probe the
