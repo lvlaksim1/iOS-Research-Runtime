@@ -116,7 +116,7 @@
     "manager_state_coherence_required": true,
     "durable_finding_gate_required": true
   },
-  "updated_at": "2026-10-03",
+  "updated_at": "2026-10-04",
   "context_version": "2.0.0-dev",
   "authority": {
     "manager_state_branch": "manager-state",
