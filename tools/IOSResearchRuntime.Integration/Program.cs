@@ -113,6 +113,7 @@ if (pinnedIoprint is not null)
 
     var launchDaemons = Path.Combine(repackRoot, "sysroot", "System", "Library", "LaunchDaemons");
     Directory.CreateDirectory(launchDaemons);
+    var launchDaemonPlists = new List<string>();
     var directProviderProbes = new[]
     {
         (Label: "org.iosresearchruntime.ioprint.devicetree", Plane: "IODeviceTree"),
@@ -131,7 +132,17 @@ if (pinnedIoprint is not null)
 <key>StandardErrorPath</key><string>/dev/console</string>
 </dict></plist>
 """;
-        File.WriteAllText(Path.Combine(launchDaemons, probe.Label + ".plist"), plist);
+        var launchDaemonPlist = Path.Combine(launchDaemons, probe.Label + ".plist");
+        File.WriteAllText(launchDaemonPlist, plist);
+        launchDaemonPlists.Add(launchDaemonPlist);
+    }
+    foreach (var launchDaemonPlist in launchDaemonPlists)
+    {
+        await processRunner.RunAsync(
+            "icacls",
+            new[] { launchDaemonPlist, "/inheritance:r", "/grant:r", "SYSTEM:F", "Administrators:F", "Users:R" },
+            layout.DataDirectory,
+            cancellationToken);
     }
     Console.WriteLine("[integration] PINNED_IOPRINT_DIRECT_LAUNCHD_PROBES=IODeviceTree,IOService");
     var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar.gz");
