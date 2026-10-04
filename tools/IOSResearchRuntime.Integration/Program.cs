@@ -110,6 +110,30 @@ if (pinnedIoprint is not null)
     var stagedIoprint = Path.Combine(repackRoot, "sysroot", "usr", "local", "bin", "ioprint");
     Directory.CreateDirectory(Path.GetDirectoryName(stagedIoprint)!);
     File.Copy(pinnedIoprint.FullName, stagedIoprint, overwrite: true);
+
+    var launchDaemons = Path.Combine(repackRoot, "sysroot", "System", "Library", "LaunchDaemons");
+    Directory.CreateDirectory(launchDaemons);
+    var directProviderProbes = new[]
+    {
+        (Label: "org.iosresearchruntime.ioprint.devicetree", Plane: "IODeviceTree"),
+        (Label: "org.iosresearchruntime.ioprint.ioservice", Plane: "IOService")
+    };
+    foreach (var probe in directProviderProbes)
+    {
+        var plist = $"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>{probe.Label}</string>
+<key>ProgramArguments</key><array><string>/usr/local/bin/ioprint</string><string>-p</string><string>{probe.Plane}</string></array>
+<key>RunAtLoad</key><true/>
+<key>StandardOutPath</key><string>/dev/console</string>
+<key>StandardErrorPath</key><string>/dev/console</string>
+</dict></plist>
+""";
+        File.WriteAllText(Path.Combine(launchDaemons, probe.Label + ".plist"), plist);
+    }
+    Console.WriteLine("[integration] PINNED_IOPRINT_DIRECT_LAUNCHD_PROBES=IODeviceTree,IOService");
+
     var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar");
     if (File.Exists(repackedSysroot))
     {
