@@ -273,6 +273,21 @@ try
         }
     }
 
+    using (var rootShellFallback = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+    {
+        rootShellFallback.CancelAfter(TimeSpan.FromSeconds(90));
+        try
+        {
+            await proofCompleted.Task.WaitAsync(rootShellFallback.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            Console.WriteLine("[integration] Root-shell prompt not observed after launchd; sending a newline to request the recovery shell prompt.");
+            await qemuRuntime.SendLineAsync(string.Empty, cancellationToken);
+            await proofCompleted.Task.WaitAsync(cancellationToken);
+        }
+    }
+
     Console.WriteLine("[integration] IOS-M3 read-only provider probe start.");
     var providerProbeLines = new[]
     {
@@ -300,20 +315,6 @@ try
         }
     }
 
-    using (var rootShellFallback = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-    {
-        rootShellFallback.CancelAfter(TimeSpan.FromSeconds(90));
-        try
-        {
-            await proofCompleted.Task.WaitAsync(rootShellFallback.Token);
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            Console.WriteLine("[integration] Root-shell prompt not observed after launchd; sending a newline to request the recovery shell prompt.");
-            await qemuRuntime.SendLineAsync(string.Empty, cancellationToken);
-            await proofCompleted.Task.WaitAsync(cancellationToken);
-        }
-    }
 
     Console.WriteLine("BOOT_PROOF_OK");
     Console.WriteLine($"BOOT_EVIDENCE={qemuRuntime.CurrentLogPath}");
