@@ -11,8 +11,7 @@ public sealed class AppleDeviceTreePatcher
         Encoding.ASCII.GetBytes("aic"),
         Encoding.ASCII.GetBytes("arm-io"),
         Encoding.ASCII.GetBytes("uart-1,samsung"),
-        Encoding.ASCII.GetBytes("pciec-bridge"),
-        Encoding.ASCII.GetBytes("apcie")
+        Encoding.ASCII.GetBytes("pciec-bridge")
     ];
 
     private const uint Frequency = 0x100000;
