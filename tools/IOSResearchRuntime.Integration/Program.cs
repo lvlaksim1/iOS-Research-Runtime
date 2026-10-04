@@ -167,6 +167,23 @@ if (pinnedIoprint is not null)
             $"Observed candidates: {(candidates.Length == 0 ? "<none>" : string.Join(", ", candidates))}",
             repackedSysroot);
     }
+    var archiveModeEvidence = await processRunner.RunAsync(
+        "tar",
+        new[] { "-tvzf", repackedSysroot },
+        layout.DataDirectory,
+        cancellationToken);
+    if (archiveModeEvidence.ExitCode != 0)
+    {
+        throw new InvalidOperationException(
+            $"Listing repacked iOS CLI tools failed with exit code {archiveModeEvidence.ExitCode}: {archiveModeEvidence.StandardError}");
+    }
+    foreach (var archiveLine in archiveModeEvidence.StandardOutput
+                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                 .Where(line => line.Contains("usr/local/bin/ioprint", StringComparison.Ordinal) ||
+                                line.Contains("org.iosresearchruntime.ioprint.", StringComparison.Ordinal)))
+    {
+        Console.WriteLine($"[integration] REPACK_MODE_EVIDENCE={archiveLine}");
+    }
     File.Move(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
     Console.WriteLine($"[integration] PINNED_IOPRINT_STAGED={pinnedIoprint.FullName}");
     Console.WriteLine($"[integration] PINNED_IOPRINT_REPACKED={stagedIoprint}");
