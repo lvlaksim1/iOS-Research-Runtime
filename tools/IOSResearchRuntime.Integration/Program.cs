@@ -144,6 +144,17 @@ if (pinnedIoprint is not null)
         new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "--mode", "u+rwX,go+rX,go-w", "-czf", repackedSysroot, "-C", repackRoot, "sysroot" },
         layout.DataDirectory,
         cancellationToken);
+    if (!File.Exists(repackedSysroot))
+    {
+        var candidates = Directory
+            .EnumerateFiles(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar*", SearchOption.TopDirectoryOnly)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        throw new FileNotFoundException(
+            $"Repacked iOS CLI tools archive was not created at expected path '{repackedSysroot}'. " +
+            $"Observed candidates: {(candidates.Length == 0 ? "<none>" : string.Join(", ", candidates))}",
+            repackedSysroot);
+    }
     File.Move(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
     Console.WriteLine($"[integration] PINNED_IOPRINT_STAGED={pinnedIoprint.FullName}");
     Console.WriteLine($"[integration] PINNED_IOPRINT_REPACKED={stagedIoprint}");
