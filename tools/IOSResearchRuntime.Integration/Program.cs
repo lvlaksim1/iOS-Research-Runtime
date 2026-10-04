@@ -141,7 +141,7 @@ if (pinnedIoprint is not null)
     }
     await processRunner.RunAsync(
         "tar",
-        new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "--mode", "u+rwX,go+rX,go-w", "-czf", repackedSysroot, "-C", repackRoot, "sysroot" },
+        new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "--mode", "u+rwX,go+rX,go-w", "-cf", repackedSysroot, "-C", repackRoot, "sysroot" },
         layout.DataDirectory,
         cancellationToken);
     File.Copy(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
