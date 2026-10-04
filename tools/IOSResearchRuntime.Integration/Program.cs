@@ -134,14 +134,14 @@ if (pinnedIoprint is not null)
         File.WriteAllText(Path.Combine(launchDaemons, probe.Label + ".plist"), plist);
     }
     Console.WriteLine("[integration] PINNED_IOPRINT_DIRECT_LAUNCHD_PROBES=IODeviceTree,IOService");
-    var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar");
+    var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar.gz");
     if (File.Exists(repackedSysroot))
     {
         File.Delete(repackedSysroot);
     }
     await processRunner.RunAsync(
         "tar",
-        new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "--mode", "u+rwX,go+rX,go-w", "-cf", repackedSysroot, "-C", repackRoot, "sysroot" },
+        new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "--mode", "u+rwX,go+rX,go-w", "-czf", repackedSysroot, "-C", repackRoot, "sysroot" },
         layout.DataDirectory,
         cancellationToken);
     File.Move(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
