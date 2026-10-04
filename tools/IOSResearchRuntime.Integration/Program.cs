@@ -141,7 +141,7 @@ if (pinnedIoprint is not null)
     }
     var repackResult = await processRunner.RunAsync(
         "tar",
-        new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "--mode", "u=rwX,go=rX", "-czf", repackedSysroot, "-C", repackRoot, "sysroot" },
+        new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "-czf", repackedSysroot, "-C", repackRoot, "sysroot" },
         layout.DataDirectory,
         cancellationToken);
     if (repackResult.ExitCode != 0)
