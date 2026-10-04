@@ -139,11 +139,16 @@ if (pinnedIoprint is not null)
     {
         File.Delete(repackedSysroot);
     }
-    await processRunner.RunAsync(
+    var repackResult = await processRunner.RunAsync(
         "tar",
         new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "--mode", "u+rwX,go+rX,go-w", "-czf", repackedSysroot, "-C", repackRoot, "sysroot" },
         layout.DataDirectory,
         cancellationToken);
+    if (repackResult.ExitCode != 0)
+    {
+        throw new InvalidOperationException(
+            $"Repacking iOS CLI tools failed with exit code {repackResult.ExitCode}: {repackResult.StandardError}");
+    }
     if (!File.Exists(repackedSysroot))
     {
         var candidates = Directory
