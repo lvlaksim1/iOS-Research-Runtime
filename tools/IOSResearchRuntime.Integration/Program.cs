@@ -144,7 +144,7 @@ if (pinnedIoprint is not null)
         new[] { "--uid", "0", "--gid", "0", "--uname", "root", "--gname", "wheel", "--mode", "u+rwX,go+rX,go-w", "-cf", repackedSysroot, "-C", repackRoot, "sysroot" },
         layout.DataDirectory,
         cancellationToken);
-    File.Copy(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
+    File.Move(repackedSysroot, layout.IosCliToolsArchive, overwrite: true);
     Console.WriteLine($"[integration] PINNED_IOPRINT_STAGED={pinnedIoprint.FullName}");
     Console.WriteLine($"[integration] PINNED_IOPRINT_REPACKED={stagedIoprint}");
 }
