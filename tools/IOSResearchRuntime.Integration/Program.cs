@@ -131,7 +131,9 @@ if (pinnedIoprint is not null)
 <key>StandardErrorPath</key><string>/dev/console</string>
 </dict></plist>
 """;
-        File.WriteAllText(Path.Combine(launchDaemons, probe.Label + ".plist"), plist);
+        var probePlistPath = Path.Combine(launchDaemons, probe.Label + ".plist");
+        File.WriteAllText(probePlistPath, plist);
+        File.SetUnixFileMode(probePlistPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
     }
     Console.WriteLine("[integration] PINNED_IOPRINT_DIRECT_LAUNCHD_PROBES=IODeviceTree,IOService");
     var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar");
