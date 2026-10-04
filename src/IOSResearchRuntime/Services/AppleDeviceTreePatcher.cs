@@ -242,6 +242,7 @@ public sealed class AppleDeviceTreePatcher
         var pcie = new AdtNode();
         pcie.Properties["name"] = "pcie";
         pcie.Properties["compatible"] = "pciec-bridge";
+        pcie.Properties["device_type"] = "pci";
         pcie.Properties["reg"] = EncodeRegRanges(
             (0x3f000000UL, 0x01000000UL),
             (0x10000000UL, 0x10000000UL));
