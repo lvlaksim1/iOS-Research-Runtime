@@ -138,11 +138,7 @@ if (pinnedIoprint is not null)
     }
     foreach (var launchDaemonPlist in launchDaemonPlists)
     {
-        await processRunner.RunAsync(
-            "icacls",
-            new[] { launchDaemonPlist, "/inheritance:r", "/grant:r", "SYSTEM:F", "Administrators:F", "Users:R" },
-            layout.DataDirectory,
-            cancellationToken);
+        File.SetAttributes(launchDaemonPlist, FileAttributes.ReadOnly);
     }
     Console.WriteLine("[integration] PINNED_IOPRINT_DIRECT_LAUNCHD_PROBES=IODeviceTree,IOService");
     var repackedSysroot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint.tar.gz");
