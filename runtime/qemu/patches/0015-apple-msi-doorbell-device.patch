@@ -1,0 +1,113 @@
+Subject: [PATCH] Add standalone Apple PCIe MSI doorbell device
+
+Standalone compile-gated device only. Machine mapping and Darwin integration are separate.
+
+diff --git a/hw/intc/apple_msi_doorbell.c b/hw/intc/apple_msi_doorbell.c
+new file mode 100644
+--- /dev/null
++++ b/hw/intc/apple_msi_doorbell.c
+@@ -0,0 +1,89 @@
++#include "qemu/osdep.h"
++#include "qemu/log.h"
++#include "hw/core/sysbus.h"
++#include "hw/core/qdev-properties.h"
++#include "hw/core/irq.h"
++
++#define TYPE_APPLE_MSI_DOORBELL "apple-msi-doorbell"
++OBJECT_DECLARE_SIMPLE_TYPE(AppleMSIDoorbellState, APPLE_MSI_DOORBELL)
++
++#define APPLE_MSI_DOORBELL_SIZE 0x1000
++#define APPLE_MSI_VECTOR_FIRST  0x533
++#define APPLE_MSI_VECTOR_COUNT  0x60
++#define APPLE_MSI_VECTOR_LAST   (APPLE_MSI_VECTOR_FIRST + APPLE_MSI_VECTOR_COUNT)
++
++struct AppleMSIDoorbellState {
++    SysBusDevice parent_obj;
++    MemoryRegion mmio;
++    DeviceState *aic;
++};
++
++static uint64_t apple_msi_doorbell_read(void *opaque, hwaddr offset,
++                                        unsigned size)
++{
++    return 0;
++}
++
++static void apple_msi_doorbell_write(void *opaque, hwaddr offset,
++                                     uint64_t value, unsigned size)
++{
++    AppleMSIDoorbellState *s = APPLE_MSI_DOORBELL(opaque);
++    uint32_t vector;
++
++    if (size != sizeof(uint32_t) || offset != 0) {
++        qemu_log_mask(LOG_GUEST_ERROR,
++                      "apple-msi-doorbell: invalid write offset=0x%" HWADDR_PRIx
++                      " size=%u\n", offset, size);
++        return;
++    }
++
++    vector = value;
++    if (vector < APPLE_MSI_VECTOR_FIRST || vector >= APPLE_MSI_VECTOR_LAST) {
++        qemu_log_mask(LOG_GUEST_ERROR,
++                      "apple-msi-doorbell: vector 0x%x outside native range\n",
++                      vector);
++        return;
++    }
++
++    qemu_irq_pulse(qdev_get_gpio_in(s->aic, vector));
++}
++
++static const MemoryRegionOps apple_msi_doorbell_ops = {
++    .read = apple_msi_doorbell_read,
++    .write = apple_msi_doorbell_write,
++    .endianness = DEVICE_NATIVE_ENDIAN,
++    .valid.min_access_size = 4,
++    .valid.max_access_size = 4,
++};
++
++static void apple_msi_doorbell_realize(DeviceState *dev, Error **errp)
++{
++    AppleMSIDoorbellState *s = APPLE_MSI_DOORBELL(dev);
++
++    if (!s->aic) {
++        error_setg(errp, "apple-msi-doorbell requires an AIC link");
++        return;
++    }
++
++    memory_region_init_io(&s->mmio, OBJECT(dev), &apple_msi_doorbell_ops, s,
++                          TYPE_APPLE_MSI_DOORBELL, APPLE_MSI_DOORBELL_SIZE);
++    sysbus_init_mmio(SYS_BUS_DEVICE(dev), &s->mmio);
++}
++
++static const Property apple_msi_doorbell_properties[] = {
++    DEFINE_PROP_LINK("aic", AppleMSIDoorbellState, aic,
++                     TYPE_DEVICE, DeviceState *),
++};
++
++static void apple_msi_doorbell_class_init(ObjectClass *klass, const void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(klass);
++    dc->realize = apple_msi_doorbell_realize;
++    device_class_set_props(dc, apple_msi_doorbell_properties);
++}
++
++static const TypeInfo apple_msi_doorbell_info = {
++    .name = TYPE_APPLE_MSI_DOORBELL,
++    .parent = TYPE_SYS_BUS_DEVICE,
++    .instance_size = sizeof(AppleMSIDoorbellState),
++    .class_init = apple_msi_doorbell_class_init,
++};
++
++static void apple_msi_doorbell_register_types(void)
++{
++    type_register_static(&apple_msi_doorbell_info);
++}
++
++type_init(apple_msi_doorbell_register_types)
+diff --git a/hw/intc/meson.build b/hw/intc/meson.build
+--- a/hw/intc/meson.build
++++ b/hw/intc/meson.build
+@@ -90,2 +90,3 @@ specific_ss.add(when: 'CONFIG_LOONGARCH_DINTC', if_true: files('loongarch_dintc.c'))
+ 
+ arm_common_ss.add(files('apple_aic.c'))
++arm_common_ss.add(files('apple_msi_doorbell.c'))
