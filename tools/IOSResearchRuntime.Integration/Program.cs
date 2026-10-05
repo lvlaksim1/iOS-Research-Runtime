@@ -111,7 +111,7 @@ if (pinnedIoprint is not null)
     Directory.CreateDirectory(Path.GetDirectoryName(stagedIoprint)!);
     File.Copy(pinnedIoprint.FullName, stagedIoprint, overwrite: true);
 
-    var launchDaemons = Path.Combine(repackRoot, "sysroot", "System", "Library", "LaunchDaemons");
+    var launchDaemons = Path.Combine(repackRoot, "sysroot", "System", "Library", "LaunchDaemons.old");
     Directory.CreateDirectory(launchDaemons);
     var launchDaemonPlists = new List<string>();
     var directProviderProbes = new[]
