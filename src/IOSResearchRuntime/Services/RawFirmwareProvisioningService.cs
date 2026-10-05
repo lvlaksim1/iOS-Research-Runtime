@@ -332,14 +332,25 @@ public sealed class RawFirmwareProvisioningService
 
         if (apcieIndex >= 0)
         {
+            var firstChildBridgeIndex = Array.FindIndex(
+                lines,
+                apcieIndex + 1,
+                line => line.TrimStart().StartsWith(
+                    "pci-bridge0:",
+                    StringComparison.OrdinalIgnoreCase));
+
+            var apcieContextEnd = firstChildBridgeIndex >= 0
+                ? firstChildBridgeIndex
+                : Math.Min(lines.Length, apcieIndex + 240);
+
             var apcieContext = lines
-                .Skip(Math.Max(0, apcieIndex - 80))
-                .Take(240)
+                .Skip(apcieIndex)
+                .Take(apcieContextEnd - apcieIndex)
                 .ToArray();
 
             ProgressChanged?.Invoke(
                 this,
-                $"[dtree-apcie-context] start_offset={Math.Max(0, apcieIndex - 80)} apcie_index={apcieIndex} line_count={apcieContext.Length}");
+                $"[dtree-apcie-context] apcie_index={apcieIndex} first_child_index={firstChildBridgeIndex} line_count={apcieContext.Length}");
 
             foreach (var line in apcieContext)
             {
