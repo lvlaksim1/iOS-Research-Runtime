@@ -176,9 +176,9 @@ public sealed class QemuRuntime : IDisposable
             };
 
             _ = await reader.ReadLineAsync(cancellationToken);
-            await writer.WriteLineAsync("{\\\"execute\\\":\\\"qmp_capabilities\\\"}");
+            await writer.WriteLineAsync("{\"execute\":\"qmp_capabilities\"}");
             _ = await reader.ReadLineAsync(cancellationToken);
-            await writer.WriteLineAsync("{\\\"execute\\\":\\\"query-pci\\\"}");
+            await writer.WriteLineAsync("{\"execute\":\"query-pci\"}");
             var response = await reader.ReadLineAsync(cancellationToken);
             if (!string.IsNullOrWhiteSpace(response))
             {
