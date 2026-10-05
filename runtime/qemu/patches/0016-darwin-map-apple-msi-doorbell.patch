@@ -7,7 +7,7 @@ Keep GPEX/ADT/NVMe changes out of this bounded unit.
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -225,6 +225,13 @@ static void darwin_init(MachineState *ms) {
+@@ -225,6 +225,12 @@ static void darwin_init(MachineState *ms) {
  
      s->aic = apple_aic_create(adt_find_node(dt_root, "arm-io/aic"), iobase);
  
