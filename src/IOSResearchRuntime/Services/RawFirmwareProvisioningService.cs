@@ -295,13 +295,16 @@ public sealed class RawFirmwareProvisioningService
 
         result.EnsureSuccess("ipsw dtree dtree.raw");
 
-        var matches = string.Concat(
+        var lines = string.Concat(
                 result.StandardOutput,
                 Environment.NewLine,
                 result.StandardError)
             .Split(
                 ['\r', '\n'],
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                StringSplitOptions.RemoveEmptyEntries);
+
+        var matches = lines
+            .Select(line => line.Trim())
             .Where(line =>
                 line.Contains("pcie", StringComparison.OrdinalIgnoreCase) ||
                 line.Contains("apcie", StringComparison.OrdinalIgnoreCase))
@@ -318,6 +321,38 @@ public sealed class RawFirmwareProvisioningService
             ProgressChanged?.Invoke(
                 this,
                 $"[dtree-pcie] {match}");
+        }
+
+        var apcieIndex = Array.FindIndex(
+            lines,
+            line => string.Equals(
+                line.Trim(),
+                "apcie:",
+                StringComparison.OrdinalIgnoreCase));
+
+        if (apcieIndex >= 0)
+        {
+            var apcieContext = lines
+                .Skip(apcieIndex)
+                .Take(160)
+                .ToArray();
+
+            ProgressChanged?.Invoke(
+                this,
+                $"[dtree-apcie-context] line_count={apcieContext.Length}");
+
+            foreach (var line in apcieContext)
+            {
+                ProgressChanged?.Invoke(
+                    this,
+                    $"[dtree-apcie-context] {line}");
+            }
+        }
+        else
+        {
+            ProgressChanged?.Invoke(
+                this,
+                "[dtree-apcie-context] node_not_found");
         }
     }
 
