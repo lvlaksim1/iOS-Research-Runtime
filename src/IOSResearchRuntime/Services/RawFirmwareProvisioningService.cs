@@ -365,6 +365,57 @@ public sealed class RawFirmwareProvisioningService
                 this,
                 "[dtree-apcie-context] node_not_found");
         }
+
+        if (apcieIndex >= 0)
+        {
+            var apcieInterruptContext = lines
+                .Skip(apcieIndex)
+                .Take(360)
+                .ToArray();
+
+            ProgressChanged?.Invoke(
+                this,
+                $"[dtree-apcie-interrupt-context] line_count={apcieInterruptContext.Length}");
+
+            foreach (var line in apcieInterruptContext)
+            {
+                ProgressChanged?.Invoke(
+                    this,
+                    $"[dtree-apcie-interrupt-context] {line}");
+            }
+        }
+
+        var aicIndex = Array.FindIndex(
+            lines,
+            line => string.Equals(
+                line.Trim(),
+                "aic:",
+                StringComparison.OrdinalIgnoreCase));
+
+        if (aicIndex >= 0)
+        {
+            var aicContext = lines
+                .Skip(aicIndex)
+                .Take(160)
+                .ToArray();
+
+            ProgressChanged?.Invoke(
+                this,
+                $"[dtree-aic-context] aic_index={aicIndex} line_count={aicContext.Length}");
+
+            foreach (var line in aicContext)
+            {
+                ProgressChanged?.Invoke(
+                    this,
+                    $"[dtree-aic-context] {line}");
+            }
+        }
+        else
+        {
+            ProgressChanged?.Invoke(
+                this,
+                "[dtree-aic-context] node_not_found");
+        }
     }
 
     private async Task ExtractAndUnwrapPatternAsync(
