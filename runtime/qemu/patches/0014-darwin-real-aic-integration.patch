@@ -1,7 +1,7 @@
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -21,12 +21,10 @@
+@@ -21,11 +21,9 @@
  #include "hw/arm/apple_amcc.h"
  #include "xnu/patch.h"
  #include "xnu/macho.h"
@@ -14,13 +14,13 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 -#define A_GOOD_NUMBER_OF_IRQS    0x1000
 -
  #define EXPECTED_FIRMWARE_NAME   "qemu-sptm"
-@@ -42,6 +40,7 @@ struct DarwinState {
+@@ -42,4 +40,5 @@ struct DarwinState {
      MachineState parent_obj;
      ARMCPU *cpu;
 +    DeviceState *aic;
      struct xnu_boot_info bootinfo;
  };
-@@ -141,38 +140,6 @@ static void init_sep(struct dtree_node *dt_root) {
+@@ -141,38 +140,4 @@ static void init_sep(struct dtree_node *dt_root) {
      alloc_zeroed("sep", sep_reg[0].base, sep_reg[0].len);
  }
  
@@ -59,7 +59,7 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 -}
 -
  static void setup_mte(Object *cpuobj, MachineState *machine, struct xnu_boot_info *info) {
-@@ -258,8 +225,9 @@ static void darwin_init(MachineState *ms) {
+@@ -258,7 +223,8 @@ static void darwin_init(MachineState *ms) {
      uint64_t iobase = arm_io_ranges[IO_RANGE_BASE_OFFSET];
      assert(0 == arm_io_ranges[0]); // child bus phys addr must be zero
  
@@ -69,7 +69,7 @@ diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 -    init_aic(dt_root, iobase);
      init_sep(dt_root);
      init_cpu_impl(dt_root);
-@@ -272,7 +240,9 @@ static void darwin_init(MachineState *ms) {
+@@ -272,6 +238,8 @@ static void darwin_init(MachineState *ms) {
      qdev_realize(DEVICE(cpuobj), NULL, &error_fatal);
  
      // On Apple Si, FIQ is hardwired to platform timer
