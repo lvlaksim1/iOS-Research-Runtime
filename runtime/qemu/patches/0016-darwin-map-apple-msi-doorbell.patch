@@ -1,0 +1,22 @@
+Subject: [PATCH] darwin: map Apple PCIe MSI doorbell to AIC
+
+Instantiate the compile-gated Apple MSI doorbell in the Darwin machine,
+link it to the real AIC, and map the native macOS MSI address 0xfffff000.
+Keep GPEX/ADT/NVMe changes out of this bounded unit.
+
+diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
+--- a/hw/arm/darwin.c
++++ b/hw/arm/darwin.c
+@@ -225,6 +225,13 @@ static void darwin_init(MachineState *ms) {
+ 
+     s->aic = apple_aic_create(adt_find_node(dt_root, "arm-io/aic"), iobase);
+ 
++    DeviceState *msi = qdev_new("apple-msi-doorbell");
++    object_property_set_link(OBJECT(msi), "aic", OBJECT(s->aic),
++                             &error_fatal);
++    sysbus_realize_and_unref(SYS_BUS_DEVICE(msi), &error_fatal);
++    sysbus_mmio_map(SYS_BUS_DEVICE(msi), 0, 0xfffff000);
++
+     init_uart(dt_root, iobase);
+     init_sep(dt_root);
+     init_cpu_impl(dt_root);
