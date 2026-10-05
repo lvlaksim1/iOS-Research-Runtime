@@ -333,13 +333,13 @@ public sealed class RawFirmwareProvisioningService
         if (apcieIndex >= 0)
         {
             var apcieContext = lines
-                .Skip(apcieIndex)
-                .Take(160)
+                .Skip(Math.Max(0, apcieIndex - 80))
+                .Take(240)
                 .ToArray();
 
             ProgressChanged?.Invoke(
                 this,
-                $"[dtree-apcie-context] line_count={apcieContext.Length}");
+                $"[dtree-apcie-context] start_offset={Math.Max(0, apcieIndex - 80)} apcie_index={apcieIndex} line_count={apcieContext.Length}");
 
             foreach (var line in apcieContext)
             {
