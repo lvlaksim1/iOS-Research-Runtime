@@ -245,6 +245,7 @@ public sealed class AppleDeviceTreePatcher
         pcie.Properties["device_type"] = "pci";
         pcie.Properties["#address-cells"] = 3u;
         pcie.Properties["#size-cells"] = 2u;
+        pcie.Properties["bus-range"] = new byte[] { 0, 0, 0, 0, 0xff, 0, 0, 0 };
         pcie.Properties["function-perst"] = AdtNull.Value;
         pcie.Properties["reg"] = EncodeRegRanges(
             (0x3f000000UL, 0x01000000UL),
