@@ -6,7 +6,7 @@ diff --git a/hw/intc/apple_msi_doorbell.c b/hw/intc/apple_msi_doorbell.c
 new file mode 100644
 --- /dev/null
 +++ b/hw/intc/apple_msi_doorbell.c
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,101 @@
 +#include "qemu/osdep.h"
 +#include "qemu/log.h"
 +#include "qapi/error.h"
