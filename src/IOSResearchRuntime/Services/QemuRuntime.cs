@@ -109,6 +109,11 @@ public sealed class QemuRuntime : IDisposable
         _ = PumpStreamAsync(process.StandardOutput);
         _ = PumpStreamAsync(process.StandardError);
 
+        // Diagnostics-only host PCI snapshot. QMP is already enabled on a private
+        // Unix socket; query the realized topology without changing guest-visible
+        // devices or DeviceTree state. This gives evidence for NVMe BDF/BAR mapping.
+        _ = CapturePciTopologyAsync(cancellationToken);
+
         return Task.CompletedTask;
     }
 
@@ -136,6 +141,57 @@ public sealed class QemuRuntime : IDisposable
 
         await process.StandardInput.WriteAsync('\n');
         await process.StandardInput.FlushAsync(cancellationToken);
+    }
+
+    private async Task CapturePciTopologyAsync(CancellationToken cancellationToken)
+    {
+        var socketPath = Path.Combine(_layout.DataDirectory, "ios-m3-qmp.sock");
+        var outputPath = Path.Combine(_layout.LogDirectory, "qmp-pci.json");
+
+        try
+        {
+            for (var attempt = 0; attempt < 50 && !File.Exists(socketPath); attempt++)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+            }
+
+            if (!File.Exists(socketPath))
+            {
+                return;
+            }
+
+            using var socket = new System.Net.Sockets.Socket(
+                System.Net.Sockets.AddressFamily.Unix,
+                System.Net.Sockets.SocketType.Stream,
+                System.Net.Sockets.ProtocolType.Unspecified);
+            await socket.ConnectAsync(
+                new System.Net.Sockets.UnixDomainSocketEndPoint(socketPath),
+                cancellationToken);
+
+            using var stream = new System.Net.Sockets.NetworkStream(socket, ownsSocket: true);
+            using var reader = new StreamReader(stream, Encoding.UTF8, false, 4096, leaveOpen: true);
+            using var writer = new StreamWriter(stream, new UTF8Encoding(false), 4096, leaveOpen: true)
+            {
+                AutoFlush = true
+            };
+
+            _ = await reader.ReadLineAsync(cancellationToken);
+            await writer.WriteLineAsync("{\\\"execute\\\":\\\"qmp_capabilities\\\"}");
+            _ = await reader.ReadLineAsync(cancellationToken);
+            await writer.WriteLineAsync("{\\\"execute\\\":\\\"query-pci\\\"}");
+            var response = await reader.ReadLineAsync(cancellationToken);
+            if (!string.IsNullOrWhiteSpace(response))
+            {
+                await File.WriteAllTextAsync(outputPath, response, cancellationToken);
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException or
+            System.Net.Sockets.SocketException or
+            OperationCanceledException)
+        {
+            // Evidence capture must never alter boot behavior.
+        }
     }
 
     private async Task PumpStreamAsync(StreamReader reader)
