@@ -32,7 +32,8 @@ public sealed class QemuCommandBuilder
             // empty raw image through QEMU NVMe and let the guest tell us whether
             // this darwin machine maps it to an IONVMe-compatible controller.
             "-drive", $"file={Path.Combine(_layout.DataDirectory, "ios-m3-nvme-probe.img")},if=none,format=raw,id=iosm3nvme",
-            "-device", "nvme,drive=iosm3nvme,serial=IOSM3PROBE",
+            "-device", "pcie-root-port,id=iosm3rp,bus=pcie.0,addr=1,chassis=1,slot=1",
+            "-device", "nvme,drive=iosm3nvme,serial=IOSM3PROBE,bus=iosm3rp",
             "-m", "8G",
             // The exact b1295ce E2E trace still first sees 0x12ed0000 at
             // the load from boot-state slot 0x...090b80 at 0x...0b3978.
