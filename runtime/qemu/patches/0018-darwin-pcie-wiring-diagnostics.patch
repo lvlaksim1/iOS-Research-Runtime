@@ -13,7 +13,7 @@ before attributing zero ECAM traffic solely to guest provider matching.
 diff --git a/hw/arm/darwin.c b/hw/arm/darwin.c
 --- a/hw/arm/darwin.c
 +++ b/hw/arm/darwin.c
-@@ -249,6 +249,10 @@ static void darwin_init(MachineState *ms) {
+@@ -249,5 +249,9 @@ static void darwin_init(MachineState *ms) {
      memory_region_init_alias(pcie_mmio, OBJECT(pcie), "darwin-pcie-mmio",
                               mmio_region, pcie_mmio_base, pcie_mmio_size);
      memory_region_add_subregion(get_system_memory(), pcie_mmio_base, pcie_mmio);
