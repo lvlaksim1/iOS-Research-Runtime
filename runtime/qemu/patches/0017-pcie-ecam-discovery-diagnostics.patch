@@ -15,7 +15,7 @@ accesses.
 diff --git a/hw/pci/pcie_host.c b/hw/pci/pcie_host.c
 --- a/hw/pci/pcie_host.c
 +++ b/hw/pci/pcie_host.c
-@@ -29,6 +29,20 @@ static inline PCIDevice *pcie_dev_find_by_mmcfg_addr(PCIBus *s,
+@@ -29,6 +29,19 @@ static inline PCIDevice *pcie_dev_find_by_mmcfg_addr(PCIBus *s,
                             PCIE_MMCFG_DEVFN(mmcfg_addr));
  }
  
@@ -35,7 +35,7 @@ diff --git a/hw/pci/pcie_host.c b/hw/pci/pcie_host.c
  static void pcie_mmcfg_data_write(void *opaque, hwaddr mmcfg_addr,
                                    uint64_t val, unsigned len)
  {
-@@ -37,6 +51,8 @@ static void pcie_mmcfg_data_write(void *opaque, hwaddr mmcfg_addr,
+@@ -37,6 +50,8 @@ static void pcie_mmcfg_data_write(void *opaque, hwaddr mmcfg_addr,
      uint32_t addr;
      uint32_t limit;
  
@@ -44,7 +44,7 @@ diff --git a/hw/pci/pcie_host.c b/hw/pci/pcie_host.c
      if (!pci_dev) {
          return;
      }
-@@ -53,6 +69,8 @@ static uint64_t pcie_mmcfg_data_read(void *opaque,
+@@ -53,6 +68,8 @@ static uint64_t pcie_mmcfg_data_read(void *opaque,
      uint32_t addr;
      uint32_t limit;
  
