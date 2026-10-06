@@ -11,7 +11,7 @@ public sealed class AppleDeviceTreePatcher
         Encoding.ASCII.GetBytes("aic"),
         Encoding.ASCII.GetBytes("arm-io"),
         Encoding.ASCII.GetBytes("uart-1,samsung"),
-        Encoding.ASCII.GetBytes("pciec-bridge")
+        Encoding.ASCII.GetBytes("apcie,t8140")
     ];
 
     private const uint Frequency = 0x100000;
@@ -241,7 +241,7 @@ public sealed class AppleDeviceTreePatcher
         // This is intentionally only a discovery node: no SystemOS payload is staged.
         var pcie = new AdtNode();
         pcie.Properties["name"] = "pcie";
-        pcie.Properties["compatible"] = "pciec-bridge";
+        pcie.Properties["compatible"] = "apcie,t8140";
         pcie.Properties["device_type"] = "pci";
         pcie.Properties["#address-cells"] = 3u;
         pcie.Properties["#size-cells"] = 2u;
