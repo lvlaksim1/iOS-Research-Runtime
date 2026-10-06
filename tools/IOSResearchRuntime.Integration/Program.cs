@@ -329,7 +329,7 @@ try
     var providerProbeLines = new[]
     {
         "echo __IOS_M3_PROVIDER_PROBE_BEGIN__",
-        "if [ -x /usr/local/bin/ioprint ]; then echo __IOS_M3_IOPRINT_SHA256_EXPECTED_8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee__; echo __IOS_M3_IOPRINT_DEVICETREE__; /usr/local/bin/ioprint -p IODeviceTree 2>&1; echo __IOS_M3_IOPRINT_IOSERVICE__; /usr/local/bin/ioprint -p IOService 2>&1; echo __IOS_M3_IOPRINT_PCIE_NVME_CLASSES__; /usr/local/bin/ioprint -p IOService 2>&1 | grep -E -i -C 6 'AppleT8140PCIe|AppleT8140PCIePort|IOPCIHostBridgeData|AppleNVMe' || echo __IOS_M3_PCIE_NVME_CLASSES_ABSENT__; else echo __IOS_M3_IOPRINT_UNAVAILABLE__; fi",
+        "if [ -x /usr/local/bin/ioprint ]; then echo __IOS_M3_IOPRINT_SHA256_EXPECTED_8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee__; echo __IOS_M3_IOPRINT_DEVICETREE__; /usr/local/bin/ioprint -k -p IODeviceTree pcie 2>&1; echo __IOS_M3_IOPRINT_IOSERVICE__; /usr/local/bin/ioprint -p IOService 2>&1; echo __IOS_M3_IOPRINT_PCIE_NVME_CLASSES__; /usr/local/bin/ioprint -p IOService 2>&1 | grep -E -i -C 6 'AppleT8140PCIe|AppleT8140PCIePort|IOPCIHostBridgeData|AppleNVMe' || echo __IOS_M3_PCIE_NVME_CLASSES_ABSENT__; else echo __IOS_M3_IOPRINT_UNAVAILABLE__; fi",
         "echo __IOS_M3_PROVIDER_PROBE_END__"
     };
 
@@ -381,7 +381,7 @@ try
         "echo __IOS_M3_PROBE_IOREGISTRY_RUNTIME_DEPS__",
         "ls -l /usr/lib/libncurses* /System/Library/Frameworks/IOKit.framework/IOKit /usr/bin/ioreg /usr/sbin/ioreg 2>&1",
         "echo __IOS_M3_PROBE_IOPRINT_PCIE_PROVIDERS__",
-        "if [ -x /usr/local/bin/ioprint ]; then echo __IOS_M3_IOPRINT_SHA256_EXPECTED_8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee__; echo __IOS_M3_IOPRINT_DEVICETREE__; /usr/local/bin/ioprint -p IODeviceTree 2>&1; echo __IOS_M3_IOPRINT_IOSERVICE__; /usr/local/bin/ioprint -p IOService 2>&1; echo __IOS_M3_IOPRINT_PCIE_NVME_CLASSES__; /usr/local/bin/ioprint -p IOService 2>&1 | grep -E -i -C 6 'AppleT8140PCIe|AppleT8140PCIePort|IOPCIHostBridgeData|AppleNVMe' || echo __IOS_M3_PCIE_NVME_CLASSES_ABSENT__; else echo __IOS_M3_IOPRINT_UNAVAILABLE__; fi",
+        "if [ -x /usr/local/bin/ioprint ]; then echo __IOS_M3_IOPRINT_SHA256_EXPECTED_8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee__; echo __IOS_M3_IOPRINT_DEVICETREE__; /usr/local/bin/ioprint -k -p IODeviceTree pcie 2>&1; echo __IOS_M3_IOPRINT_IOSERVICE__; /usr/local/bin/ioprint -p IOService 2>&1; echo __IOS_M3_IOPRINT_PCIE_NVME_CLASSES__; /usr/local/bin/ioprint -p IOService 2>&1 | grep -E -i -C 6 'AppleT8140PCIe|AppleT8140PCIePort|IOPCIHostBridgeData|AppleNVMe' || echo __IOS_M3_PCIE_NVME_CLASSES_ABSENT__; else echo __IOS_M3_IOPRINT_UNAVAILABLE__; fi",
         "echo __IOS_M2_BOUNDARY_END__"
     };
 
