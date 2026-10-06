@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iOS Research Runtime <noreply@example.invalid>
+Date: Tue, 6 Oct 2026 00:32:00 +0000
+Subject: [PATCH] pcie: trace bounded ECAM discovery accesses
+
+Emit a bounded diagnostic when the guest touches PCIe ECAM. This gives
+host-side evidence that XNU reached the synthetic GPEX configuration
+space even when recovery userspace cannot execute ioprint. Keep the
+probe read-only with respect to PCI semantics and cap output at 128
+accesses.
+---
+ hw/pci/pcie_host.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/hw/pci/pcie_host.c b/hw/pci/pcie_host.c
+--- a/hw/pci/pcie_host.c
++++ b/hw/pci/pcie_host.c
+@@ -29,6 +29,17 @@ static inline PCIDevice *pcie_dev_find_by_mmcfg_addr(PCIBus *s,
+                            PCIE_MMCFG_DEVFN(mmcfg_addr));
+ }
+ 
++static unsigned pcie_mmcfg_probe_count;
++
++static void pcie_mmcfg_probe(const char *op, hwaddr mmcfg_addr,
++                             unsigned len, bool found)
++{
++    if (pcie_mmcfg_probe_count++ >= 128) {
++        return;
++    }
++    fprintf(stderr, "[ios-m3-pcie-ecam] op=%s addr=0x%" HWADDR_PRIx
++            " len=%u device=%s\n", op, mmcfg_addr, len,
++            found ? "present" : "absent");
++}
++
+ static void pcie_mmcfg_data_write(void *opaque, hwaddr mmcfg_addr,
+                                   uint64_t val, unsigned len)
+ {
+@@ -37,6 +48,8 @@ static void pcie_mmcfg_data_write(void *opaque, hwaddr mmcfg_addr,
+     uint32_t addr;
+     uint32_t limit;
+ 
++    pcie_mmcfg_probe("write", mmcfg_addr, len, pci_dev != NULL);
++
+     if (!pci_dev) {
+         return;
+     }
+@@ -53,6 +66,8 @@ static uint64_t pcie_mmcfg_data_read(void *opaque,
+     uint32_t addr;
+     uint32_t limit;
+ 
++    pcie_mmcfg_probe("read", mmcfg_addr, len, pci_dev != NULL);
++
+     if (!pci_dev) {
+         return ~0x0;
+     }
+-- 
+2.51.0
