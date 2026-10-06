@@ -82,8 +82,15 @@ public sealed class RawFirmwareProvisioningService
                 Path.Combine(firmwareDirectory, "dtree.raw"),
                 cancellationToken);
 
+            var rawDeviceTreePath = Path.Combine(firmwareDirectory, "dtree.raw");
+            File.Copy(
+                rawDeviceTreePath,
+                Path.Combine(_layout.LogDirectory, "dtree.raw"),
+                overwrite: true);
+            ProgressChanged?.Invoke(this, "[dtree] RAW_DEVICE_TREE_EVIDENCE=logs/dtree.raw");
+
             await ReportDeviceTreePcieCapabilitiesAsync(
-                Path.Combine(firmwareDirectory, "dtree.raw"),
+                rawDeviceTreePath,
                 cancellationToken);
 
             ProgressChanged?.Invoke(this, "[dtree] Применение qemu-sptm DeviceTree fixups…");
