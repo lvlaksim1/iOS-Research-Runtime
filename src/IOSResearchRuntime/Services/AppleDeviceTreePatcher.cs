@@ -247,6 +247,12 @@ public sealed class AppleDeviceTreePatcher
         pcie.Properties["#size-cells"] = 2u;
         pcie.Properties["bus-range"] = new byte[] { 0, 0, 0, 0, 0xff, 0, 0, 0 };
         pcie.Properties["function-perst"] = AdtNull.Value;
+        // Native Darwin PCIe MSI contract from the pinned DeviceTree evidence.
+        pcie.Properties["interrupt-parent"] = 32u;
+        pcie.Properties["msi-parent-controller"] = 32u;
+        pcie.Properties["msi-address"] = 0xfffff000UL;
+        pcie.Properties["msi-vector-offset"] = 0x533u;
+        pcie.Properties["#msi-vectors"] = 96u;
         pcie.Properties["reg"] = EncodeRegRanges(
             (0x3f000000UL, 0x01000000UL),
             (0x10000000UL, 0x10000000UL));
