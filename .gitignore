@@ -12,3 +12,14 @@ tools/ios-ramdisk-tool/.apfs-patched/
 tools/ios-ramdisk-tool/go.work
 tools/ios-ramdisk-tool/go.work.sum
 tools/ios-ramdisk-tool/apfs-overlay.json
+
+# Repository storage policy
+/dist/
+/build/
+*.exe
+*.msi
+*.zip
+*.7z
+*.rar
+*.dll
+*.pdb
