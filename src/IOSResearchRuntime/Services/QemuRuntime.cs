@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 
 namespace IOSResearchRuntime.Services;
 
@@ -111,7 +112,7 @@ public sealed class QemuRuntime : IDisposable
         // Diagnostics-only host PCI snapshot. QMP is already enabled on a private
         // Unix socket; query the realized topology without changing guest-visible
         // devices or DeviceTree state. This gives evidence for NVMe BDF/BAR mapping.
-        _ = CapturePciTopologyAsync(cancellationToken);
+        _ = CapturePciTopologyAsync(capture.BootNonce, capture.RunId, capture.HeadSha, cancellationToken);
 
         return Task.CompletedTask;
     }
@@ -142,10 +143,13 @@ public sealed class QemuRuntime : IDisposable
         await process.StandardInput.FlushAsync(cancellationToken);
     }
 
-    private async Task CapturePciTopologyAsync(CancellationToken cancellationToken)
+    private async Task CapturePciTopologyAsync(
+        string bootNonce, string? runId, string? headSha,
+        CancellationToken cancellationToken)
     {
         var socketPath = Path.Combine(_layout.DataDirectory, "ios-m3-qmp.sock");
-        var outputPath = Path.Combine(_layout.LogDirectory, "qmp-pci.json");
+        var rawPath = Path.Combine(_layout.LogDirectory, $"boot-{bootNonce}.qmp-pci.json");
+        var evidencePath = Path.Combine(_layout.LogDirectory, $"boot-{bootNonce}.qmp-pci-evidence.json");
 
         try
         {
@@ -159,13 +163,17 @@ public sealed class QemuRuntime : IDisposable
                 return;
             }
 
+            // A bounded query never delays or changes the guest boot path.
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(12));
+            var token = timeout.Token;
+
             using var socket = new System.Net.Sockets.Socket(
                 System.Net.Sockets.AddressFamily.Unix,
                 System.Net.Sockets.SocketType.Stream,
                 System.Net.Sockets.ProtocolType.Unspecified);
             await socket.ConnectAsync(
-                new System.Net.Sockets.UnixDomainSocketEndPoint(socketPath),
-                cancellationToken);
+                new System.Net.Sockets.UnixDomainSocketEndPoint(socketPath), token);
 
             using var stream = new System.Net.Sockets.NetworkStream(socket, ownsSocket: true);
             using var reader = new StreamReader(stream, Encoding.UTF8, false, 4096, leaveOpen: true);
@@ -174,23 +182,107 @@ public sealed class QemuRuntime : IDisposable
                 AutoFlush = true
             };
 
-            _ = await reader.ReadLineAsync(cancellationToken);
-            await writer.WriteLineAsync("{\"execute\":\"qmp_capabilities\"}");
-            _ = await reader.ReadLineAsync(cancellationToken);
-            await writer.WriteLineAsync("{\"execute\":\"query-pci\"}");
-            var response = await reader.ReadLineAsync(cancellationToken);
-            if (!string.IsNullOrWhiteSpace(response))
+            _ = await reader.ReadLineAsync(token); // QMP greeting.
+            var capabilitiesId = $"iosm3-capabilities-{bootNonce}";
+            await writer.WriteLineAsync(
+                JsonSerializer.Serialize(new { execute = "qmp_capabilities", id = capabilitiesId }));
+            var capabilitiesReply = await ReadQmpReplyAsync(reader, capabilitiesId, token);
+            if (capabilitiesReply is null)
             {
-                await File.WriteAllTextAsync(outputPath, response, cancellationToken);
+                return;
             }
+
+            using (var capabilities = JsonDocument.Parse(capabilitiesReply))
+            {
+                if (!capabilities.RootElement.TryGetProperty("return", out _))
+                {
+                    return;
+                }
+            }
+
+            var queryId = $"iosm3-query-pci-{bootNonce}";
+            await writer.WriteLineAsync(
+                JsonSerializer.Serialize(new { execute = "query-pci", id = queryId }));
+            var response = await ReadQmpReplyAsync(reader, queryId, token);
+            if (response is null)
+            {
+                return;
+            }
+
+            var classification = QmpPciStorageEvidence.Evaluate(response);
+            await using (var raw = new FileStream(
+                rawPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+            {
+                await raw.WriteAsync(Encoding.UTF8.GetBytes(response), token);
+                await raw.FlushAsync(token);
+            }
+
+            // This is an independent host-model observation. It is never
+            // evidence of IOKit binding, a guest BSD disk, APFS, or Stage 1.
+            var receipt = new
+            {
+                schema = 1,
+                boot_nonce = bootNonce,
+                run_id = runId,
+                head_sha = headSha,
+                source = "QMP_QUERY_PCI_HOST_ONLY",
+                raw_reply_file = Path.GetFileName(rawPath),
+                valid_query_pci_reply = classification.ValidQueryPciReply,
+                host_nvme_candidates = classification.HostNvmeCandidates,
+                classification = classification.Classification,
+                guest_nvme_bound = false,
+                stage1_accepted = false
+            };
+            await using var evidence = new FileStream(
+                evidencePath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+            await JsonSerializer.SerializeAsync(evidence, receipt, cancellationToken: token);
+            await evidence.FlushAsync(token);
         }
         catch (Exception exception) when (
             exception is IOException or
             System.Net.Sockets.SocketException or
-            OperationCanceledException)
+            OperationCanceledException or
+            UnauthorizedAccessException or
+            JsonException or
+            ObjectDisposedException)
         {
-            // Evidence capture must never alter boot behavior.
+            // Optional host-side evidence must never alter guest boot behavior.
         }
+    }
+
+    private static async Task<string?> ReadQmpReplyAsync(
+        StreamReader reader, string expectedId, CancellationToken cancellationToken)
+    {
+        // QMP events may arrive between command responses. Correlate by ID.
+        for (var lineIndex = 0; lineIndex < 32; lineIndex++)
+        {
+            var line = await reader.ReadLineAsync(cancellationToken);
+            if (line is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(line);
+                var root = document.RootElement;
+                if (root.ValueKind == JsonValueKind.Object &&
+                    root.TryGetProperty("id", out var id) &&
+                    id.ValueKind == JsonValueKind.String &&
+                    id.GetString() == expectedId &&
+                    (root.TryGetProperty("return", out _) ||
+                     root.TryGetProperty("error", out _)))
+                {
+                    return line;
+                }
+            }
+            catch (JsonException)
+            {
+                // An unrelated or malformed line is not a command response.
+            }
+        }
+
+        return null;
     }
 
     private async Task PumpStreamAsync(
