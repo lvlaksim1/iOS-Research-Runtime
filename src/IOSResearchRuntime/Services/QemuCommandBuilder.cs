@@ -57,6 +57,9 @@ public sealed class QemuCommandBuilder
             arguments.Add(txm);
         }
 
+        // Explicit opt-in only. Default boot arguments and guest devices stay intact.
+        // Invalid plans fail before QEMU starts, rather than silently losing evidence.
+        arguments.AddRange(QemuNvmeTraceOptIn.GetArguments(_layout));
         return arguments;
     }
 }

@@ -124,6 +124,28 @@ jobs:
           cd qemu-sptm/build
           ninja qemu-system-aarch64.exe
 
+      # Requires the verified G47 capability checker in scripts/ on the same ref.
+      # Checks the built binary, its Meson configuration and its trace catalog.
+      # This does not execute a guest or establish NVMe/IOKit/APFS readiness.
+      - name: Verify compiled QEMU NVMe IRQ trace capability
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          mkdir -p qemu-proof
+          python scripts/check_m3_windows_qemu_trace_capability.py \
+            --build-root qemu-sptm/build \
+            --binary qemu-sptm/build/qemu-system-aarch64.exe \
+            --output qemu-proof/nvme-irq-trace-capability.json
+
+      - name: Upload compiled QEMU trace capability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-sptm-nvme-irq-trace-capability
+          path: qemu-proof/nvme-irq-trace-capability.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Save QEMU build cache
         if: steps.qemu-build-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
