@@ -27,10 +27,10 @@
 - The filtered runtime IORegistry probe on that green run produced no matching PCIe/NVMe provider lines, narrowing the immediate boundary to runtime IOService matching/binding rather than missing BootKC PCIe/NVMe code.
   - source: legacy-v2-state
   - authority: legacy-unverified
-- Current product authority is `main@a8c960bc7d26011c7e87e0791cb2e7621f0cd61e`, which captures unfiltered IODeviceTree and IOService registry evidence.
+- Current product authority is `main@89cf1e04571545010c2433f24264bae25f5c5f2d`, verified by GitHub ref on 2026-10-15; no full-system iOS boot is proven.
   - source: legacy-v2-state
   - authority: legacy-unverified
-- Current correct runtime state is WAIT_EXTERNAL_EVIDENCE for Windows E2E run `37068183031` on that exact head.
+- Earlier E2E run `37068183031` is historical, not the current runtime wait; latest package010 generation651 was OCB_BACKOFF after six explicit blocked source writes, with no product target.
   - source: legacy-v2-state
   - authority: legacy-unverified
 - SystemOS staging remains deferred until guest-visible block transport is evidenced.
@@ -48,3 +48,7 @@
 - PP-RM must never bypass a substantive safety restriction; only a genuine no-compliant-path safety boundary may become OWNER_GATE.
   - source: legacy-v2-state
   - authority: legacy-unverified
+
+- Owner authorized justified temporary GitHub branches on 2026-10-15, recorded in DEC-0021; prior g649 staging ref still matches main and does not contain the paired ADT/PMGR implementation.
+  - source: direct Owner directive, DEC-0021, fresh GitHub refs and PP-RM generation651 trace
+  - authority: Owner + independently verified repository evidence

@@ -1,15 +1,12 @@
 # Next actions
 
-Updated: 2026-10-03 00:42 MSK
+Updated: 2026-10-15 04:23 MSK
 
-1. Preserve `main@a8c960bc7d26011c7e87e0791cb2e7621f0cd61e`; do not duplicate the unfiltered IORegistry mutation.
-2. Consume terminal exact-SHA Windows E2E run `37068183031`.
-3. Inspect unfiltered IODeviceTree and IOService output for the actual live PCIe hierarchy, provider classes, matching properties and any IONVMe-related service.
-4. If no relevant PCIe provider is instantiated, isolate the smallest DeviceTree/service-matching dependency.
-5. If PCIe binding exists but no NVMe endpoint binds, isolate the next endpoint/device-model/IOMMU/interrupt dependency.
-6. If guest disk visibility is achieved, add explicit proof and proceed automatically to SystemOS/APFS staging outside Git.
-7. Continue internal IOS-M* work without Owner gates until LARGE STAGE 1 acceptance or a genuine strategic/safety boundary.
-8. Apply DEC-0018 on transient OCB.
-9. Apply DEC-0019 for publication only when its strict conditions hold: canonical `update_ref(force=false)` first; after repeated explicit OCB on an unambiguous existing single-file bounded change, fresh-fetch the current blob SHA, publish the exact content through `update_file`, record the returned new authoritative SHA and obtain new exact-SHA CI evidence.
-10. Do not use the DEC-0019 fallback for multi-file/ambiguous/non-equivalent publication or to bypass a substantive restriction.
-11. Do not resume packages005–009.
+1. Preserve authoritative `main@89cf1e04571545010c2433f24264bae25f5c5f2d` and the unmodified service branch `pp-rm/g649-pmgr-two-file-staging` unless a newly verified compliant plan requires another justified branch.
+2. Start PP-RM v19 successor package `IOS-M3-CONTINUOUS-011` with Manager generation 27, Worker B owner of READY generation 1; use the existing five task objects only.
+3. First bounded unit: independently inspect pinned QEMU Darwin/PMGR hardware mapping and host ADT native compatibility, and reconcile exact-sha Windows build/E2E prerequisite evidence. Report precise facts and UNKNOWNs; do not immediately attempt code writes.
+4. Produce a new, evidence-based smallest viable implementation/test obligation that is genuinely distinct from the explicitly blocked g649–650 host ADT update. Do not bypass content safety restrictions or reattempt identical blocked updates through a different interface.
+5. If a valid independently justified target can be constructed, freeze a direct child of current main through two-phase v19 publication; consume DEC-0020 ordered prerequisite evidence before CI/E2E or mutation; never force refs.
+6. Retain nonterminal Watchdog-owned BACKOFF when a compliant construction route is not yet proven. Do not silently declare project acceptance.
+7. Acceptance: guest-visible non-ramdisk block storage, actual full-system APFS SystemOS/Preboot/Data and system launchd/core userland from the system volume, all from reproducible exact-SHA Windows evidence. Recovery `md0` is not acceptance.
+8. Do not reactivate packages005–009, do not publish releases or large binary assets without Owner authority.

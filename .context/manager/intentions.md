@@ -1,6 +1,6 @@
 # Manager intentions and commitments
 
-Manager generation: 25.
+Manager generation: 27.
 
 ## Completed foundation
 - IOS-M1: COMPLETED — recovery launchd + root shell.
@@ -9,13 +9,13 @@ Manager generation: 25.
 
 ## Active macro stage
 ### LARGE STAGE 1 — Full iOS System Boot
-Status: ACTIVE / WAIT_EXTERNAL_EVIDENCE.
-Active runtime package: `IOS-M3-CONTINUOUS-010`.
-Current product: `main@a8c960bc7d26011c7e87e0791cb2e7621f0cd61e`.
-Current evidence run: `37068183031`.
+Status: ACTIVE / READY_TO_DISPATCH_NEW_PACKAGE.
+Active runtime package: `IOS-M3-CONTINUOUS-011` (successor to generation651 OCB_BACKOFF; old package superseded).
+Current product: `main@89cf1e04571545010c2433f24264bae25f5c5f2d`.
+Earlier evidence run `37068183031` is historical; no currently frozen changed target.
 
 Current bounded objective:
-capture unfiltered IODeviceTree/IOService registry state and determine why native Apple PCIe/NVMe code and DeviceTree descriptions are not yet producing a guest-visible disk.
+resume storage-path investigation with a new read-only, exact-SHA source/evidence prerequisite audit of PMGR/ADT and existing Windows results; distinguish a genuinely new, permitted implementation path from the identical source update already explicitly blocked six times. Do not repeat the blocked operation. Progress toward an independently verifiable PCIe/IOKit->NVMe->/dev/disk* implementation when evidence permits.
 
 When guest-visible storage is proven, continue automatically through SystemOS/Preboot/Data staging, APFS discovery/mounting, system launchd and core full-system userland.
 
