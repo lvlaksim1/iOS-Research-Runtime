@@ -2,6 +2,7 @@ name: qemu-sptm Windows Gate
 # Provenance refresh: rebuild unchanged pinned QEMU gate artifact for current main.
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - '.github/workflows/qemu-sptm-windows.yml'
