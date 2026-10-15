@@ -69,7 +69,12 @@ public static class QmpPciStorageEvidence
             return;
         }
 
-        var busNumber = Number(bus, "bus") ?? -1;
+        WalkDevices(devices, Number(bus, "bus") ?? -1, candidates);
+    }
+
+    private static void WalkDevices(
+        JsonElement devices, int busNumber, List<NvmeCandidate> candidates)
+    {
         foreach (var device in devices.EnumerateArray())
         {
             if (device.ValueKind != JsonValueKind.Object)
@@ -94,19 +99,17 @@ public static class QmpPciStorageEvidence
             }
 
             if (device.TryGetProperty("pci_bridge", out var bridge) &&
-                bridge.ValueKind == JsonValueKind.Object)
+                bridge.ValueKind == JsonValueKind.Object &&
+                bridge.TryGetProperty("devices", out var childDevices) &&
+                childDevices.ValueKind == JsonValueKind.Array)
             {
-                // query-pci nests downstream devices inside pci_bridge.devices.
-                // The secondary bus number is in bus.number in QEMU's response.
-                if (bridge.TryGetProperty("bus", out var childBus) &&
-                    childBus.ValueKind == JsonValueKind.Object)
-                {
-                    WalkBus(childBus, candidates);
-                }
-                else
-                {
-                    WalkBus(bridge, candidates);
-                }
+                // Pinned QEMU puts bus metadata in pci_bridge.bus and
+                // downstream devices in its sibling pci_bridge.devices.
+                var secondaryBus = bridge.TryGetProperty("bus", out var bridgeBus) &&
+                                   bridgeBus.ValueKind == JsonValueKind.Object
+                    ? Number(bridgeBus, "secondary") ?? -1
+                    : -1;
+                WalkDevices(childDevices, secondaryBus, candidates);
             }
         }
     }
