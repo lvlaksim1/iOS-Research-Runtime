@@ -7,9 +7,8 @@ public sealed class QemuRuntime : IDisposable
 {
     private readonly RuntimeLayout _layout;
     private readonly QemuCommandBuilder _commandBuilder;
-    private readonly object _logSync = new();
     private Process? _process;
-    private StreamWriter? _logWriter;
+    private Task? _captureCompletion;
 
     public QemuRuntime(RuntimeLayout layout, QemuCommandBuilder commandBuilder)
     {
@@ -33,6 +32,11 @@ public sealed class QemuRuntime : IDisposable
             throw new InvalidOperationException("QEMU runtime is already running.");
         }
 
+        if (_captureCompletion is { IsCompleted: false })
+        {
+            throw new InvalidOperationException("Previous boot capture is still finalizing.");
+        }
+
         _layout.EnsureDirectories();
 
         // IOS-M3 transport probe: QEMU opens the host-backed raw image at startup.
@@ -49,23 +53,12 @@ public sealed class QemuRuntime : IDisposable
             probe.SetLength(64L * 1024 * 1024);
         }
 
-        lock (_logSync)
-        {
-            _logWriter?.Dispose();
-            CurrentLogPath = Path.Combine(
-                _layout.LogDirectory,
-                $"boot-{DateTime.Now:yyyyMMdd-HHmmss}.log");
-            _logWriter = new StreamWriter(
-                new FileStream(
-                    CurrentLogPath,
-                    FileMode.Create,
-                    FileAccess.Write,
-                    FileShare.Read),
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false))
-            {
-                AutoFlush = true
-            };
-        }
+        // Serial evidence and host diagnostics are deliberately separate.
+        var capture = new BootEvidenceCapture(
+            _layout.LogDirectory,
+            Environment.GetEnvironmentVariable("GITHUB_RUN_ID"),
+            Environment.GetEnvironmentVariable("GITHUB_SHA"));
+        CurrentLogPath = capture.SerialPath;
 
         var startInfo = new ProcessStartInfo
         {
@@ -94,20 +87,26 @@ public sealed class QemuRuntime : IDisposable
             Exited?.Invoke(this, process.ExitCode);
         };
 
-        if (!process.Start())
+        try
+        {
+            if (!process.Start())
+            {
+                throw new InvalidOperationException("Failed to start qemu-sptm.");
+            }
+        }
+        catch
         {
             process.Dispose();
-            lock (_logSync)
-            {
-                _logWriter?.Dispose();
-                _logWriter = null;
-            }
-            throw new InvalidOperationException("Failed to start qemu-sptm.");
+            capture.Complete();
+            throw;
         }
 
         _process = process;
-        _ = PumpStreamAsync(process.StandardOutput);
-        _ = PumpStreamAsync(process.StandardError);
+        var serialPump = PumpStreamAsync(
+            process.StandardOutput, capture.AppendSerial, emitConsoleEvents: true);
+        var diagnosticPump = PumpStreamAsync(
+            process.StandardError, capture.AppendStderr, emitConsoleEvents: false);
+        _captureCompletion = FinalizeCaptureAsync(process, capture, serialPump, diagnosticPump);
 
         // Diagnostics-only host PCI snapshot. QMP is already enabled on a private
         // Unix socket; query the realized topology without changing guest-visible
@@ -194,7 +193,8 @@ public sealed class QemuRuntime : IDisposable
         }
     }
 
-    private async Task PumpStreamAsync(StreamReader reader)
+    private async Task PumpStreamAsync(
+        StreamReader reader, Action<string> record, bool emitConsoleEvents)
     {
         var buffer = new char[4096];
         var pendingLine = new StringBuilder();
@@ -210,11 +210,15 @@ public sealed class QemuRuntime : IDisposable
                 }
 
                 var chunk = new string(buffer, 0, read);
-                EmitChunk(chunk);
-                EmitCompletedLines(chunk, pendingLine);
+                record(chunk);
+                if (emitConsoleEvents)
+                {
+                    OutputChunkReceived?.Invoke(this, chunk);
+                    EmitCompletedLines(chunk, pendingLine);
+                }
             }
 
-            if (pendingLine.Length > 0)
+            if (emitConsoleEvents && pendingLine.Length > 0)
             {
                 OutputReceived?.Invoke(this, pendingLine.ToString());
             }
@@ -227,14 +231,33 @@ public sealed class QemuRuntime : IDisposable
         }
     }
 
-    private void EmitChunk(string chunk)
+    private static async Task FinalizeCaptureAsync(
+        Process process, BootEvidenceCapture capture, Task serialPump, Task diagnosticPump)
     {
-        lock (_logSync)
+        try
         {
-            _logWriter?.Write(chunk);
+            await process.WaitForExitAsync().ConfigureAwait(false);
         }
-
-        OutputChunkReceived?.Invoke(this, chunk);
+        catch (ObjectDisposedException)
+        {
+            // Process disposal may race with redirected-pipe completion.
+        }
+        catch (InvalidOperationException)
+        {
+            // A process can exit while its asynchronous setup is finishing.
+        }
+        finally
+        {
+            try
+            {
+                await Task.WhenAll(serialPump, diagnosticPump).ConfigureAwait(false);
+            }
+            finally
+            {
+                // No receipt is finalized while either stream can still append.
+                capture.Complete();
+            }
+        }
     }
 
     private void EmitCompletedLines(string chunk, StringBuilder pendingLine)
@@ -259,8 +282,17 @@ public sealed class QemuRuntime : IDisposable
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         var process = _process;
-        if (process is null || process.HasExited)
+        if (process is null)
         {
+            return;
+        }
+
+        if (process.HasExited)
+        {
+            if (_captureCompletion is { } completed)
+            {
+                await completed.ConfigureAwait(false);
+            }
             return;
         }
 
@@ -276,6 +308,10 @@ public sealed class QemuRuntime : IDisposable
             if (await Task.WhenAny(gracefulExit, timeout) == gracefulExit)
             {
                 await gracefulExit;
+                if (_captureCompletion is { } completed)
+                {
+                    await completed.ConfigureAwait(false);
+                }
                 return;
             }
         }
@@ -288,6 +324,11 @@ public sealed class QemuRuntime : IDisposable
             process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync(cancellationToken);
         }
+
+        if (_captureCompletion is { } completion)
+        {
+            await completion.ConfigureAwait(false);
+        }
     }
 
     public void Dispose()
@@ -297,12 +338,19 @@ public sealed class QemuRuntime : IDisposable
             _process.Kill(entireProcessTree: true);
         }
 
-        _process?.Dispose();
-
-        lock (_logSync)
+        // Preserve redirected pipes until both capture tasks finish.
+        var process = _process;
+        if (process is not null)
         {
-            _logWriter?.Dispose();
-            _logWriter = null;
+            if (_captureCompletion is { } completion)
+            {
+                _ = completion.ContinueWith(
+                    _ => process.Dispose(), TaskScheduler.Default);
+            }
+            else
+            {
+                process.Dispose();
+            }
         }
     }
 }
