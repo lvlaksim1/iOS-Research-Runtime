@@ -66,10 +66,11 @@ class WindowsTraceGateContract(unittest.TestCase):
         self.assertIn("path: qemu-proof/nvme-irq-trace-capability.json", segment)
         self.assertIn("if-no-files-found: warn", segment)
 
-    def test_pinned_qemu_and_existing_cache_preserved(self) -> None:
+    def test_pinned_qemu_and_exact_cache_preserved(self) -> None:
         self.assertIn("git checkout 2867d847d3471560e773120ee50c42dbcbb6d60b", self.workflow)
-        self.assertIn("qemu-sptm-win64-2867d847-headless-v2-", self.workflow)
-        self.assertIn("if [ ! -f build.ninja ]; then", self.workflow)
+        self.assertIn("qemu-sptm-win64-2867d847-headless-v3-", self.workflow)
+        self.assertIn("if [ -f build.ninja ]; then", self.workflow)
+        self.assertIn("Exact cache hit lacks build.ninja", self.workflow)
 
     def test_restored_checker_requires_config_and_real_binary(self) -> None:
         for required in ("intro-buildoptions.json", "config-host.h", "CONFIG_TRACE_LOG",

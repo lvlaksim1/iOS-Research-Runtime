@@ -72,6 +72,62 @@ class TestTraceCapability(unittest.TestCase):
         self.header.write_text("/* CONFIG_TRACE_LOG absent */\n")
         self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
 
+    def test_valueless_meson_boolean_define_passes_catalog_only(self):
+        self.header.write_text("#define CONFIG_TRACE_LOG\n", encoding="utf-8")
+        r = self.check()
+        self.assertTrue(r["config_host_log_backend"])
+        self.assertEqual(r["catalog_capability"], "VERIFIED_FOR_THIS_BINARY_SHA256")
+        self.assertEqual(r["runtime_irq_emission"], "NOT_OBSERVED")
+        self.assertEqual(r["full_ios_system_boot"], "NOT_PROVEN")
+
+    def test_valueless_define_with_crlf_passes(self):
+        self.header.write_bytes(b"#define CONFIG_TRACE_LOG\r\n")
+        self.assertTrue(self.check()["config_host_log_backend"])
+
+    def test_explicit_zero_define_fails_closed(self):
+        self.header.write_text("#define CONFIG_TRACE_LOG 0\n", encoding="utf-8")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_undef_define_fails_closed(self):
+        self.header.write_text("#undef CONFIG_TRACE_LOG\n", encoding="utf-8")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_similarly_named_macro_fails_closed(self):
+        self.header.write_text("#define CONFIG_TRACE_LOGGING 1\n", encoding="utf-8")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_nonboolean_value_fails_closed(self):
+        self.header.write_text("#define CONFIG_TRACE_LOG 2\n", encoding="utf-8")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_define_zero_then_valueless_fails_closed(self):
+        self.header.write_text("#define CONFIG_TRACE_LOG 0\n#define CONFIG_TRACE_LOG\n")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_valueless_then_undef_fails_closed(self):
+        self.header.write_text("#define CONFIG_TRACE_LOG\n#undef CONFIG_TRACE_LOG\n")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_undef_then_define_fails_closed(self):
+        self.header.write_text("#undef CONFIG_TRACE_LOG\n#define CONFIG_TRACE_LOG 1\n")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_duplicate_valid_defines_fail_closed(self):
+        self.header.write_text("#define CONFIG_TRACE_LOG\n#define CONFIG_TRACE_LOG 1\n")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_invalid_then_valid_define_fails_closed(self):
+        self.header.write_text("#define CONFIG_TRACE_LOG 2\n#define CONFIG_TRACE_LOG 1\n")
+        self.assertIn("CONFIG_TRACE_LOG_NOT_DEFINED", self.check()["reasons"])
+
+    def test_other_macro_does_not_conflict_with_valid_define(self):
+        self.header.write_text("#define CONFIG_TRACE_LOGGING 0\n#define CONFIG_TRACE_LOG\n")
+        self.assertTrue(self.check()["config_host_log_backend"])
+
+    def test_whitespace_meson_define_is_accepted(self):
+        self.header.write_text("  # define  CONFIG_TRACE_LOG\t1  \n")
+        self.assertTrue(self.check()["config_host_log_backend"])
+
     def test_missing_meson_file_fails(self):
         self.options.unlink()
         self.assertIn("MESON_BUILD_OPTIONS_UNREADABLE", self.check()["reasons"])

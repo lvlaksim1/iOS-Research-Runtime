@@ -94,6 +94,12 @@ var pinnedIoprint = Directory
             .Equals(pinnedIoprintSha256, StringComparison.OrdinalIgnoreCase);
     });
 
+if (pinnedIoprint is null)
+{
+    throw new FileNotFoundException(
+        "Pinned ioprint executable was not found with the required SHA-256; provider diagnostics cannot proceed.");
+}
+
 if (pinnedIoprint is not null)
 {
     var repackRoot = Path.Combine(layout.DataDirectory, "ios-cli-tools-with-ioprint-root");
@@ -102,11 +108,21 @@ if (pinnedIoprint is not null)
         Directory.Delete(repackRoot, recursive: true);
     }
     Directory.CreateDirectory(repackRoot);
-    await processRunner.RunAsync(
+    var extractionResult = await processRunner.RunAsync(
         "tar",
         new[] { "-xzf", layout.IosCliToolsArchive, "-C", repackRoot },
         layout.DataDirectory,
         cancellationToken);
+    if (extractionResult.ExitCode != 0)
+    {
+        throw new InvalidOperationException(
+            $"Extracting iOS CLI tools failed with exit code {extractionResult.ExitCode}: " +
+            extractionResult.StandardError);
+    }
+    if (!Directory.Exists(Path.Combine(repackRoot, "sysroot")))
+    {
+        throw new InvalidDataException("Extracted iOS CLI tools archive lacks sysroot.");
+    }
     var stagedIoprint = Path.Combine(repackRoot, "sysroot", "usr", "local", "bin", "ioprint");
     Directory.CreateDirectory(Path.GetDirectoryName(stagedIoprint)!);
     File.Copy(pinnedIoprint.FullName, stagedIoprint, overwrite: true);
@@ -167,6 +183,80 @@ if (pinnedIoprint is not null)
             $"Observed candidates: {(candidates.Length == 0 ? "<none>" : string.Join(", ", candidates))}",
             repackedSysroot);
     }
+    // G78/G79: repair only the tar header mode of the pinned ioprint entry,
+    // then independently verify it before replacing the original archive.
+    // Python scripts are immutable, SHA-256-pinned inputs from this checkout.
+    var scriptsRoot = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE");
+    if (string.IsNullOrWhiteSpace(scriptsRoot))
+    {
+        scriptsRoot = Directory.GetCurrentDirectory();
+    }
+    var ioprintRepairScript = Path.Combine(scriptsRoot, "scripts", "fix_m3_ioprint_tar_mode.py");
+    var ioprintGateScript = Path.Combine(scriptsRoot, "scripts", "check_m3_ioprint_tar_mode.py");
+    var ioprintScriptChecks = new[]
+    {
+        (Path: ioprintRepairScript, Sha256: "3cf0aae8c4d006c137ae98a61a71c4b6317f674c50dccfd56dcc2cb2564ae3a0"),
+        (Path: ioprintGateScript, Sha256: "cd60562732f2ddc5d2ed4f63a78f6f588368d2048bce03660462c85f078560dd")
+    };
+    foreach (var script in ioprintScriptChecks)
+    {
+        if (!File.Exists(script.Path))
+        {
+            throw new FileNotFoundException("Pinned ioprint archive-mode script is missing.", script.Path);
+        }
+        using var scriptStream = File.OpenRead(script.Path);
+        var actualSha256 = Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(scriptStream));
+        if (!actualSha256.Equals(script.Sha256, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException($"Pinned ioprint script hash mismatch: {script.Path}");
+        }
+    }
+
+    var ioprintRepairResult = await processRunner.RunAsync(
+        "python",
+        new[] { "-B", ioprintRepairScript, repackedSysroot },
+        layout.DataDirectory,
+        cancellationToken);
+    if (ioprintRepairResult.ExitCode != 0)
+    {
+        throw new InvalidDataException(
+            $"ioprint tar-mode repair failed (exit {ioprintRepairResult.ExitCode}): " +
+            ioprintRepairResult.StandardError + " " + ioprintRepairResult.StandardOutput);
+    }
+    using (var repairEvidence = System.Text.Json.JsonDocument.Parse(ioprintRepairResult.StandardOutput))
+    {
+        var repairStatus = repairEvidence.RootElement.GetProperty("status").GetString();
+        var repairMode = repairEvidence.RootElement.GetProperty("mode").GetString();
+        if (repairMode != "0755" ||
+            (repairStatus != "ARCHIVE_EXEC_MODE_REPAIRED" && repairStatus != "ALREADY_CORRECT"))
+        {
+            throw new InvalidDataException("ioprint tar-mode repair returned invalid success evidence.");
+        }
+    }
+    Console.WriteLine($"[integration] IOPRINT_TAR_MODE_REPAIR={ioprintRepairResult.StandardOutput.Trim()}");
+
+    var ioprintGateResult = await processRunner.RunAsync(
+        "python",
+        new[] { "-B", ioprintGateScript, repackedSysroot },
+        layout.DataDirectory,
+        cancellationToken);
+    if (ioprintGateResult.ExitCode != 0)
+    {
+        throw new InvalidDataException(
+            $"ioprint tar-mode gate failed (exit {ioprintGateResult.ExitCode}): " +
+            ioprintGateResult.StandardError + " " + ioprintGateResult.StandardOutput);
+    }
+    using (var gateEvidence = System.Text.Json.JsonDocument.Parse(ioprintGateResult.StandardOutput))
+    {
+        if (gateEvidence.RootElement.GetProperty("status").GetString() != "ARCHIVE_EXEC_MODE_PASS" ||
+            gateEvidence.RootElement.GetProperty("observed_mode").GetString() != "0755")
+        {
+            throw new InvalidDataException("ioprint tar-mode gate returned invalid success evidence.");
+        }
+    }
+    Console.WriteLine($"[integration] IOPRINT_TAR_MODE_GATE={ioprintGateResult.StandardOutput.Trim()}");
+
     var archiveModeEvidence = await processRunner.RunAsync(
         "tar",
         new[] { "-tvzf", repackedSysroot },

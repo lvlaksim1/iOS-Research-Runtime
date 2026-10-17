@@ -28,6 +28,18 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def has_unambiguous_log_define(header: str) -> bool:
+    """Accept one Meson boolean define, reject duplicate/undef directives."""
+    directives = [line for line in header.splitlines()
+                  if re.match(r"^[ \t]*#[ \t]*(?:define|undef)[ \t]+CONFIG_TRACE_LOG\b", line)]
+    if len(directives) != 1:
+        return False
+    return re.fullmatch(
+        r"[ \t]*#[ \t]*define[ \t]+CONFIG_TRACE_LOG(?:[ \t]+1)?[ \t]*",
+        directives[0],
+    ) is not None
+
+
 def read_backend_config(build_root: Path) -> tuple[bool, bool, list[str]]:
     """Require both Meson introspection and the generated host header."""
     reasons: list[str] = []
@@ -49,7 +61,7 @@ def read_backend_config(build_root: Path) -> tuple[bool, bool, list[str]]:
         reasons.append("MESON_BUILD_OPTIONS_UNREADABLE")
     try:
         header = header_path.read_text(encoding="utf-8")
-        host_log = bool(re.search(r"(?m)^\s*#define\s+CONFIG_TRACE_LOG\s+1\s*$", header))
+        host_log = has_unambiguous_log_define(header)
         if not host_log:
             reasons.append("CONFIG_TRACE_LOG_NOT_DEFINED")
     except (OSError, UnicodeError):

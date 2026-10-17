@@ -90,10 +90,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: qemu-sptm/build
-          key: qemu-sptm-win64-2867d847-headless-v2-${{ hashFiles('runtime/qemu/patches/*.patch') }}
-          restore-keys: |
-            qemu-sptm-win64-2867d847-headless-v2-
-            qemu-sptm-win64-2867d847-headless-v1-
+          # Exact-only cache: patch set AND workflow configuration must match.
+          key: qemu-sptm-win64-2867d847-headless-v3-${{ hashFiles('runtime/qemu/patches/*.patch', '.github/workflows/qemu-sptm-windows.yml') }}
 
       - name: Configure qemu-sptm
         shell: msys2 {0}
@@ -101,7 +99,19 @@ jobs:
           cd qemu-sptm
           mkdir -p build
           cd build
-          if [ ! -f build.ninja ]; then
+          # An exact cache hit must include the configuration it claims to cache.
+          # A cache miss must never silently reuse an existing build.ninja.
+          if [ -f build.ninja ]; then
+            if [ "${{ steps.qemu-build-cache.outputs.cache-hit }}" != 'true' ]; then
+              echo 'Unexpected build.ninja without an exact cache hit' >&2
+              exit 1
+            fi
+            test -f config-host.h || { echo 'Exact cache hit lacks config-host.h' >&2; exit 1; }
+          else
+            if [ "${{ steps.qemu-build-cache.outputs.cache-hit }}" = 'true' ]; then
+              echo 'Exact cache hit lacks build.ninja' >&2
+              exit 1
+            fi
             ../configure \
               --target-list=aarch64-softmmu \
               --disable-pvg \
@@ -127,6 +137,38 @@ jobs:
       # Requires the verified G47 capability checker in scripts/ on the same ref.
       # Checks the built binary, its Meson configuration and its trace catalog.
       # This does not execute a guest or establish NVMe/IOKit/APFS readiness.
+      - name: Record QEMU cache and build provenance
+        shell: msys2 {0}
+        env:
+          QEMU_CACHE_HIT: ${{ steps.qemu-build-cache.outputs.cache-hit }}
+          QEMU_CACHE_KEY: qemu-sptm-win64-2867d847-headless-v3-${{ hashFiles('runtime/qemu/patches/*.patch', '.github/workflows/qemu-sptm-windows.yml') }}
+        run: |
+          set -euo pipefail
+          test -f qemu-sptm/build/build.ninja
+          test -f qemu-sptm/build/config-host.h
+          test -f qemu-sptm/build/qemu-system-aarch64.exe
+          actual_upstream=$(git -C qemu-sptm rev-parse HEAD)
+          test "$actual_upstream" = '2867d847d3471560e773120ee50c42dbcbb6d60b'
+          mkdir -p qemu-proof
+          {
+            printf 'CACHE_HIT=%s\n' "${QEMU_CACHE_HIT:-false}"
+            printf 'CACHE_KEY=%s\n' "$QEMU_CACHE_KEY"
+            printf 'UPSTREAM_SHA=%s\n' "$actual_upstream"
+            sha256sum qemu-sptm/build/build.ninja qemu-sptm/build/config-host.h qemu-sptm/build/qemu-system-aarch64.exe
+          } > qemu-proof/cache-config-provenance.txt
+
+      - name: Upload QEMU cache and build provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-sptm-cache-config-provenance
+          path: qemu-proof/cache-config-provenance.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Requires the verified G47 capability checker in scripts/ on the same ref.
+      # Checks the built binary, its Meson configuration and its trace catalog.
+      # This does not execute a guest or establish NVMe/IOKit/APFS readiness.
       - name: Verify compiled QEMU NVMe IRQ trace capability
         shell: msys2 {0}
         run: |
@@ -146,12 +188,21 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Upload generated QEMU Meson configuration header
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-sptm-config-host-header
+          path: qemu-sptm/build/config-host.h
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Save QEMU build cache
         if: steps.qemu-build-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: qemu-sptm/build
-          key: qemu-sptm-win64-2867d847-headless-v2-${{ hashFiles('runtime/qemu/patches/*.patch') }}
+          key: qemu-sptm-win64-2867d847-headless-v3-${{ hashFiles('runtime/qemu/patches/*.patch', '.github/workflows/qemu-sptm-windows.yml') }}
 
       - name: Verify Darwin machine
         shell: msys2 {0}
@@ -196,6 +247,43 @@ jobs:
           $output | Set-Content -Encoding utf8 "qemu-proof/standalone-machine-list.txt"
           if ($LASTEXITCODE -ne 0) { throw "Standalone qemu-system-aarch64.exe failed with exit code $LASTEXITCODE" }
           if (-not ($output -match '(?m)^darwin\s')) { throw "Standalone QEMU runtime does not expose the darwin machine" }
+
+      # Host-only self-reported provenance, not cryptographic attestation.
+      # workflow_call uses the caller's run id and commit SHA.
+      - name: Record QEMU gate job origin
+        shell: pwsh
+        run: |
+          $runId = $env:GITHUB_RUN_ID
+          $headSha = $env:GITHUB_SHA
+          [long]$parsedRunId = 0
+          if ($runId -cnotmatch '^[1-9][0-9]{0,18}$' -or -not [long]::TryParse($runId, [ref]$parsedRunId)) {
+            throw "Invalid QEMU gate run id"
+          }
+          if ($headSha -cnotmatch '^[0-9a-f]{40}$') { throw "Invalid QEMU gate commit SHA" }
+          $checkedOutSha = (& git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $checkedOutSha -cne $headSha) {
+            throw "QEMU gate checkout differs from workflow commit"
+          }
+          $upstream = (& git -C qemu-sptm rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $upstream -cne '2867d847d3471560e773120ee50c42dbcbb6d60b') {
+            throw "QEMU upstream checkout does not match pin"
+          }
+          $binary = Join-Path $PWD 'qemu-proof/runtime/qemu-system-aarch64.exe'
+          $binaryItem = Get-Item -LiteralPath $binary -ErrorAction Stop
+          if ($binaryItem.PSIsContainer -or ($binaryItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            throw "QEMU gate executable is not an ordinary file"
+          }
+          $digest = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
+          $receipt = Join-Path $PWD 'qemu-proof/gate-origin.txt'
+          if (Test-Path -LiteralPath $receipt) { throw "QEMU gate receipt already exists" }
+          $lines = @(
+            "GATE_RUN_ID=$runId"
+            "GATE_SHA=$headSha"
+            "QEMU_UPSTREAM_SHA=$upstream"
+            "QEMU_RUNTIME_SHA256=$digest"
+          )
+          $asciiLf = [Text.Encoding]::ASCII.GetBytes(($lines -join "`n") + "`n")
+          [IO.File]::WriteAllBytes($receipt, $asciiLf)
 
       - name: Upload proof artifact
         uses: actions/upload-artifact@v4

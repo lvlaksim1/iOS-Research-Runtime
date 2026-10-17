@@ -16,6 +16,19 @@ on:
       - 'src/IOSResearchRuntime/Services/**'
       - 'tools/ios-ramdisk-tool/**'
       - 'tools/IOSResearchRuntime.Integration/**'
+      - '.github/workflows/windows-e2e.yml'
+      - '.github/workflows/qemu-sptm-windows.yml'
+      - 'scripts/check_qemu_gate_origin.py'
+      - 'scripts/prepare_e2e_upload_evidence.py'
+      - 'scripts/collect_text_evidence.py'
+      - 'scripts/check_m3_ioprint_tar_mode.py'
+      - 'scripts/fix_m3_ioprint_tar_mode.py'
+      - 'tests/python/test_check_m3_ioprint_tar_mode.py'
+      - 'tests/python/test_fix_m3_ioprint_tar_mode.py'
+      - 'tests/python/test_m3_ioprint_windows_integration.py'
+      - 'tests/python/test_m3_ioprint_windows_python_setup.py'
+      - 'scripts/check_m3_ioprint_macho_platform.py'
+      - 'tests/python/test_m3_ioprint_macho_platform.py'
 
 concurrency:
   group: windows-e2e-${{ github.event_name }}
@@ -78,6 +91,11 @@ jobs:
           if (!(Test-Path $ioprint)) { throw "Pinned asset does not contain ios/ioprint" }
           $ioprintHash = (Get-FileHash -Algorithm SHA256 $ioprint).Hash.ToLowerInvariant()
           $ioprintSize = (Get-Item $ioprint).Length
+          $pinnedIoprintSha256 = "8d1425e8f63416da64ed4c5789109eff2535b44327469d879134eb89c31320ee"
+          if ($ioprintHash -ne $pinnedIoprintSha256) {
+            throw "Pinned iokit-utils 1.4.0 ioprint SHA-256 mismatch: expected $pinnedIoprintSha256; observed $ioprintHash"
+          }
+          $ioprintSize = (Get-Item $ioprint).Length
           @(
             "IOKIT_UTILS_RELEASE=1.4.0"
             "IOKIT_UTILS_RELEASE_COMMIT=df1d6b5172a19950edac74b8a05a28c12b34bba9"
@@ -85,6 +103,7 @@ jobs:
             "IOKIT_UTILS_ASSET_SIZE=$length"
             "IOKIT_UTILS_ASSET_SHA256=$assetHash"
             "IOKIT_UTILS_IOS_IOPRINT_SIZE=$ioprintSize"
+            "IOKIT_UTILS_IOS_IOPRINT_SHA256_EXPECTED=$pinnedIoprintSha256"
             "IOKIT_UTILS_IOS_IOPRINT_SHA256=$ioprintHash"
           ) | Set-Content e2e-evidence/iokit-utils-provenance.txt
           $objdump = Get-Command llvm-objdump -ErrorAction SilentlyContinue
@@ -105,14 +124,74 @@ jobs:
           go-version: '1.26.x'
           cache-dependency-path: tools/ios-ramdisk-tool/go.sum
 
+      - name: Setup pinned Python for ioprint archive checks
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate pinned ioprint Mach-O arm64 iOS platform
+        shell: pwsh
+        run: |
+          $ioprint = Join-Path $env:RUNNER_TEMP "iokit-utils-1.4.0/ios/ioprint"
+          python -B scripts/check_m3_ioprint_macho_platform.py --input "$ioprint" --output "e2e-evidence/ioprint-macho-platform.json"
+          if ($LASTEXITCODE -ne 0) { throw "ioprint Mach-O platform gate failed" }
+
+      - name: Verify Python and run ioprint pre-boot tests
+        shell: pwsh
+        run: |
+          python --version
+          python -B -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+          python -B -m py_compile scripts/check_m3_ioprint_tar_mode.py scripts/fix_m3_ioprint_tar_mode.py tests/python/test_check_m3_ioprint_tar_mode.py tests/python/test_fix_m3_ioprint_tar_mode.py tests/python/test_m3_ioprint_windows_integration.py tests/python/test_m3_ioprint_windows_python_setup.py scripts/check_m3_ioprint_macho_platform.py tests/python/test_m3_ioprint_macho_platform.py
+          if ($LASTEXITCODE -ne 0) { throw "ioprint Python syntax checks failed" }
+          python -B -m unittest discover -s tests/python -p 'test_*ioprint*.py' -v
+          if ($LASTEXITCODE -ne 0) { throw "ioprint pre-boot tests failed" }
+
       - name: Download QEMU runtime from gate
         uses: actions/download-artifact@v4
         with:
           name: qemu-sptm-windows-gate
           path: qemu-gate-artifact
 
+      - name: Setup Python for QEMU gate origin verification
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Verify downloaded QEMU gate origin
+        shell: pwsh
+        env:
+          EXPECTED_GATE_RUN: ${{ steps.qemu.outputs.run_id }}
+          EXPECTED_GATE_SHA: ${{ steps.qemu.outputs.head_sha }}
+        run: |
+          # Refuse reparse points in downloaded artifact ancestors and files.
+          foreach ($relative in @(
+            'qemu-gate-artifact',
+            'qemu-gate-artifact/runtime',
+            'qemu-gate-artifact/gate-origin.txt',
+            'qemu-gate-artifact/runtime/qemu-system-aarch64.exe',
+            'e2e-evidence'
+          )) {
+            $item = Get-Item -LiteralPath $relative -Force -ErrorAction Stop
+            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+              throw "QEMU gate evidence has a reparse point: $relative"
+            }
+          }
+          & python scripts/check_qemu_gate_origin.py `
+            --receipt qemu-gate-artifact/gate-origin.txt `
+            --binary qemu-gate-artifact/runtime/qemu-system-aarch64.exe `
+            --expected-run-id $env:EXPECTED_GATE_RUN `
+            --expected-sha $env:EXPECTED_GATE_SHA `
+            --output e2e-evidence/qemu-gate-origin-check.json
+          if ($LASTEXITCODE -ne 0) { throw "QEMU gate origin check failed" }
+          if (!(Test-Path -LiteralPath e2e-evidence/qemu-gate-origin-check.json -PathType Leaf)) {
+            throw "QEMU gate origin check produced no receipt"
+          }
+
       - name: Stage tested QEMU runtime
         shell: pwsh
+        env:
+          EXPECTED_GATE_RUN: ${{ steps.qemu.outputs.run_id }}
+          EXPECTED_GATE_SHA: ${{ steps.qemu.outputs.head_sha }}
         run: |
           $source = Join-Path $PWD "qemu-gate-artifact/runtime"
           $destination = Join-Path $PWD "tools/qemu-sptm"
@@ -123,6 +202,15 @@ jobs:
 
           New-Item -ItemType Directory -Path $destination -Force | Out-Null
           Copy-Item (Join-Path $source "*") $destination -Recurse -Force
+
+          # Verify the staged executable again before executing it.
+          & python scripts/check_qemu_gate_origin.py `
+            --receipt qemu-gate-artifact/gate-origin.txt `
+            --binary (Join-Path $destination "qemu-system-aarch64.exe") `
+            --expected-run-id $env:EXPECTED_GATE_RUN `
+            --expected-sha $env:EXPECTED_GATE_SHA `
+            --output e2e-evidence/qemu-gate-staged-origin-check.json
+          if ($LASTEXITCODE -ne 0) { throw "Staged QEMU executable differs from gate receipt" }
 
           $systemRoot = $env:SystemRoot
           $oldPath = $env:PATH
@@ -182,13 +270,14 @@ jobs:
             throw "End-to-end integration harness failed with exit code $LASTEXITCODE"
           }
 
-          $bootLogs = Join-Path $data "logs"
-          if (Test-Path $bootLogs) {
-            Copy-Item $bootLogs (Join-Path $evidence "boot-logs") -Recurse -Force
-          }
-
           Copy-Item "qemu-gate-artifact/runtime-summary.txt" $evidence -ErrorAction SilentlyContinue
           Copy-Item "qemu-gate-artifact/standalone-machine-list.txt" $evidence -ErrorAction SilentlyContinue
+
+      - name: Setup Python for native ADT evidence
+        if: always()
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
 
       - name: Collect failure evidence
         if: always()
@@ -197,28 +286,51 @@ jobs:
           $evidence = Join-Path $PWD "e2e-evidence"
           New-Item -ItemType Directory -Path $evidence -Force | Out-Null
           $data = Join-Path $env:RUNNER_TEMP "ios-research-runtime-e2e"
+          $logs = Join-Path $data "logs"
+          $raw = Join-Path $logs "dtree.raw"
+          $capture = Join-Path $evidence "native-apcie-properties.json"
+          $status = Join-Path $evidence "native-apcie-capture-status.txt"
 
-          if (Test-Path (Join-Path $data "logs")) {
-            Copy-Item (Join-Path $data "logs") (Join-Path $evidence "boot-logs") -Recurse -Force
+          if (Test-Path -LiteralPath $raw -PathType Leaf) {
+            try {
+              & python scripts/capture_native_apcie_properties.py --input $raw --output $capture 2>$null
+              if ($LASTEXITCODE -ne 0) { throw "capture failed" }
+              if (!(Test-Path -LiteralPath $capture -PathType Leaf)) { throw "capture missing" }
+              if ((Get-Item -LiteralPath $capture).Length -gt 65536) { throw "capture too large" }
+              "CAPTURE_OK_TEXT_ONLY" | Set-Content -LiteralPath $status
+            }
+            catch {
+              Remove-Item -LiteralPath $capture -Force -ErrorAction SilentlyContinue
+              "CAPTURE_FAILED" | Set-Content -LiteralPath $status
+            }
+          }
+          else {
+            "RAW_ADT_NOT_AVAILABLE" | Set-Content -LiteralPath $status
           }
 
-          Get-ChildItem $evidence -Recurse -File | ForEach-Object {
-            "$($_.FullName) $($_.Length)"
-          } | Set-Content (Join-Path $evidence "evidence-files.txt")
+          # Fail-closed bounded UTF-8 allowlist; raw firmware never enters artifacts.
+          $bootLogs = Join-Path $evidence "boot-logs"
+          $textStatus = Join-Path $evidence "text-evidence-copy-status.txt"
+          & python scripts/collect_text_evidence.py --source $logs --destination $bootLogs --status $textStatus
+          if ($LASTEXITCODE -ne 0) { "TEXT_EVIDENCE_FAILED" | Set-Content -LiteralPath $textStatus }
 
-      - name: Upload tested QEMU runtime
-        uses: actions/upload-artifact@v4
-        with:
-          name: qemu-runtime-tested
-          path: qemu-gate-artifact/runtime/**
-          if-no-files-found: error
-          retention-days: 14
+          # Direct diagnostic files stay on the runner; never enumerate absolute paths.
+
+      - name: Prepare minimized E2E upload
+        id: prepare_upload
+        if: always()
+        shell: pwsh
+        run: |
+          & python scripts/prepare_e2e_upload_evidence.py --source e2e-evidence --destination e2e-upload --expected-run-id "${{ github.run_id }}" --expected-sha "${{ github.sha }}"
+          if ($LASTEXITCODE -ne 0) { throw "Evidence minimization failed" }
 
       - name: Upload end-to-end evidence
-        if: always()
+        if: always() && steps.prepare_upload.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ios-darwin-windows-e2e
-          path: e2e-evidence/**
+          path: |
+            e2e-upload/evidence-summary.json
+            e2e-upload/evidence-files.txt
           if-no-files-found: warn
           retention-days: 14

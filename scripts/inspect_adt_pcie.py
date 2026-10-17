@@ -72,6 +72,20 @@ def _decode_u32(raw: bytes | None) -> int | None:
     return struct.unpack("<I", raw)[0] if raw is not None and len(raw) == 4 else None
 
 
+def _decode_reg_u64_pairs(raw: bytes | None) -> list[dict[str, int]] | None:
+    """Expose 16-byte little-endian pairs as raw numbers, not a PCIe port ABI.
+
+    Native and synthetic reg properties may have different semantics.  A
+    malformed width is retained in properties.hex and never reinterpreted.
+    """
+    if raw is None or not raw or len(raw) % 16 != 0:
+        return None
+    return [
+        {"first_u64_le": first, "second_u64_le": second}
+        for first, second in struct.iter_unpack("<QQ", raw)
+    ]
+
+
 def _candidate(name: str, compatible: bytes) -> bool:
     return "pcie" in name.lower() or b"apcie" in compatible.lower()
 
@@ -94,6 +108,7 @@ def inspect_pcie(data: bytes) -> dict:
                 "ports_length": len(raw_ports) if raw_ports is not None else None,
                 "ports_raw_hex": raw_ports.hex() if raw_ports is not None else None,
                 "ports_u32_le": _decode_u32(raw_ports),
+                "reg_u64_le_pairs": _decode_reg_u64_pairs(props.get("reg")),
                 "children": [_name(c["properties"].get("name", b"")) for c in node["children"]],
                 "properties": {key: {"length": len(value), "hex": value.hex()}
                                for key, value in sorted(props.items())

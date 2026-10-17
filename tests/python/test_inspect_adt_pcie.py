@@ -47,6 +47,23 @@ class PcieAdtEvidenceTests(unittest.TestCase):
         self.assertEqual(entry["ports_length"], 2)
         self.assertIsNone(entry["ports_u32_le"])
 
+    def test_synthetic_reg_pairs_are_raw_not_apple_ports(self):
+        reg = struct.pack("<QQQQ", 0x3f000000, 0x01000000, 0x10000000, 0x10000000)
+        tree = adt_node({"name": b"pcie\0", "compatible": b"apcie,t8140\0", "reg": reg})
+        entry = module.inspect_pcie(tree)["pcie_nodes"][0]
+        self.assertEqual(entry["reg_u64_le_pairs"], [
+            {"first_u64_le": 0x3f000000, "second_u64_le": 0x01000000},
+            {"first_u64_le": 0x10000000, "second_u64_le": 0x10000000},
+        ])
+        self.assertFalse(entry["ports_present"])
+        self.assertEqual(module.inspect_pcie(tree)["qemu_root_port_to_apple_ports_mapping"], "UNPROVEN")
+
+    def test_malformed_reg_width_remains_uninterpreted(self):
+        tree = adt_node({"name": b"pcie\0", "reg": b"\x00" * 17})
+        entry = module.inspect_pcie(tree)["pcie_nodes"][0]
+        self.assertIsNone(entry["reg_u64_le_pairs"])
+        self.assertEqual(entry["properties"]["reg"]["length"], 17)
+
     def test_no_candidate(self):
         tree = adt_node({"name": b"device-tree\0"}, [adt_node({"name": b"arm-io\0"})])
         self.assertEqual(module.inspect_pcie(tree)["pcie_nodes"], [])
