@@ -1,6 +1,6 @@
 # Owner-facing roadmap
 
-Updated: 2026-10-01 17:47 MSK
+Updated: 2026-10-27 MSK
 
 ## Planning granularity
 
@@ -102,14 +102,7 @@ Includes:
 Acceptance:
 A clean Windows installation can provision, launch and use the supported iOS environment through the application without developer tooling or manual command-line intervention, with documented limitations and reproducible release evidence.
 
-## Current mapping
+## Current mapping (reconciled 2026-10-27)
 
-Completed internal checkpoints:
-- IOS-M1 — recovery launchd + root shell;
-- IOS-M2 — isolated missing full-system storage boundary.
-
-Current internal work:
-- IOS-M3 and package IOS-M3-CONTINUOUS-010 are implementation work inside LARGE STAGE 1.
-- Current product head is in the NVMe host-backed transport experiment sequence.
-
-Future IOS-M* labels are allowed for engineering bookkeeping, but they are subordinate to the four large stages above and are not Owner-facing approval gates.
+Completed historical internal checkpoints: IOS-M1 recovery launchd/root shell and IOS-M2 storage-boundary isolation.
+Current internal work: LARGE STAGE 1 / IOS-M3 via package `IOS-M3-CONTINUOUS-011`, scheduler frozen to manager generation27; durable capsule generation28. Live `main@0b633cbafd2a0198a9053c6f760d9590c2496e14`, exact-head Windows Build and E2E FAILED, QEMU Gate PASSED; full-system Stage1 remains NOT_PROVEN. GEN195 dispatch/ownership needs reconciliation. The four large stages and Owner approval gates remain unchanged.

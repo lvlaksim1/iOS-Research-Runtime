@@ -1,39 +1,22 @@
 # Manager intentions and commitments
 
-Manager generation: 27.
+Manager generation 28. Updated: 2026-10-27 MSK.
 
-## Completed foundation
-- IOS-M1: COMPLETED — recovery launchd + root shell.
-- IOS-M2: COMPLETED — recovery/full-system storage boundary isolated.
-- Storage capability evidence: IONVMeFamily, APFS, AppleEmbeddedPCIE and AppleT8140PCIe are present; source DeviceTree contains native apcie hierarchy.
+## Historical completed foundations
+- IOS-M1: completed, recovery launchd + root shell, not full system.
+- IOS-M2: completed, isolated storage boundary and driver capability evidence.
 
-## Active macro stage
-### LARGE STAGE 1 — Full iOS System Boot
-Status: ACTIVE / READY_TO_DISPATCH_NEW_PACKAGE.
-Active runtime package: `IOS-M3-CONTINUOUS-011` (successor to generation651 OCB_BACKOFF; old package superseded).
-Current product: `main@89cf1e04571545010c2433f24264bae25f5c5f2d`.
-Earlier evidence run `37068183031` is historical; no currently frozen changed target.
+## Active continuing owner commitment
+LARGE STAGE 1 — Full iOS System Boot: ACTIVE / NOT_PROVEN.
+Persistent commitment owner: `ios-research-runtime-project-manager`.
+Product: `main@0b633cbafd2a0198a9053c6f760d9590c2496e14`.
+Runtime package: `IOS-M3-CONTINUOUS-011`; five existing tasks pinned to manager generation27 / `f26dd70e1b6687ffed72703ff809af5e16a0558d` (must not be silently reconfigured).
 
-Current bounded objective:
-resume storage-path investigation with a new read-only, exact-SHA source/evidence prerequisite audit of PMGR/ADT and existing Windows results; distinguish a genuinely new, permitted implementation path from the identical source update already explicitly blocked six times. Do not repeat the blocked operation. Progress toward an independently verifiable PCIe/IOKit->NVMe->/dev/disk* implementation when evidence permits.
+The manager remains committed to:
+1. Isolating current-head Windows Build `39016012852` and E2E `39016012955` failures with exact job evidence; QEMU Gate `39016012886` succeeds but is not guest acceptance.
+2. Reconciling GEN195 canonical Mailbox ownership and the reported scheduler error before dispatch. Never duplicate owner work from stale READY metadata.
+3. Verifying actual guest PCIe/IOKit -> NVMe -> non-ramdisk `/dev/disk*` with authentic source, CI and guest evidence. Preserve permissible independent Library work; no safety-refused G30/G71 replay.
+4. Only after verified disk visibility, advancing through SystemOS/Preboot/Data staging, APFS mounting, system launchd and core full-system userland.
+5. Preserving provenance, manager memory and uninterrupted responsibility across execution-carrier replacement.
 
-When guest-visible storage is proven, continue automatically through SystemOS/Preboot/Data staging, APFS discovery/mounting, system launchd and core full-system userland.
-
-## Runtime continuity commitment
-DEC-0018 / schema10 applies:
-- OCB3 exhausts one disposable Worker runtime only;
-- first recovery rotates to a fresh partner runtime;
-- repeated transient OCB enters nonterminal Watchdog-owned OCB_BACKOFF and later safe replan;
-- successful progress resets OCB recovery state;
-- only genuine strategy/authority/safety boundaries may require Owner intervention.
-
-DEC-0019 publication recovery applies:
-- `update_ref(force=false)` remains canonical for publishing a prebuilt target;
-- after repeated explicit OCB, an existing single-file bounded change may be published through fresh-SHA-fenced `update_file` only when refs and intended content are unambiguous;
-- the fallback-produced commit SHA replaces the prebuilt target as authoritative product head and receives fresh exact-SHA CI evidence;
-- this is not a multi-file atomic-publication substitute and must not bypass substantive restrictions.
-
-## Constraints
-Do not stage large SystemOS assets until guest-visible storage transport is evidenced.
-Do not infer AppleSEPManager as causal without evidence.
-Packages005–009 must not resume.
+PP-RM schema10 DEC-0018 self-healing and DEC-0019 narrowly limited publication rules remain subordinate to explicit safety refusals. Packages005-009 are terminal; package010 superseded. No production release is authorized by this capsule refresh.

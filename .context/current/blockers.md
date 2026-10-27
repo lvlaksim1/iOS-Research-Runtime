@@ -1,30 +1,11 @@
 # Current blockers and open risks
 
-Updated: 2026-10-15 04:23 MSK
+Updated: 2026-10-27 MSK.
+1. **CI:** exact `main@0b633cbafd2a0198a9053c6f760d9590c2496e14` Windows Build `39016012852` failed at Build; E2E `39016012955` failed at provisioning/root-shell proof; QEMU Gate `39016012886` passed. Specific causes not established until detailed logs are read.
+2. **Guest storage:** historical BootKC has IONVMeFamily/APFS/AppleEmbeddedPCIE/AppleT8140PCIe and native `apcie` structure, but no proven real PCIe/IOKit binding, NVMe interrupt delivery, non-ramdisk `/dev/disk*`, APFS SystemOS/Preboot/Data mounts or system `launchd` on current head.
+3. **Runtime ownership:** Mailbox GEN195 B READY/ACK NONE/seq0 conflicts with last B scheduler-service error and disabled A/B task flags. Watchdog enabled, its last audit inconclusive. Do not assume successful dispatch or repeat work without full canonical readback.
+4. **Unpublished evidence:** 64 Mailbox Library records combine published and pending statuses; G194 5/5 synthetic fixture change is reported preserved in Library but PENDING_GITHUB. Library preservation is not GitHub publication or runtime proof.
+5. **Explicit refusals:** G30/G71 GitHub write attempts remain PENDING_OCB; do not repeat or reroute refused operations. Preserve independently permissible work only.
+6. **Generation boundary:** Manager capsule becomes generation28 while existing scheduler package remains frozen to generation27 / `f26dd70e1b6687ffed72703ff809af5e16a0558d`. No implied scheduler reauthorization.
 
-## Large Stage 1
-Immediate technical boundary: native Apple PCIe/NVMe code and source DeviceTree descriptions are present, but XNU still has not registered a guest-visible disk.
-
-Evidence now establishes:
-- recovery boot and root shell work;
-- IONVMeFamily and APFS are present;
-- AppleEmbeddedPCIE and AppleT8140PCIe are present;
-- source DeviceTree contains native apcie nodes, DART/IOMMU relationships and PCIe ranges;
-- exact-SHA E2E `37063868899` is green;
-- `/dev/disk*` remains absent;
-- filtered runtime IORegistry did not expose matching PCIe/NVMe providers.
-
-Latest verified product authority is `main@89cf1e04571545010c2433f24264bae25f5c5f2d`. Prior run `37068183031` belongs to earlier evidence and must be independently reconciled before reusing it.
-
-The next technical blocker must be isolated from that evidence among DeviceTree-to-IOService matching, provider/class/property mismatch, bridge/endpoint instantiation, interrupt/IOMMU relationships, or NVMe device-model compatibility.
-
-SystemOS extraction remains intentionally deferred.
-
-## Current engineering and execution blocker
-Package010 generations649–651 could not create a valid atomic host ADT plus QEMU PMGR pair. Six identical host source writes met explicit safety blocks. No preexisting complete exact direct-child target was found. The new package begins with read-only material prerequisite investigation; the blocked source write remains prohibited from blind retry.
-
-## Runtime continuity and publication risk
-Repeated explicit OCB on low-level `update_ref` publication has been demonstrated even for unambiguous bounded changes.
-DEC-0018 keeps transient OCB nonterminal.
-DEC-0019 records the narrow existing-single-file `update_file` fallback with fresh blob-SHA fencing, explicit semantic-equivalence recording, new authoritative commit SHA, and mandatory new exact-SHA evidence.
-This fallback must not be generalized to ambiguous or multi-file publication and must never bypass a substantive safety restriction.
+Stage1 acceptance still requires reproducible Windows exact-SHA evidence of non-ramdisk guest storage, SystemOS/Preboot/Data, APFS and system launchd/core userland; recovery `md0` does not qualify.

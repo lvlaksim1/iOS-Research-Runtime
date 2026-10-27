@@ -1,18 +1,19 @@
 # Latest handoff
 
-Updated: 2026-10-15 04:23 MSK
-
-Persistent manager: `ios-research-runtime-project-manager`.
-Manager generation: 27, sealed.
-Product authority: `main@89cf1e04571545010c2433f24264bae25f5c5f2d` (fresh GitHub read 2026-10-15).
-Macro stage: LARGE STAGE 1 — Full iOS System Boot.
-Package: `IOS-M3-CONTINUOUS-011`, initially READY generation 1, owner Worker B, before dispatch ACK.
+Updated: 2026-10-27 MSK. Persistent Project Manager `ios-research-runtime-project-manager`, sealed generation28.
+Product authority: `main@0b633cbafd2a0198a9053c6f760d9590c2496e14`.
+Macro stage: LARGE STAGE 1 — Full iOS System Boot: ACTIVE / NOT_PROVEN.
 
 ## Reconciliation
-Eight previous coupled files matched seal generation26. DEC-0021 Owner authorization for justified service branches and the package010 OCB episode are published on manager-state. Old PP-RM package010 generation651 was OCB_BACKOFF with no frozen target and no product code changes; subsequent authorized g649 branch remains at the same main SHA. Fresh successor package is a clean bounded investigation, not permission to repeat the blocked write.
+Previous 2026-10-15 working view `main@89cf1e...` is superseded. New main published 10 more commits, but current-head Build `39016012852` FAILED, Windows E2E `39016012955` FAILED, QEMU Gate `39016012886` PASSED. These do not prove full-iOS system boot.
 
-## First bounded unit
-Read pinned QEMU Darwin machine / existing local patch files, inspect host ADT compatibility filtering and available exact SHA Windows evidence. Identify genuinely different testable next storage-binding dependency before proposing implementation. Do not retry the identical source update blocked six times, re-label a blocked mutation, fabricate a complete two-file target or announce full iOS boot.
+## Executor boundary
+PP-RM `IOS-M3-CONTINUOUS-011` scheduler package remains frozen at manager generation27 and `f26dd70e1b6687ffed72703ff809af5e16a0558d`. Mailbox header last inspected as GEN195 B READY ACK NONE progress_seq0; Worker B last reported task-service error, A/B were disabled and Watchdog enabled on recent inspection. Live active ownership/dispatch UNCONFIRMED.
+Mailbox records 64 mixed-status Library archives, including G194 five synthetic negative tests and saved ZIP PENDING_GITHUB. G30/G71 safety-refused GitHub targets remain PENDING_OCB. Do not retry them or implicitly promote Library ZIPs to published code.
+iOS Expert is a separate automation, not evidence of this project's Stage1 progress.
 
-## Strict acceptance
-Non-ramdisk /dev/disk* plus actual APFS SystemOS/Preboot/Data plus system launchd/core userland, proven in reproducible Windows exact-SHA E2E. Recovery md0 does not qualify.
+## First safe next action
+Read fresh GitHub/CI and complete five-task control-plane state. Investigate current-head failing Build/E2E job details. Establish unique GEN195 ownership before any rearm; then proceed with permitted source-backed storage diagnostic.
+
+## Acceptance
+A guest non-ramdisk `/dev/disk*`, actual APFS SystemOS/Preboot/Data and system `launchd`/core userland, reproduced in Windows exact-SHA E2E. Recovery `md0`/shell is insufficient.

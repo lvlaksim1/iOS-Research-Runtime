@@ -1,41 +1,14 @@
-# PP-RM Launch Package — runtime schema 10
+# PP-RM Launch Package — current manager working view
 
-Status: RUNNING / WAIT_EXTERNAL_EVIDENCE
-Manager generation: 24
-Package: `IOS-M3-CONTINUOUS-010`
-Macro stage: LARGE STAGE 1 — Full iOS System Boot
-Current product: `main@32dd17014113543862e756c7daa52822e2eec073`
-Previous package: `IOS-M2-CONTINUOUS-009` — FINAL_COMPLETED / MUST NOT RESUME
+Updated: 2026-10-27 MSK. Persistent manager `ios-research-runtime-project-manager`; current capsule generation28.
+Active execution package: `IOS-M3-CONTINUOUS-011`, PP-RM schema10/v19, **frozen** at generation27 / manager commit `f26dd70e1b6687ffed72703ff809af5e16a0558d`.
+This is a descriptive working view, not an instruction to rewrite or reauthorize existing scheduler tasks.
+Product `main@0b633cbafd2a0198a9053c6f760d9590c2496e14`. LARGE STAGE 1 Full iOS System Boot NOT_PROVEN.
 
-## Mission
-Continue autonomously from verified recovery/root-shell execution to real full-iOS system userland:
-storage transport → guest-visible disk → SystemOS/Preboot/Data staging → APFS discovery/mounting → system launchd → core full-system userland.
+## Last observed runtime and product
+Mailbox header: GEN195 owner B READY, ACK NONE, progress_seq0. 64 mixed published/pending Library archive records, G194 synthetic 5/5 and Library-saved ZIP pending GitHub; G30/G71 explicit OpenAI-check-blocked publication attempts PENDING_OCB.
+Scheduler snapshot: Workers A/B disabled, Watchdog enabled; last B report: scheduler service error, no verified GEN195 ACK.
+CI at exact main: Build `39016012852` FAIL, Windows E2E `39016012955` FAIL, QEMU Gate `39016012886` SUCCESS.
 
-IOS-M3 and later IOS-M* labels are internal engineering checkpoints only. They do not stop PP-RM or require Owner participation.
-
-## Current bounded step
-BootKC evidence established:
-- IONVMeFamily present;
-- VirtIO storage absent;
-- APFS present.
-
-The darwin QEMU machine now has bounded GPEX/PCIe plumbing and ECAM/MMIO windows. Recovery/root shell remains reproducible.
-
-Exact-SHA E2E `36908440572` on `82c710bd243a57f89964a8c381879e14f1a0b4fc` succeeded but `/dev/disk*` remained absent.
-
-Generation45 identified the next smallest correction: attach the PCIe discovery node under Apple `arm-io` instead of the DeviceTree root. Legacy OCB3 interrupted that Worker runtime. Manager recovery published:
-`32dd17014113543862e756c7daa52822e2eec073` — `Attach PCIe discovery node under arm-io`.
-
-## Current wait
-Expected workflow: Windows End-to-End Boot.
-Expected exact head: `32dd17014113543862e756c7daa52822e2eec073`.
-Run: `36915159246`.
-State: WAIT_EXTERNAL_EVIDENCE.
-Resume owner after terminal evidence: Worker B.
-Do not duplicate the run.
-
-## OCB resilience
-DEC-0018 is authoritative.
-OCB3 exhausts only the current Worker runtime.
-Fresh-runtime failover, alternate compliant path and Watchdog-owned OCB_BACKOFF are nonterminal recovery states.
-A transient OCB must not become OWNER_GATE.
+## Mission and safe continuation
+Reconcile canonical GEN195 ownership and scheduler error; inspect CI failure logs; advance authentic PCIe/IOKit -> NVMe -> non-ramdisk disk proof, then APFS SystemOS/Preboot/Data, system launchd and core userland. Synthetic tests and recovery md0 are not acceptance. Do not retry/reroute G30/G71 refused writes or stage protected firmware before storage proof.
