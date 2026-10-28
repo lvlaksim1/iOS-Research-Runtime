@@ -16,6 +16,8 @@ Updated: 2026-10-27 MSK. Superseding earlier statements of the *current* product
 - Earlier Windows run `36483217835` failed due to missing QEMU gate artifact; historical, not current-head diagnosis.
 - Earlier APFS error79 and later recovery-root-shell results remain historical evidence, not current-full-system acceptance.
 
+- source: legacy-v2-state
+- authority: legacy-unverified
 ## Retained durable execution/procedure facts
 - PP-RM remains subordinate to persistent Project Manager `ios-research-runtime-project-manager`. A/B are replaceable execution runtimes and never become the project commitment owner. source: Owner directive; authority: owner-directive.
 - PP-RM control plane is native Scheduled Tasks: Worker A/B plus disabled Mailbox/Pulse/Trace. GitHub is product/evidence infrastructure, not baton ownership state. source: Owner-provided PP-RM mechanism and verified deployment; authority: owner-provided-evidence plus verified-runtime.
