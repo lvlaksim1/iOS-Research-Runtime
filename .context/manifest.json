@@ -44,7 +44,8 @@
   "current_state": ".context/current/state.md",
   "rules": [
     ".context/rules/project-rules.md",
-    ".context/rules/batch-development-standard.md"
+    ".context/rules/batch-development-standard.md",
+    ".context/rules/local-first-workspace.md"
   ],
   "decisions": [
     ".context/decisions/DEC-0001-persistent-manager-migration.md",
@@ -120,7 +121,7 @@
     "manager_state_coherence_required": true,
     "durable_finding_gate_required": true
   },
-  "updated_at": "2026-10-28",
+  "updated_at": "2026-10-30",
   "context_version": "2.1.0",
   "authority": {
     "manager_state_branch": "manager-state",
