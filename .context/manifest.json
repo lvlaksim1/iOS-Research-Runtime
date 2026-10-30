@@ -45,7 +45,8 @@
   "rules": [
     ".context/rules/project-rules.md",
     ".context/rules/batch-development-standard.md",
-    ".context/rules/local-first-workspace.md"
+    ".context/rules/local-first-workspace.md",
+    ".context/rules/possibility-first-research.md"
   ],
   "decisions": [
     ".context/decisions/DEC-0001-persistent-manager-migration.md",
@@ -69,7 +70,8 @@
     ".context/decisions/DEC-0019-high-level-single-file-publication-fallback.md",
     ".context/decisions/DEC-0020-durable-finding-gate.md",
     ".context/decisions/DEC-0021-owner-authorized-temporary-service-branches.md",
-    ".context/decisions/owner-batched-development-2026-10-30.md"
+    ".context/decisions/owner-batched-development-2026-10-30.md",
+    ".context/decisions/owner-possibility-first-2026-10-30.md"
   ],
   "dialogues": [
     ".context/dialogues/2026-09-24-apfs-error79-reconciliation.md"
